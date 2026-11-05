@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import type { StandingSort } from "@/lib/mock/data";
+import type { StandingsSort } from "@/lib/standings-sort";
 import { cn } from "@/lib/utils";
 
-const OPTIONS: { value: StandingSort; label: string }[] = [
+const OPTIONS: { value: StandingsSort; label: string }[] = [
   { value: "points", label: "Points" },
   { value: "goals", label: "Goals" },
   { value: "assists", label: "Assists" },
@@ -16,7 +16,7 @@ const OPTIONS: { value: StandingSort; label: string }[] = [
 export function StandingsSortChips() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const current = (searchParams.get("sort") as StandingSort | null) ?? "points";
+  const current = (searchParams.get("sort") as StandingsSort | null) ?? "points";
 
   return (
     <div

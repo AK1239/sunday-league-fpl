@@ -1,4 +1,10 @@
-import { Award, CalendarDays, ChevronRight, Trophy } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  ChevronRight,
+  Footprints,
+  Trophy,
+} from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/fantasy/page-header";
 import { LEAGUE_NAME } from "@/lib/league";
@@ -20,11 +26,14 @@ export default function MorePage() {
           icon={<CalendarDays />}
           i={1}
         />
-        <MoreLink href="/awards" label="Awards" icon={<Award />} i={2} />
+        <MoreLink
+          href="/players"
+          label="Player standings"
+          icon={<Footprints />}
+          i={2}
+        />
+        <MoreLink href="/rules" label="Scoring rules" icon={<BookOpen />} i={3} />
       </ul>
-      <p className="text-xs text-muted-foreground">
-        Scoring rules and season archive will be added in upcoming phases.
-      </p>
     </div>
   );
 }

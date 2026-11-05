@@ -96,10 +96,15 @@ export async function HomeHubPanel() {
             <ul className="space-y-2">
               {data.latestPublished.matches.map((match) => (
                 <li key={match.id}>
-                  <ScoreCard
-                    teamA={{ name: "Side A", score: match.scoreA }}
-                    teamB={{ name: "Side B", score: match.scoreB }}
-                  />
+                  <Link
+                    href={`/matchdays/${data.latestPublished!.id}/matches/${match.id}`}
+                    className="block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <ScoreCard
+                      teamA={{ name: "Side A", score: match.scoreA }}
+                      teamB={{ name: "Side B", score: match.scoreB }}
+                    />
+                  </Link>
                 </li>
               ))}
             </ul>

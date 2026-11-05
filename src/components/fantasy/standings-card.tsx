@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { MockStandingRow } from "@/lib/mock/data";
+import type { StandingRow } from "@/server/queries/standings";
 import { PlayerAvatar } from "./player-avatar";
 import { RankDelta } from "./rank-delta";
 
@@ -7,7 +7,7 @@ export function StandingsCard({
   row,
   index = 0,
 }: {
-  row: MockStandingRow;
+  row: StandingRow;
   index?: number;
 }) {
   return (
@@ -16,7 +16,7 @@ export function StandingsCard({
       style={{ "--d": `${Math.min(index, 10) * 45}ms` } as React.CSSProperties}
     >
       <Link
-        href={`/players/${row.player.id}`}
+        href={`/players/${row.playerId}`}
         className="surface surface-hover flex items-center gap-3 rounded-2xl px-3.5 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]"
       >
         <span
@@ -33,9 +33,13 @@ export function StandingsCard({
         >
           {row.rank}
         </span>
-        <PlayerAvatar name={row.player.displayName} size="md" />
+        <PlayerAvatar
+          name={row.displayName}
+          avatarUrl={row.avatarUrl ?? undefined}
+          size="md"
+        />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold">{row.player.displayName}</p>
+          <p className="truncate font-semibold">{row.displayName}</p>
           <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
             {row.goals}G · {row.assists}A · {row.appearances} apps
           </p>
