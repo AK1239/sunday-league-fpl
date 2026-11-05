@@ -1,6 +1,4 @@
-import { Suspense } from "react";
-import { BottomNav } from "./bottom-nav";
-import { SiteHeader } from "./site-header";
+import { PublicShellChrome } from "./public-shell-chrome";
 
 export function PublicShell({ children }: { children: React.ReactNode }) {
   return (
@@ -11,18 +9,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       >
         Skip to content
       </a>
-      <Suspense fallback={<div className="h-16 border-b border-border/40" />}>
-        <SiteHeader />
-      </Suspense>
-      <main
-        id="main-content"
-        className="mx-auto w-full max-w-5xl flex-1 px-4 pt-8 pb-28 md:pb-14"
-      >
-        {children}
-      </main>
-      <Suspense fallback={null}>
-        <BottomNav />
-      </Suspense>
+      <PublicShellChrome>{children}</PublicShellChrome>
     </>
   );
 }
