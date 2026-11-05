@@ -1,3 +1,5 @@
+import { SQUAD_PLAYERS } from "@/lib/squad";
+
 export type StandingSort =
   "points" | "goals" | "assists" | "appearances" | "average";
 
@@ -58,23 +60,10 @@ export const MOCK_SEASON: MockSeason = {
   daysRemaining: 87,
 };
 
-export const MOCK_PLAYERS: MockPlayer[] = [
-  { id: "akil", displayName: "Akil M.", nickname: "AK" },
-  { id: "juma", displayName: "Juma Hassan" },
-  { id: "david", displayName: "David K." },
-  { id: "omar", displayName: "Omar Said" },
-  { id: "kelvin", displayName: "Kelvin N." },
-  { id: "michael", displayName: "Michael T." },
-  { id: "raj", displayName: "Raj P." },
-  { id: "sam", displayName: "Samuel L." },
-  { id: "yusuf", displayName: "Yusuf A." },
-  { id: "eric", displayName: "Eric B." },
-  { id: "ian", displayName: "Ian C." },
-  { id: "peter", displayName: "Peter M." },
-  { id: "hassan", displayName: "Hassan R." },
-  { id: "leo", displayName: "Leo F." },
-  { id: "ben", displayName: "Ben W." },
-];
+export const MOCK_PLAYERS: MockPlayer[] = SQUAD_PLAYERS.map((player) => ({
+  id: player.id,
+  displayName: player.displayName,
+}));
 
 const STANDINGS_BASE: Omit<MockStandingRow, "player" | "rank" | "rankDelta">[] =
   [
@@ -190,17 +179,9 @@ const STANDINGS_BASE: Omit<MockStandingRow, "player" | "rank" | "rankDelta">[] =
       wins: 2,
       averagePoints: 13.0,
     },
-    {
-      points: 41,
-      goals: 1,
-      assists: 1,
-      appearances: 3,
-      wins: 1,
-      averagePoints: 13.7,
-    },
   ];
 
-const RANK_DELTAS = [0, 2, -1, 1, 0, -2, 3, 0, -1, 1, 0, 0, -1, 2, 0];
+const RANK_DELTAS = [0, 2, -1, 1, 0, -2, 3, 0, -1, 1, 0, 0, -1, 2];
 
 export function getMockStandings(
   sort: StandingSort = "points",
@@ -231,7 +212,7 @@ export const MOCK_LATEST_MATCHDAY: MockMatchday = {
   id: "md-8",
   number: 8,
   playedOn: "2026-11-02",
-  playerOfWeekId: "juma",
+  playerOfWeekId: "garnacho",
   matches: [
     {
       id: "m1",
@@ -243,13 +224,13 @@ export const MOCK_LATEST_MATCHDAY: MockMatchday = {
       id: "m2",
       teamA: { name: "Green", score: 1 },
       teamB: { name: "Yellow", score: 1 },
-      mvpPlayerId: "david",
+      mvpPlayerId: "yusuf",
     },
     {
       id: "m3",
       teamA: { name: "Red", score: 4 },
       teamB: { name: "Green", score: 3 },
-      mvpPlayerId: "juma",
+      mvpPlayerId: "garnacho",
     },
   ],
 };
@@ -258,19 +239,19 @@ export const MOCK_ACHIEVEMENTS: MockAchievement[] = [
   {
     id: "a1",
     label: "Hat-trick hero",
-    playerId: "juma",
+    playerId: "garnacho",
     detail: "Matchday 8 · Match 3",
   },
   {
     id: "a2",
     label: "Player of the Week",
-    playerId: "juma",
+    playerId: "garnacho",
     detail: "Matchday 8",
   },
   {
     id: "a3",
     label: "Clean sheet",
-    playerId: "kelvin",
+    playerId: "yusuf",
     detail: "Matchday 8 · Match 2",
   },
 ];
@@ -304,8 +285,8 @@ export function getMockPlayer(id: string): MockPlayerProfile | undefined {
 
   const formByPlayer: Record<string, number[]> = {
     akil: [22, 18, 24, 16, 20],
-    juma: [19, 26, 21, 23, 28],
-    david: [15, 17, 14, 18, 16],
+    garnacho: [19, 26, 21, 23, 28],
+    yusuf: [15, 17, 14, 18, 16],
   };
 
   return {
@@ -320,7 +301,7 @@ export function getMockPlayer(id: string): MockPlayerProfile | undefined {
       ? Math.round((row.wins / row.appearances) * 100)
       : 0,
     averagePoints: row.averagePoints,
-    mvpCount: id === "juma" ? 4 : id === "akil" ? 3 : 1,
+    mvpCount: id === "garnacho" ? 4 : id === "akil" ? 3 : 1,
     form: formByPlayer[id] ?? [12, 14, 10, 15, 13],
     recentMatches: [
       {
@@ -338,7 +319,7 @@ export function getMockPlayer(id: string): MockPlayerProfile | undefined {
       { matchday: 6, date: "2026-10-19", points: 19, summary: "1A · Draw" },
     ],
     awards:
-      id === "juma"
+      id === "garnacho"
         ? ["Golden Boot leader", "Player of the Week ×2"]
         : id === "akil"
           ? ["Most wins"]

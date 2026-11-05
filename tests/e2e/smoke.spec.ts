@@ -16,9 +16,9 @@ test("standings page renders", async ({ page }) => {
 });
 
 test("player profile renders", async ({ page }) => {
-  await page.goto("/players/juma");
+  await page.goto("/players/garnacho");
   await expect(
-    page.getByRole("heading", { level: 1, name: "Juma Hassan" }),
+    page.getByRole("heading", { level: 1, name: "Garnacho" }),
   ).toBeVisible();
 });
 

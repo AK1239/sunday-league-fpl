@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { eq } from "drizzle-orm";
 import { parseEnv } from "@/env";
+import { SQUAD_DISPLAY_NAMES } from "@/lib/squad";
 import { recomputeMatchday } from "@/server/domain/recompute-matchday";
 import { getDb } from "./index";
 import {
@@ -15,27 +16,6 @@ import {
   scoringRuleSets,
   seasons,
 } from "./schema";
-
-const PLAYER_NAMES = [
-  "Akil M.",
-  "Juma Hassan",
-  "David K.",
-  "Omar Said",
-  "Kelvin N.",
-  "Michael T.",
-  "Raj P.",
-  "Samuel L.",
-  "Yusuf A.",
-  "Eric B.",
-  "Ian C.",
-  "Peter M.",
-  "Hassan R.",
-  "Leo F.",
-  "Ben W.",
-  "Chris D.",
-  "Frank O.",
-  "Noah J.",
-];
 
 export async function seedDatabase() {
   parseEnv(process.env);
@@ -75,7 +55,7 @@ export async function seedDatabase() {
   const insertedPlayers = await db
     .insert(players)
     .values(
-      PLAYER_NAMES.map((displayName) => ({
+      SQUAD_DISPLAY_NAMES.map((displayName) => ({
         displayName,
         joinedOn: "2026-11-01",
       })),
@@ -97,13 +77,7 @@ export async function seedDatabase() {
     })
     .returning();
 
-  const attendees = [
-    "Akil M.",
-    "Juma Hassan",
-    "David K.",
-    "Omar Said",
-    "Kelvin N.",
-  ];
+  const attendees = ["Akil", "Murti", "Yusuf", "Lolo", "Ajam"];
   await db.insert(matchdayAttendance).values(
     attendees.map((name) => ({
       matchdayId: matchday!.id,
@@ -117,18 +91,18 @@ export async function seedDatabase() {
     matchNo: 1,
     scoreA: 3,
     scoreB: 2,
-    sideA: ["Akil M.", "Juma Hassan", "David K."],
-    sideB: ["Omar Said", "Kelvin N."],
-    sideAGk: "David K.",
+    sideA: ["Akil", "Murti", "Yusuf"],
+    sideB: ["Lolo", "Ajam"],
+    sideAGk: "Yusuf",
     sideBGk: null,
     goalEvents: [
-      { side: "A" as const, scorer: "Akil M.", assist: "Juma Hassan" },
-      { side: "A" as const, scorer: "Akil M.", assist: null },
-      { side: "A" as const, scorer: "Juma Hassan", assist: null },
-      { side: "B" as const, scorer: "Omar Said", assist: null },
-      { side: "B" as const, scorer: "Kelvin N.", assist: null },
+      { side: "A" as const, scorer: "Akil", assist: "Murti" },
+      { side: "A" as const, scorer: "Akil", assist: null },
+      { side: "A" as const, scorer: "Yusuf", assist: null },
+      { side: "B" as const, scorer: "Lolo", assist: null },
+      { side: "B" as const, scorer: "Ajam", assist: null },
     ],
-    mvp: "Akil M.",
+    mvp: "Akil",
     byName,
   });
 
