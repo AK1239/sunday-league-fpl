@@ -20,10 +20,7 @@ export async function PickTeamPanel() {
         title="No gameweek open for picks"
         description="When the admin schedules the next Sunday gameweek, you can pick your five here."
         action={
-          <Link
-            href="/"
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
+          <Link href="/" className={cn(buttonVariants({ variant: "outline" }))}>
             Back to home
           </Link>
         }

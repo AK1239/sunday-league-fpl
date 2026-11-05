@@ -55,7 +55,11 @@ function clearLocalDraft(matchdayId: string) {
   }
 }
 
-export function PickTeamClient({ initial }: { initial: SerializedPickTeamData }) {
+export function PickTeamClient({
+  initial,
+}: {
+  initial: SerializedPickTeamData;
+}) {
   const router = useRouter();
   const playerById = useMemo(
     () => new Map(initial.players.map((p) => [p.id, p])),
@@ -113,15 +117,17 @@ export function PickTeamClient({ initial }: { initial: SerializedPickTeamData })
       captainPlayerId,
       viceCaptainPlayerId,
     });
-  }, [slots, captainPlayerId, viceCaptainPlayerId, initial.matchday.id, readOnly]);
+  }, [
+    slots,
+    captainPlayerId,
+    viceCaptainPlayerId,
+    initial.matchday.id,
+    readOnly,
+  ]);
 
   const pickForValidation = useMemo(() => {
     const playerIds = slots.filter((id): id is string => Boolean(id));
-    if (
-      playerIds.length !== 5 ||
-      !captainPlayerId ||
-      !viceCaptainPlayerId
-    ) {
+    if (playerIds.length !== 5 || !captainPlayerId || !viceCaptainPlayerId) {
       return null;
     }
     return {

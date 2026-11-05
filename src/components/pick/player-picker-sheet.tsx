@@ -10,11 +10,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export type PickerSort =
-  | "expected"
-  | "form"
-  | "average"
-  | "appearances"
-  | "name";
+  "expected" | "form" | "average" | "appearances" | "name";
 
 export function PlayerPickerSheet({
   open,
@@ -46,7 +42,10 @@ export function PlayerPickerSheet({
     list = [...list].sort((a, b) => {
       switch (sort) {
         case "expected":
-          return b.expectedPoints - a.expectedPoints || a.displayName.localeCompare(b.displayName);
+          return (
+            b.expectedPoints - a.expectedPoints ||
+            a.displayName.localeCompare(b.displayName)
+          );
         case "form": {
           const avgA =
             a.form.length === 0
@@ -64,7 +63,10 @@ export function PlayerPickerSheet({
           return avgB - avgA || a.displayName.localeCompare(b.displayName);
         }
         case "appearances":
-          return b.appearances - a.appearances || a.displayName.localeCompare(b.displayName);
+          return (
+            b.appearances - a.appearances ||
+            a.displayName.localeCompare(b.displayName)
+          );
         case "name":
           return a.displayName.localeCompare(b.displayName);
         default:
@@ -139,7 +141,9 @@ export function PlayerPickerSheet({
                       {player.displayName}
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <FormPips values={player.form.length ? player.form : [0]} />
+                      <FormPips
+                        values={player.form.length ? player.form : [0]}
+                      />
                       <span className="tabular-nums">
                         Last GW {player.lastGameweekPoints ?? "—"}
                       </span>

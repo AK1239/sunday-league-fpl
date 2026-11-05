@@ -54,7 +54,8 @@ export function PitchSlots({
               className={cn(
                 "relative flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/50 bg-background/60 px-2 py-3 text-center text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-70",
                 layoutClass,
-                !player && "border-dashed hover:border-primary/40 hover:bg-primary/5",
+                !player &&
+                  "border-dashed hover:border-primary/40 hover:bg-primary/5",
                 player && "hover:border-primary/30",
               )}
               aria-label={
@@ -94,7 +95,9 @@ export function PitchSlots({
               ) : (
                 <>
                   <Plus className="size-6 text-muted-foreground" aria-hidden />
-                  <span className="text-xs text-muted-foreground">Add player</span>
+                  <span className="text-xs text-muted-foreground">
+                    Add player
+                  </span>
                 </>
               )}
             </button>

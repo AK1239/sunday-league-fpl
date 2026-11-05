@@ -16,7 +16,9 @@ export function FormPips({
     >
       {values.map((value, index) => (
         <li key={index} className="flex flex-col items-center gap-0.5">
-          <span className="sr-only">GW {index + 1}: {value} pts</span>
+          <span className="sr-only">
+            GW {index + 1}: {value} pts
+          </span>
           <span
             className="block w-1.5 rounded-full bg-primary/70"
             style={{ height: `${Math.max(4, (value / max) * 16)}px` }}

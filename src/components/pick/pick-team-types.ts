@@ -10,7 +10,9 @@ export type SerializedPickTeamData = Omit<
   };
 };
 
-export function serializePickTeamData(data: PickTeamData): SerializedPickTeamData {
+export function serializePickTeamData(
+  data: PickTeamData,
+): SerializedPickTeamData {
   return {
     ...data,
     serverNow: data.serverNow.toISOString(),
