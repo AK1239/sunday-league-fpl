@@ -138,10 +138,258 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(
+        60rem 32rem at 12% -8%,
+        oklch(0.88 0.19 120 / 9%),
+        transparent 60%
+      ),
+      radial-gradient(
+        48rem 28rem at 100% 0%,
+        oklch(0.75 0.12 230 / 7%),
+        transparent 60%
+      );
+    background-attachment: fixed;
+  }
+  :root:not(.dark) body {
+    background-image:
+      radial-gradient(
+        60rem 32rem at 12% -8%,
+        oklch(0.75 0.16 145 / 14%),
+        transparent 60%
+      ),
+      radial-gradient(
+        48rem 28rem at 100% 0%,
+        oklch(0.8 0.1 230 / 12%),
+        transparent 60%
+      );
   }
   html {
     @apply font-sans;
   }
+  ::selection {
+    background: oklch(0.88 0.19 120 / 35%);
+  }
+  /* Stop browser autofill from painting a pale blue box over dark inputs */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--foreground);
+    caret-color: var(--foreground);
+    transition: background-color 9999s ease-out 0s;
+    box-shadow: 0 0 0 100px color-mix(in oklch, var(--card) 92%, white) inset;
+  }
+}
+
+/* ---------- Premium surface + motion utilities ---------- */
+
+.glass {
+  background: color-mix(in oklch, var(--card) 70%, transparent);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid color-mix(in oklch, var(--foreground) 9%, transparent);
+  box-shadow:
+    0 1px 0 0 color-mix(in oklch, var(--foreground) 7%, transparent) inset,
+    0 24px 48px -24px oklch(0 0 0 / 55%);
+}
+
+.surface {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--card) 92%, var(--foreground) 3%),
+    var(--card)
+  );
+  border: 1px solid color-mix(in oklch, var(--foreground) 8%, transparent);
+  box-shadow: 0 1px 0 0 color-mix(in oklch, var(--foreground) 6%, transparent)
+    inset;
+}
+
+.surface-hover {
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms,
+    box-shadow 220ms,
+    background-color 220ms;
+}
+.surface-hover:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in oklch, var(--primary) 40%, transparent);
+  box-shadow: 0 18px 36px -20px
+    color-mix(in oklch, var(--primary) 45%, transparent);
+}
+
+.text-gradient {
+  background: linear-gradient(
+    120deg,
+    var(--foreground) 20%,
+    color-mix(in oklch, var(--primary) 85%, var(--foreground)) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.glow-primary {
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--primary) 50%, transparent),
+    0 10px 30px -8px color-mix(in oklch, var(--primary) 55%, transparent);
+}
+
+.pitch-lines {
+  background-image:
+    radial-gradient(
+      circle at 50% 50%,
+      transparent 0 3.2rem,
+      oklch(1 0 0 / 5%) 3.2rem 3.3rem,
+      transparent 3.3rem
+    ),
+    linear-gradient(oklch(1 0 0 / 4%) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    100% 100%;
+  background-position: center;
+}
+
+.grid-fade {
+  background-image:
+    linear-gradient(to right, oklch(1 0 0 / 4%) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(1 0 0 / 4%) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(
+    ellipse at center,
+    black 30%,
+    transparent 75%
+  );
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2%, -4%, 0) scale(1.08);
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes shake {
+  10%,
+  90% {
+    transform: translateX(-1px);
+  }
+  20%,
+  80% {
+    transform: translateX(2px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-4px);
+  }
+  40%,
+  60% {
+    transform: translateX(4px);
+  }
+}
+@keyframes grow-up {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 55%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 14px transparent;
+  }
+}
+
+.animate-rise {
+  animation: rise-in 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.animate-fade {
+  animation: fade-in 500ms ease-out both;
+  animation-delay: var(--d, 0ms);
+}
+.animate-float {
+  animation: float-slow 14s ease-in-out infinite;
+}
+.animate-shake {
+  animation: shake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+.animate-grow-up {
+  transform-origin: bottom;
+  animation: grow-up 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.animate-pop {
+  animation: pop 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.animate-pulse-ring {
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    100deg,
+    var(--muted) 30%,
+    color-mix(in oklch, var(--muted) 60%, var(--foreground) 12%) 50%,
+    var(--muted) 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* Smooth cross-page transition where supported */
+@view-transition {
+  navigation: auto;
 }
 
 .hero-strip {

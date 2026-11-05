@@ -26,7 +26,7 @@ export function StandingsSkeleton() {
     >
       <span className="sr-only">Loading standings</span>
       {Array.from({ length: 6 }).map((_, i) => (
-        <Skeleton key={i} className="h-[4.5rem] w-full rounded-xl" />
+        <Skeleton key={i} className="h-[4.5rem] w-full rounded-2xl" />
       ))}
     </div>
   );

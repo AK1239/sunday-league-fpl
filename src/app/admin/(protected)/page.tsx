@@ -39,8 +39,8 @@ function AdminLinkCard({
   return (
     <li>
       <Link href={href} className="block h-full">
-        <Card className="h-full p-4 transition-colors hover:bg-muted/40">
-          <h2 className="font-semibold">{title}</h2>
+        <Card className="surface-hover h-full p-5">
+          <h2 className="font-heading text-xl font-semibold">{title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         </Card>
       </Link>

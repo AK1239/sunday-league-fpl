@@ -36,7 +36,7 @@ export async function AdminInvitesPanel() {
         {invites.length === 0 ? (
           <p className="text-sm text-muted-foreground">No invites yet.</p>
         ) : (
-          <ul className="divide-y divide-border/60 rounded-2xl border border-border/60 bg-card/50">
+          <ul className="surface divide-y divide-border/40 overflow-hidden rounded-2xl">
             {invites.map((invite) => {
               const status = invite.usedAt
                 ? "Used"
@@ -61,7 +61,18 @@ export async function AdminInvitesPanel() {
                     </p>
                   </div>
                   <div className="text-right text-xs text-muted-foreground">
-                    <p>{status}</p>
+                    <p
+                      className={
+                        "inline-block rounded-full px-2 py-0.5 font-medium " +
+                        (status === "Open"
+                          ? "bg-primary/15 text-primary"
+                          : status === "Used"
+                            ? "bg-muted text-muted-foreground"
+                            : "bg-destructive/15 text-destructive")
+                      }
+                    >
+                      {status}
+                    </p>
                     <p>Expires {invite.expiresAt.toLocaleDateString()}</p>
                   </div>
                 </li>

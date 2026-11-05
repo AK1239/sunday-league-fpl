@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { resolveEffectiveTeam, type SubmittedFantasyTeam } from "./effective-team";
+import {
+  resolveEffectiveTeam,
+  type SubmittedFantasyTeam,
+} from "./effective-team";
 
 const md1 = {
   matchdayId: "md1",
@@ -14,7 +17,9 @@ const md2 = {
   seasonStartsOn: "2026-11-01",
 };
 
-const baseTeam = (overrides: Partial<SubmittedFantasyTeam>): SubmittedFantasyTeam => ({
+const baseTeam = (
+  overrides: Partial<SubmittedFantasyTeam>,
+): SubmittedFantasyTeam => ({
   managerId: "mgr",
   matchday: md1,
   source: "manual",
@@ -46,9 +51,7 @@ describe("resolveEffectiveTeam", () => {
   });
 
   it("ignores carry_over rows as carry sources", () => {
-    const teams = [
-      baseTeam({ source: "carry_over", matchday: md1 }),
-    ];
+    const teams = [baseTeam({ source: "carry_over", matchday: md1 })];
     expect(resolveEffectiveTeam("mgr", md2, teams)).toBeNull();
   });
 });

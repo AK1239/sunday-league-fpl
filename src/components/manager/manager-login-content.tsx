@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { ManagerLoginForm } from "@/components/manager/manager-login-form";
 import { getUserSession } from "@/server/auth/session";
 
@@ -10,24 +11,23 @@ export async function ManagerLoginContent() {
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-6 py-10">
-      <header className="space-y-1 text-center">
-        <h1 className="font-heading text-2xl font-bold tracking-tight">
-          Manager sign in
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Pick your fantasy team and track your points.
-        </p>
-      </header>
+    <AuthShell
+      eyebrow="Manager"
+      title="Welcome back"
+      subtitle="Sign in to pick your team and track your points."
+      footer={
+        <>
+          <p>Need an account? Ask the league admin for an invite link.</p>
+          <Link
+            href="/"
+            className="inline-block font-medium text-primary transition-colors hover:underline"
+          >
+            ← Back to league home
+          </Link>
+        </>
+      }
+    >
       <ManagerLoginForm />
-      <p className="text-center text-sm text-muted-foreground">
-        Need an account? Ask the league admin for an invite link.
-      </p>
-      <p className="text-center text-sm">
-        <Link href="/" className="text-primary hover:underline">
-          Back to league home
-        </Link>
-      </p>
-    </div>
+    </AuthShell>
   );
 }

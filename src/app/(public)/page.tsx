@@ -1,4 +1,12 @@
+import {
+  ArrowRight,
+  CalendarClock,
+  Footprints,
+  Medal,
+  Target,
+} from "lucide-react";
 import Link from "next/link";
+import { CountUp } from "@/components/fantasy/count-up";
 import { PodiumHero } from "@/components/fantasy/podium-hero";
 import { ScoreCard } from "@/components/fantasy/score-card";
 import { SectionHeading } from "@/components/fantasy/section-heading";
@@ -24,17 +32,21 @@ export default function HomePage() {
 
   return (
     <div className="space-y-8">
-      <header className="space-y-2">
-        <p className="text-xs font-medium uppercase tracking-widest text-primary">
+      <header className="animate-rise space-y-3">
+        <p className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold tracking-widest text-primary uppercase">
+          <span className="relative flex size-1.5">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-75" />
+            <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
+          </span>
           {MOCK_SEASON.name}
         </p>
-        <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-          {LEAGUE_NAME}
+        <h1 className="font-heading text-5xl leading-[1.02] font-bold tracking-tight sm:text-6xl">
+          <span className="text-gradient">{LEAGUE_NAME}</span>
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground">
           {leader.player.displayName} leads with{" "}
           <span className="font-semibold text-foreground tabular-nums">
-            {leader.points} pts
+            <CountUp value={leader.points} /> pts
           </span>
           {" · "}
           {MOCK_SEASON.daysRemaining} days left in the season
@@ -43,15 +55,23 @@ export default function HomePage() {
 
       <PodiumHero topThree={topThree} />
 
-      <section aria-labelledby="latest-md">
+      <section
+        aria-labelledby="latest-md"
+        className="animate-rise"
+        style={{ "--d": "250ms" } as React.CSSProperties}
+      >
         <SectionHeading
           title={`Matchday ${MOCK_LATEST_MATCHDAY.number}`}
           action={
             <Link
               href="/matchdays"
-              className="text-sm font-medium text-primary hover:underline"
+              className="group inline-flex items-center gap-1 text-sm font-medium text-primary"
             >
               All matchdays
+              <ArrowRight
+                className="size-4 transition-transform group-hover:translate-x-1"
+                aria-hidden
+              />
             </Link>
           }
         />
@@ -71,15 +91,19 @@ export default function HomePage() {
         </ul>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-4">
-          <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <div
+        className="animate-rise grid gap-4 sm:grid-cols-2"
+        style={{ "--d": "350ms" } as React.CSSProperties}
+      >
+        <section className="surface rounded-2xl p-5">
+          <h2 className="flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+            <Medal className="size-4 text-podium-gold" aria-hidden />
             Player of the week
           </h2>
           {potw ? (
             <Link
               href={`/players/${potw.id}`}
-              className="mt-3 flex items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="group mt-3 flex items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <PlayerAvatar name={potw.displayName} size="lg" />
               <div>
@@ -91,25 +115,37 @@ export default function HomePage() {
             </Link>
           ) : null}
         </section>
-        <section className="rounded-2xl border border-border/60 bg-card/70 p-4">
-          <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <section className="surface relative overflow-hidden rounded-2xl p-5">
+          <div
+            aria-hidden
+            className="absolute -top-10 -right-10 size-36 rounded-full bg-primary/15 blur-2xl"
+          />
+          <h2 className="relative flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+            <CalendarClock className="size-4 text-primary" aria-hidden />
             Next Sunday
           </h2>
-          <p className="mt-3 font-heading text-2xl font-bold">Matchday 9</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="relative mt-3 font-heading text-3xl font-bold">
+            Matchday 9
+          </p>
+          <p className="relative text-sm text-muted-foreground">
             Kickoff at the usual pitch
           </p>
         </section>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div
+        className="animate-rise grid gap-4 sm:grid-cols-2"
+        style={{ "--d": "450ms" } as React.CSSProperties}
+      >
         <LeaderMini
+          icon={<Target className="size-4" aria-hidden />}
           title="Golden Boot"
           name={goldenBoot.player.displayName}
           stat={`${goldenBoot.goals} goals`}
           href={`/players/${goldenBoot.player.id}`}
         />
         <LeaderMini
+          icon={<Footprints className="size-4" aria-hidden />}
           title="Playmaker"
           name={playmaker.player.displayName}
           stat={`${playmaker.assists} assists`}
@@ -117,7 +153,11 @@ export default function HomePage() {
         />
       </div>
 
-      <section aria-labelledby="recent-achievements">
+      <section
+        aria-labelledby="recent-achievements"
+        className="animate-rise"
+        style={{ "--d": "550ms" } as React.CSSProperties}
+      >
         <SectionHeading title="Recent highlights" />
         <ul className="space-y-2">
           {MOCK_ACHIEVEMENTS.map((item) => {
@@ -125,7 +165,7 @@ export default function HomePage() {
             return (
               <li
                 key={item.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-card/60 px-3 py-2.5 text-sm"
+                className="surface flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm"
               >
                 <span className="font-medium">{item.label}</span>
                 <span className="text-muted-foreground">
@@ -141,11 +181,13 @@ export default function HomePage() {
 }
 
 function LeaderMini({
+  icon,
   title,
   name,
   stat,
   href,
 }: {
+  icon: React.ReactNode;
   title: string;
   name: string;
   stat: string;
@@ -154,13 +196,16 @@ function LeaderMini({
   return (
     <Link
       href={href}
-      className="block rounded-2xl border border-border/60 bg-card/70 p-4 outline-none transition-colors hover:bg-card focus-visible:ring-2 focus-visible:ring-ring"
+      className="surface surface-hover block rounded-2xl p-5 outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <p className="flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+        <span className="text-primary">{icon}</span>
         {title}
       </p>
-      <p className="mt-2 font-semibold">{name}</p>
-      <p className="text-sm tabular-nums text-primary">{stat}</p>
+      <p className="mt-3 text-lg font-semibold">{name}</p>
+      <p className="font-heading text-2xl font-bold tabular-nums text-primary">
+        {stat}
+      </p>
     </Link>
   );
 }

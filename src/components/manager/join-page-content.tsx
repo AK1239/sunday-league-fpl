@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { JoinForm } from "@/components/manager/join-form";
+import { LEAGUE_NAME } from "@/lib/league";
 import { getInvitePreviewByToken } from "@/server/domain/invites";
 
 export async function JoinPageContent({
@@ -15,25 +17,24 @@ export async function JoinPageContent({
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-6 py-10">
-      <header className="space-y-1 text-center">
-        <h1 className="font-heading text-2xl font-bold tracking-tight">
-          {preview.isPasswordReset
-            ? "Reset your password"
-            : "Join the league"}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {preview.isPasswordReset
-            ? "Choose a new password for your manager account."
-            : "Create your manager account for Mkate Champions League."}
-        </p>
-      </header>
-      <JoinForm token={token} preview={preview} />
-      <p className="text-center text-sm">
-        <Link href="/login" className="text-primary hover:underline">
+    <AuthShell
+      eyebrow={preview.isPasswordReset ? "Account recovery" : "You're invited"}
+      title={preview.isPasswordReset ? "Reset password" : "Join the league"}
+      subtitle={
+        preview.isPasswordReset
+          ? "Choose a new password for your manager account."
+          : `Create your manager account for ${LEAGUE_NAME}.`
+      }
+      footer={
+        <Link
+          href="/login"
+          className="inline-block font-medium text-primary transition-colors hover:underline"
+        >
           Already have an account? Sign in
         </Link>
-      </p>
-    </div>
+      }
+    >
+      <JoinForm token={token} preview={preview} />
+    </AuthShell>
   );
 }

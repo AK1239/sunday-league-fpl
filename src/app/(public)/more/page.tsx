@@ -1,17 +1,26 @@
+import { Award, CalendarDays, ChevronRight, Trophy } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/fantasy/page-header";
 import { LEAGUE_NAME } from "@/lib/league";
 
 export default function MorePage() {
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="font-heading text-3xl font-bold tracking-tight">More</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{LEAGUE_NAME}</p>
-      </header>
-      <ul className="divide-y divide-border/60 rounded-2xl border border-border/60 bg-card/70">
-        <MoreLink href="/table" label="Full standings" />
-        <MoreLink href="/matchdays" label="Matchdays" />
-        <MoreLink href="/awards" label="Awards" />
+    <div className="space-y-8">
+      <PageHeader eyebrow={LEAGUE_NAME} title="More" />
+      <ul className="space-y-3">
+        <MoreLink
+          href="/table"
+          label="Full standings"
+          icon={<Trophy />}
+          i={0}
+        />
+        <MoreLink
+          href="/matchdays"
+          label="Matchdays"
+          icon={<CalendarDays />}
+          i={1}
+        />
+        <MoreLink href="/awards" label="Awards" icon={<Award />} i={2} />
       </ul>
       <p className="text-xs text-muted-foreground">
         Scoring rules and season archive will be added in upcoming phases.
@@ -20,14 +29,34 @@ export default function MorePage() {
   );
 }
 
-function MoreLink({ href, label }: { href: string; label: string }) {
+function MoreLink({
+  href,
+  label,
+  icon,
+  i,
+}: {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  i: number;
+}) {
   return (
-    <li>
+    <li
+      className="animate-rise"
+      style={{ "--d": `${100 + i * 70}ms` } as React.CSSProperties}
+    >
       <Link
         href={href}
-        className="flex min-h-12 items-center px-4 py-3 font-medium outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        className="group surface surface-hover flex min-h-14 items-center gap-4 rounded-2xl px-4 py-3 font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        {label}
+        <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary [&_svg]:size-5">
+          {icon}
+        </span>
+        <span className="flex-1">{label}</span>
+        <ChevronRight
+          className="size-5 text-muted-foreground transition-transform group-hover:translate-x-1"
+          aria-hidden
+        />
       </Link>
     </li>
   );

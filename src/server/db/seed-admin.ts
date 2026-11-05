@@ -7,10 +7,7 @@ export async function seedAdminUser(db: AppDb): Promise<void> {
   const password = process.env.ADMIN_PASSWORD;
   if (!email || !password) return;
 
-  const existing = await db
-    .select({ id: users.id })
-    .from(users)
-    .limit(1);
+  const existing = await db.select({ id: users.id }).from(users).limit(1);
   if (existing.length > 0) return;
 
   const localPart = email.split("@")[0] ?? "Admin";

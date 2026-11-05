@@ -20,17 +20,17 @@ export async function StandingsView({
       <StandingsSortChips />
 
       <ul className="space-y-2 md:hidden" aria-label="League standings">
-        {rows.map((row) => (
-          <StandingsCard key={row.player.id} row={row} />
+        {rows.map((row, i) => (
+          <StandingsCard key={row.player.id} row={row} index={i} />
         ))}
       </ul>
 
-      <div className="hidden overflow-x-auto rounded-2xl border border-border/60 md:block">
+      <div className="surface animate-rise hidden overflow-x-auto rounded-2xl md:block">
         <table className="w-full min-w-[640px] text-sm">
           <caption className="sr-only">
             League standings sorted by {sort}
           </caption>
-          <thead className="border-b border-border/60 bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+          <thead className="border-b border-border/50 bg-muted/30 text-left text-xs tracking-widest text-muted-foreground uppercase">
             <tr>
               <th scope="col" className="px-3 py-3">
                 #

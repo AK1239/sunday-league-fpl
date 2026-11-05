@@ -45,7 +45,7 @@ export function PlayerAvatar({
     <span
       aria-hidden
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-muted font-semibold text-muted-foreground ring-2 ring-primary/30",
+        "inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/30 via-primary/10 to-muted font-semibold text-foreground ring-2 ring-primary/30",
         sizeClasses[size],
         className,
       )}

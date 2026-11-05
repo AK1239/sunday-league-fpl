@@ -15,7 +15,9 @@ function clientKeyFromHeaders(headerStore: Headers): string {
   );
 }
 
-export async function managerLoginAction(formData: FormData): Promise<ActionResult> {
+export async function managerLoginAction(
+  formData: FormData,
+): Promise<ActionResult> {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 

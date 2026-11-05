@@ -37,10 +37,10 @@ export function StandingsSortChips() {
             href={href}
             aria-current={active ? "true" : undefined}
             className={cn(
-              "shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95",
               active
-                ? "border-primary/40 bg-primary text-primary-foreground"
-                : "border-border/70 bg-card/60 text-muted-foreground hover:text-foreground",
+                ? "glow-primary border-primary/40 bg-primary text-primary-foreground"
+                : "border-border/70 bg-card/60 text-muted-foreground hover:border-primary/40 hover:text-foreground",
             )}
           >
             {option.label}

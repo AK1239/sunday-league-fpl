@@ -14,10 +14,7 @@ export async function AdminPlayersList() {
       </h2>
       <ul className="space-y-3">
         {players.map((player) => (
-          <li
-            key={player.id}
-            className="rounded-xl border border-border/60 bg-card/60 p-3"
-          >
+          <li key={player.id} className="surface animate-rise rounded-2xl p-4">
             <div className="mb-2 flex items-center gap-3">
               <PlayerAvatar
                 name={player.displayName}

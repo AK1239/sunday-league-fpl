@@ -10,8 +10,7 @@ export type EligiblePlayer = {
 };
 
 export type ValidateFantasyTeamResult =
-  | { ok: true }
-  | { ok: false; code: string; message: string };
+  { ok: true } | { ok: false; code: string; message: string };
 
 const SQUAD_SIZE = 5;
 

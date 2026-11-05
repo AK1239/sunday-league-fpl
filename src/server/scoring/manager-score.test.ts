@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import {
-  scoreManagerWithNoTeam,
-  scoreManagers,
-} from "./manager-score";
-import type { ManagerScoringRules, TeamForManagerScoring } from "./manager-types";
+import { scoreManagerWithNoTeam, scoreManagers } from "./manager-score";
+import type {
+  ManagerScoringRules,
+  TeamForManagerScoring,
+} from "./manager-types";
 
 const rules: ManagerScoringRules = {
   attendancePts: 2,
@@ -39,7 +39,11 @@ describe("scoreManagers", () => {
     expect(result.totalPoints).toBe(10 * 2 + 4);
     expect(result.multiplierPlayerId).toBe("p1");
     const captainLine = result.lines.find((l) => l.playerId === "p1");
-    expect(captainLine).toMatchObject({ basePoints: 10, multiplier: 2, points: 20 });
+    expect(captainLine).toMatchObject({
+      basePoints: 10,
+      multiplier: 2,
+      points: 20,
+    });
   });
 
   it("uses vice multiplier when captain did not attend", () => {

@@ -478,7 +478,9 @@ export const managerMatchdayScores = pgTable(
       .notNull()
       .references(() => seasons.id),
     totalPoints: integer("total_points").notNull(),
-    multiplierPlayerId: uuid("multiplier_player_id").references(() => players.id),
+    multiplierPlayerId: uuid("multiplier_player_id").references(
+      () => players.id,
+    ),
     teamSource: managerMatchdayTeamSourceEnum("team_source").notNull(),
   },
   (table) => [

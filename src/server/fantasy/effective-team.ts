@@ -70,9 +70,7 @@ export function resolveEffectiveTeam(
         (t.source === "manual" || t.source === "admin") &&
         isMatchdayBefore(t.matchday, targetMatchday),
     )
-    .sort((a, b) =>
-      compareMatchdaysChronologically(b.matchday, a.matchday),
-    )[0];
+    .sort((a, b) => compareMatchdaysChronologically(b.matchday, a.matchday))[0];
 
   if (!priorManual) return null;
 

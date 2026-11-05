@@ -11,8 +11,9 @@ export function SectionHeading({
   className?: string;
 }) {
   return (
-    <div className={cn("mb-3 flex items-end justify-between gap-3", className)}>
-      <h2 className="font-heading text-lg font-semibold tracking-tight sm:text-xl">
+    <div className={cn("mb-4 flex items-end justify-between gap-3", className)}>
+      <h2 className="font-heading flex items-center gap-2.5 text-xl font-semibold tracking-tight sm:text-2xl">
+        <span aria-hidden className="h-5 w-1 rounded-full bg-primary" />
         {title}
       </h2>
       {action}

@@ -65,7 +65,9 @@ export function scoreManagers(
   });
 }
 
-export function scoreManagerWithNoTeam(managerId: string): ScoredManagerMatchday {
+export function scoreManagerWithNoTeam(
+  managerId: string,
+): ScoredManagerMatchday {
   return {
     managerId,
     totalPoints: 0,

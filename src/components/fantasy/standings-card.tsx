@@ -3,14 +3,34 @@ import type { MockStandingRow } from "@/lib/mock/data";
 import { PlayerAvatar } from "./player-avatar";
 import { RankDelta } from "./rank-delta";
 
-export function StandingsCard({ row }: { row: MockStandingRow }) {
+export function StandingsCard({
+  row,
+  index = 0,
+}: {
+  row: MockStandingRow;
+  index?: number;
+}) {
   return (
-    <li>
+    <li
+      className="animate-rise"
+      style={{ "--d": `${Math.min(index, 10) * 45}ms` } as React.CSSProperties}
+    >
       <Link
         href={`/players/${row.player.id}`}
-        className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/90 px-3 py-3 outline-none transition-colors hover:bg-card focus-visible:ring-2 focus-visible:ring-ring"
+        className="surface surface-hover flex items-center gap-3 rounded-2xl px-3.5 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]"
       >
-        <span className="font-heading w-6 shrink-0 text-lg font-bold tabular-nums text-muted-foreground">
+        <span
+          className={
+            "font-heading w-6 shrink-0 text-xl font-bold tabular-nums " +
+            (row.rank === 1
+              ? "text-podium-gold"
+              : row.rank === 2
+                ? "text-podium-silver"
+                : row.rank === 3
+                  ? "text-podium-bronze"
+                  : "text-muted-foreground")
+          }
+        >
           {row.rank}
         </span>
         <PlayerAvatar name={row.player.displayName} size="md" />

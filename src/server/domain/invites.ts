@@ -2,7 +2,10 @@ import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db";
 import { managerInvites, users } from "@/server/db/schema";
 import { hashPassword } from "@/server/auth/password";
-import { createSessionToken, hashSessionToken } from "@/server/auth/session-token";
+import {
+  createSessionToken,
+  hashSessionToken,
+} from "@/server/auth/session-token";
 
 export type InvitePreview = {
   inviteId: string;

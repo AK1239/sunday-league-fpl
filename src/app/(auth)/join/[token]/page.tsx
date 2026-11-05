@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { AuthLoading } from "@/components/auth/auth-loading";
 import { JoinPageContent } from "@/components/manager/join-page-content";
 
 export default function JoinPage({
@@ -7,13 +8,7 @@ export default function JoinPage({
   params: Promise<{ token: string }>;
 }) {
   return (
-    <Suspense
-      fallback={
-        <p className="py-10 text-center text-sm text-muted-foreground" role="status">
-          Loading invite…
-        </p>
-      }
-    >
+    <Suspense fallback={<AuthLoading label="Loading invite…" />}>
       <JoinPageContent params={params} />
     </Suspense>
   );

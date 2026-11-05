@@ -28,7 +28,9 @@ export function RankDelta({
     <span
       className={cn(
         "inline-flex items-center gap-0.5 text-xs font-medium tabular-nums",
-        up ? "text-emerald-400" : "text-rose-400",
+        up
+          ? "rounded-full bg-emerald-400/10 px-1.5 py-0.5 text-emerald-400"
+          : "rounded-full bg-rose-400/10 px-1.5 py-0.5 text-rose-400",
         className,
       )}
       aria-label={`${up ? "Up" : "Down"} ${Math.abs(delta)} places`}

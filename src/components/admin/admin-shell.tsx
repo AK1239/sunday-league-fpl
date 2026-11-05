@@ -19,10 +19,10 @@ export function AdminShell({
 }) {
   return (
     <div className="min-h-full bg-background">
-      <header className="border-b border-border/60 bg-card/50">
+      <header className="sticky top-0 z-40 border-b border-border/40 bg-background/70 backdrop-blur-xl backdrop-saturate-150">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-primary">
+            <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-primary uppercase">
               Admin
             </p>
             <p className="font-heading text-sm font-semibold">{LEAGUE_NAME}</p>
@@ -32,7 +32,7 @@ export function AdminShell({
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="rounded-full px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {item.label}
               </Link>
@@ -50,7 +50,7 @@ export function AdminShell({
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-4 py-6">{children}</main>
+      <main className="mx-auto max-w-3xl px-4 py-8">{children}</main>
     </div>
   );
 }

@@ -11,12 +11,12 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       >
         Skip to content
       </a>
-      <Suspense fallback={<div className="h-14 border-b border-border/60" />}>
+      <Suspense fallback={<div className="h-16 border-b border-border/40" />}>
         <SiteHeader />
       </Suspense>
       <main
         id="main-content"
-        className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-6 md:pb-10"
+        className="mx-auto w-full max-w-5xl flex-1 px-4 pt-8 pb-28 md:pb-14"
       >
         {children}
       </main>

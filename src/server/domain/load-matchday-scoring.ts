@@ -12,10 +12,7 @@ import {
   seasons,
 } from "@/server/db/schema";
 import type { ManagerScoringRules } from "@/server/scoring/manager-types";
-import type {
-  ScoreMatch,
-  ScoreMatchdayInput,
-} from "@/server/scoring/types";
+import type { ScoreMatch, ScoreMatchdayInput } from "@/server/scoring/types";
 
 export async function loadScoringRulesForMatchday(
   db: DbExecutor,

@@ -3,7 +3,10 @@
 import { desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/server/auth/require-admin";
-import { acceptManagerInvite, createManagerInvite } from "@/server/domain/invites";
+import {
+  acceptManagerInvite,
+  createManagerInvite,
+} from "@/server/domain/invites";
 import { getDb } from "@/server/db";
 import { managerInvites, players, users } from "@/server/db/schema";
 import { actionFail, actionOk, type ActionResult } from "./action-result";

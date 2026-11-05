@@ -309,9 +309,10 @@ async function rebuildManagerRankSnapshots(
     const totals = await tx
       .select({
         managerId: managerMatchdayScores.managerId,
-        total: sql<number>`coalesce(sum(${managerMatchdayScores.totalPoints}), 0)::int`.as(
-          "total",
-        ),
+        total:
+          sql<number>`coalesce(sum(${managerMatchdayScores.totalPoints}), 0)::int`.as(
+            "total",
+          ),
       })
       .from(managerMatchdayScores)
       .innerJoin(matchdays, eq(managerMatchdayScores.matchdayId, matchdays.id))
@@ -324,9 +325,7 @@ async function rebuildManagerRankSnapshots(
       )
       .groupBy(managerMatchdayScores.managerId);
 
-    const totalsMap = new Map(
-      totals.map((row) => [row.managerId, row.total]),
-    );
+    const totalsMap = new Map(totals.map((row) => [row.managerId, row.total]));
 
     const ranked = managers
       .map((manager) => ({

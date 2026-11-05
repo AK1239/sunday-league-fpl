@@ -1,17 +1,15 @@
+import { PageHeader } from "@/components/fantasy/page-header";
 import { Award } from "lucide-react";
 import { EmptyState } from "@/components/fantasy/empty-state";
 
 export default function AwardsPlaceholderPage() {
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="font-heading text-3xl font-bold tracking-tight">
-          Awards
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Season trophies and hall of fame will appear here.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Honours"
+        title="Awards"
+        description="Season trophies and hall of fame will appear here."
+      />
       <EmptyState
         icon={<Award className="mx-auto size-10" />}
         title="Awards hall coming soon"

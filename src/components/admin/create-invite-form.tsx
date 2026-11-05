@@ -30,10 +30,7 @@ export function CreateInviteForm({
   );
 
   return (
-    <form
-      action={formAction}
-      className="space-y-4 rounded-2xl border border-border/60 bg-card/80 p-4"
-    >
+    <form action={formAction} className="space-y-4 surface rounded-2xl p-5">
       <div className="space-y-2">
         <Label htmlFor="label">Label (optional)</Label>
         <Input
@@ -51,7 +48,7 @@ export function CreateInviteForm({
         <select
           id="linkedPlayerId"
           name="linkedPlayerId"
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          className="flex h-11 w-full rounded-xl border border-input bg-background/40 px-3 text-sm transition-all outline-none hover:border-foreground/25 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={pending}
           defaultValue=""
         >
@@ -64,11 +61,13 @@ export function CreateInviteForm({
         </select>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="resetUserId">Password reset for manager (optional)</Label>
+        <Label htmlFor="resetUserId">
+          Password reset for manager (optional)
+        </Label>
         <select
           id="resetUserId"
           name="resetUserId"
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          className="flex h-11 w-full rounded-xl border border-input bg-background/40 px-3 text-sm transition-all outline-none hover:border-foreground/25 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           disabled={pending}
           defaultValue=""
         >
@@ -87,11 +86,13 @@ export function CreateInviteForm({
       ) : null}
       {state?.ok === true && state.data?.joinPath ? (
         <div
-          className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm"
+          className="animate-pop rounded-xl border border-primary/30 bg-primary/10 p-4 text-sm"
           role="status"
         >
           <p className="font-medium">One-time invite link (copy now):</p>
-          <p className="mt-1 break-all font-mono text-xs">{state.data.joinPath}</p>
+          <p className="mt-1 break-all font-mono text-xs">
+            {state.data.joinPath}
+          </p>
         </div>
       ) : null}
       <Button type="submit" disabled={pending}>

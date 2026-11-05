@@ -14,13 +14,22 @@ export async function AdminSeasonsList() {
         {seasons.map((season) => (
           <li
             key={season.id}
-            className="flex flex-col gap-2 rounded-xl border border-border/60 bg-card/60 p-3 sm:flex-row sm:items-center sm:justify-between"
+            className="surface flex flex-col gap-2 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
               <p className="font-medium">{season.name}</p>
               <p className="text-sm text-muted-foreground tabular-nums">
                 {season.startsOn} → {season.endsOn} ·{" "}
-                <span className="capitalize">{season.status}</span>
+                <span
+                  className={
+                    "capitalize " +
+                    (season.status === "active"
+                      ? "font-medium text-primary"
+                      : "")
+                  }
+                >
+                  {season.status}
+                </span>
               </p>
             </div>
             {season.status !== "active" && season.status !== "closed" ? (

@@ -15,7 +15,7 @@ export function ScoreCard({
   return (
     <div
       className={cn(
-        "grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-xl border border-border/60 bg-card/90 px-3 py-3",
+        "surface surface-hover grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-2xl px-4 py-4",
         className,
       )}
     >
@@ -29,7 +29,7 @@ export function ScoreCard({
           {teamA.name}
         </p>
       </div>
-      <p className="font-heading text-xl font-bold tabular-nums tracking-tight">
+      <p className="font-heading rounded-xl bg-background/50 px-3 py-1 text-2xl font-bold tabular-nums tracking-tight">
         <span className={aWins ? "text-team-a" : undefined}>{teamA.score}</span>
         <span className="mx-1.5 text-muted-foreground">–</span>
         <span className={bWins ? "text-team-b" : undefined}>{teamB.score}</span>

@@ -55,8 +55,7 @@ export async function loginWithCredentials(
     (await verifyPassword(password, user.passwordHash));
 
   const allowedRoles = options.allowedRoles;
-  const roleOk =
-    !allowedRoles || (user && allowedRoles.includes(user.role));
+  const roleOk = !allowedRoles || (user && allowedRoles.includes(user.role));
 
   if (!valid || !roleOk) {
     recordLoginFailure(`${rateLimitKey}:${normalizedEmail}`);
