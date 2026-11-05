@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mkate Champions League
 
-## Getting Started
+Private fantasy league for Sunday football: managers pick five real players plus captain and vice; admin publishes match results and gameweek scores.
 
-First, run the development server:
+## Stack
+
+Next.js 16, React 19, Tailwind v4, Drizzle ORM, PostgreSQL, Docker Compose + Caddy.
+
+## Local development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+cp .env.example .env   # set DATABASE_URL, SESSION_SECRET, admin credentials
+docker compose up -d db
+pnpm install
+pnpm db:migrate
+pnpm db:seed           # demo season + players (skipped if rules already exist)
+pnpm db:seed-admin     # admin user only when users table is empty
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Purpose |
+|--------|---------|
+| `pnpm dev` | Development server |
+| `pnpm build` / `pnpm start` | Production build |
+| `pnpm test` | Unit + integration (needs `DATABASE_URL`) |
+| `pnpm test:e2e` | Playwright smoke + a11y (mobile viewport) |
+| `pnpm db:migrate` | Apply SQL migrations |
+| `pnpm db:backup` | `pg_dump` gzip to `./backups/` |
+| `pnpm db:restore` | Restore from a backup (interactive confirm) |
 
-## Learn More
+## Production
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+docker compose up -d
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+See **[docs/LAUNCH.md](docs/LAUNCH.md)** for invite rollout, backups, and go-live checks.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Health
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`GET /api/health` — `{ "status": "ok" | "degraded", "db": boolean }` for monitoring.

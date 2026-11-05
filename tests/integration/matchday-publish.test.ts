@@ -125,7 +125,7 @@ describe.skipIf(!hasDatabase)("matchday publish & inspector", () => {
 
     const [{ sum: beforeSum }] = await db
       .select({
-        sum: sql<number>`coalesce(sum(${pointLedger.points}), 0)`,
+        sum: sql<number>`coalesce(sum(${pointLedger.points}), 0)`.mapWith(Number),
       })
       .from(pointLedger)
       .where(eq(pointLedger.matchdayId, matchdayId));
@@ -162,7 +162,7 @@ describe.skipIf(!hasDatabase)("matchday publish & inspector", () => {
 
     const [{ sum: afterSum }] = await db
       .select({
-        sum: sql<number>`coalesce(sum(${pointLedger.points}), 0)`,
+        sum: sql<number>`coalesce(sum(${pointLedger.points}), 0)`.mapWith(Number),
       })
       .from(pointLedger)
       .where(eq(pointLedger.matchdayId, matchdayId));

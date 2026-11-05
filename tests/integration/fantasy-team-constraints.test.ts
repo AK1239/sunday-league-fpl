@@ -10,7 +10,7 @@ import {
   seasons,
   users,
 } from "@/server/db/schema";
-import { resetDatabase } from "./helpers";
+import { expectDbReject, resetDatabase } from "./helpers";
 
 const hasDatabase = !!process.env.DATABASE_URL;
 
@@ -127,48 +127,52 @@ describe.skipIf(!hasDatabase)("fantasy team DB constraints", () => {
   it("rejects fewer than five players at commit", async () => {
     const fx = await seedFixtures();
     const ids = fx.playerIds.slice(0, 5);
-    await expect(
-      getDb().transaction(async (tx) => {
-        const [team] = await tx
-          .insert(fantasyTeams)
-          .values({
-            managerId: fx.managerId,
-            matchdayId: fx.matchdayId,
-            captainPlayerId: ids[0]!,
-            viceCaptainPlayerId: ids[1]!,
-          })
-          .returning();
-        await tx.insert(fantasyTeamPlayers).values(
-          ids.slice(0, 3).map((playerId) => ({
-            fantasyTeamId: team!.id,
-            playerId,
-          })),
-        );
-      }),
-    ).rejects.toThrow(/exactly 5 players/i);
+    await expectDbReject(
+      () =>
+        getDb().transaction(async (tx) => {
+          const [team] = await tx
+            .insert(fantasyTeams)
+            .values({
+              managerId: fx.managerId,
+              matchdayId: fx.matchdayId,
+              captainPlayerId: ids[0]!,
+              viceCaptainPlayerId: ids[1]!,
+            })
+            .returning();
+          await tx.insert(fantasyTeamPlayers).values(
+            ids.slice(0, 3).map((playerId) => ({
+              fantasyTeamId: team!.id,
+              playerId,
+            })),
+          );
+        }),
+      /exactly 5 players/i,
+    );
   });
 
   it("rejects captain not in the five", async () => {
     const fx = await seedFixtures();
     const ids = fx.playerIds;
-    await expect(
-      getDb().transaction(async (tx) => {
-        const [team] = await tx
-          .insert(fantasyTeams)
-          .values({
-            managerId: fx.managerId,
-            matchdayId: fx.matchdayId,
-            captainPlayerId: ids[5]!,
-            viceCaptainPlayerId: ids[0]!,
-          })
-          .returning();
-        await tx.insert(fantasyTeamPlayers).values(
-          ids.slice(0, 5).map((playerId) => ({
-            fantasyTeamId: team!.id,
-            playerId,
-          })),
-        );
-      }),
-    ).rejects.toThrow(/foreign key|violates foreign key/i);
+    await expectDbReject(
+      () =>
+        getDb().transaction(async (tx) => {
+          const [team] = await tx
+            .insert(fantasyTeams)
+            .values({
+              managerId: fx.managerId,
+              matchdayId: fx.matchdayId,
+              captainPlayerId: ids[5]!,
+              viceCaptainPlayerId: ids[0]!,
+            })
+            .returning();
+          await tx.insert(fantasyTeamPlayers).values(
+            ids.slice(0, 5).map((playerId) => ({
+              fantasyTeamId: team!.id,
+              playerId,
+            })),
+          );
+        }),
+      /foreign key|violates foreign key|captain_in_squad/i,
+    );
   });
 });

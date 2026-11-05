@@ -1,3 +1,4 @@
+import { expect } from "vitest";
 import { sql } from "drizzle-orm";
 import { parseEnv } from "@/env";
 import { getDb } from "@/server/db";
@@ -10,6 +11,37 @@ export function requireDatabaseUrl(): string {
   }
   parseEnv(process.env);
   return url;
+}
+
+/** Drizzle often wraps deferred constraint failures as a failed COMMIT. */
+export function dbErrorMessage(error: unknown): string {
+  const parts: string[] = [];
+  let current: unknown = error;
+  for (let depth = 0; depth < 4 && current; depth++) {
+    if (current instanceof Error) {
+      parts.push(current.message);
+      current = current.cause;
+    } else {
+      parts.push(String(current));
+      break;
+    }
+  }
+  return parts.join(" ");
+}
+
+export async function expectDbReject(
+  run: () => Promise<unknown>,
+  pattern: RegExp,
+) {
+  try {
+    await run();
+    throw new Error("Expected promise to reject");
+  } catch (error) {
+    if (error instanceof Error && error.message === "Expected promise to reject") {
+      throw error;
+    }
+    expect(dbErrorMessage(error)).toMatch(pattern);
+  }
 }
 
 export async function resetDatabase() {

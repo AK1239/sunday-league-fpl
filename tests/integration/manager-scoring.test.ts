@@ -40,23 +40,24 @@ describe.skipIf(!hasDatabase)("manager scoring integration", () => {
       })
       .returning();
 
-    const [team] = await db
-      .insert(fantasyTeams)
-      .values({
-        managerId: manager!.id,
-        matchdayId: matchday!.id,
-        captainPlayerId: squad[0]!.id,
-        viceCaptainPlayerId: squad[1]!.id,
-        source: "manual",
-      })
-      .returning();
-
-    await db.insert(fantasyTeamPlayers).values(
-      squad.map((p) => ({
-        fantasyTeamId: team!.id,
-        playerId: p.id,
-      })),
-    );
+    await db.transaction(async (tx) => {
+      const [team] = await tx
+        .insert(fantasyTeams)
+        .values({
+          managerId: manager!.id,
+          matchdayId: matchday!.id,
+          captainPlayerId: squad[0]!.id,
+          viceCaptainPlayerId: squad[1]!.id,
+          source: "manual",
+        })
+        .returning();
+      await tx.insert(fantasyTeamPlayers).values(
+        squad.map((p) => ({
+          fantasyTeamId: team!.id,
+          playerId: p.id,
+        })),
+      );
+    });
 
     await recomputeMatchday(matchday!.id);
 
