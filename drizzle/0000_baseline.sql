@@ -1,0 +1,1 @@
+-- Baseline migration (intentionally empty). Tables arrive in Phase 2.
