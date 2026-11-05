@@ -17,6 +17,7 @@ import type {
   MatchEntryMatch,
 } from "./match-entry-types";
 import { validateMatchDraft } from "./validate-match-draft";
+import { recomputeMatchday } from "./recompute-matchday";
 
 export class MatchEntryError extends Error {
   constructor(
@@ -47,13 +48,13 @@ async function assertMatchdayEditable(
   if (md.status === "cancelled") {
     throw new MatchEntryError("Cancelled matchdays cannot be edited.", "CANCELLED");
   }
-  if (md.status === "published") {
-    throw new MatchEntryError(
-      "Published matchdays use the publish workflow to edit.",
-      "PUBLISHED",
-    );
-  }
   return md;
+}
+
+async function recomputeIfPublished(matchdayId: string, status: string) {
+  if (status === "published") {
+    await recomputeMatchday(matchdayId);
+  }
 }
 
 async function ensureDraftStatus(tx: DbExecutor, matchdayId: string) {
@@ -190,8 +191,10 @@ export async function saveMatchdayAttendanceAdmin(
   matchdayId: string,
   attendeeIds: string[],
 ): Promise<void> {
+  let status = "draft";
   await db.transaction(async (tx) => {
-    await assertMatchdayEditable(tx, matchdayId);
+    const md = await assertMatchdayEditable(tx, matchdayId);
+    status = md.status;
     await ensureDraftStatus(tx, matchdayId);
 
     const unique = [...new Set(attendeeIds)];
@@ -213,6 +216,7 @@ export async function saveMatchdayAttendanceAdmin(
       after: { count: unique.length },
     });
   });
+  await recomputeIfPublished(matchdayId, status);
 }
 
 async function replaceMatchContents(
@@ -315,8 +319,10 @@ export async function saveMatchDraftAdmin(
     throw new MatchEntryError(validation.message, validation.code);
   }
 
-  return db.transaction(async (tx) => {
-    await assertMatchdayEditable(tx, matchdayId);
+  let publishedStatus = "draft";
+  const result = await db.transaction(async (tx) => {
+    const md = await assertMatchdayEditable(tx, matchdayId);
+    publishedStatus = md.status;
     await ensureDraftStatus(tx, matchdayId);
 
     const uniqueAttendees = mergedAttendees;
@@ -376,6 +382,8 @@ export async function saveMatchDraftAdmin(
 
     return { matchId: matchId! };
   });
+  await recomputeIfPublished(matchdayId, publishedStatus);
+  return result;
 }
 
 export async function addEmptyMatchAdmin(
@@ -383,8 +391,10 @@ export async function addEmptyMatchAdmin(
   adminUserId: string,
   matchdayId: string,
 ): Promise<{ matchId: string; matchNo: number }> {
-  return db.transaction(async (tx) => {
-    await assertMatchdayEditable(tx, matchdayId);
+  let status = "draft";
+  const result = await db.transaction(async (tx) => {
+    const md = await assertMatchdayEditable(tx, matchdayId);
+    status = md.status;
     await ensureDraftStatus(tx, matchdayId);
 
     const [{ value }] = await tx
@@ -414,6 +424,8 @@ export async function addEmptyMatchAdmin(
 
     return { matchId: match!.id, matchNo };
   });
+  await recomputeIfPublished(matchdayId, status);
+  return result;
 }
 
 export async function copyLineupFromPreviousMatchAdmin(
@@ -422,8 +434,10 @@ export async function copyLineupFromPreviousMatchAdmin(
   matchdayId: string,
   targetMatchId: string,
 ): Promise<void> {
+  let status = "draft";
   await db.transaction(async (tx) => {
-    await assertMatchdayEditable(tx, matchdayId);
+    const md = await assertMatchdayEditable(tx, matchdayId);
+    status = md.status;
 
     const target = await tx
       .select({ id: matches.id, matchNo: matches.matchNo })
@@ -478,6 +492,7 @@ export async function copyLineupFromPreviousMatchAdmin(
       after: { fromMatchId: previous[0].id },
     });
   });
+  await recomputeIfPublished(matchdayId, status);
 }
 
 async function loadMatchParts(tx: DbExecutor, matchId: string) {

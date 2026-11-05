@@ -101,14 +101,24 @@ export async function AdminMatchdaysPanel() {
                     <span className={statusClass(md.status)}>{md.status}</span>
                   </p>
                   {md.status !== "cancelled" ? (
-                    <Link
-                      href={`/admin/matchdays/${md.id}/entry`}
-                      className="text-sm font-medium text-primary hover:underline"
-                    >
-                      {md.status === "published"
-                        ? "View entry"
-                        : "Enter results →"}
-                    </Link>
+                    <div className="flex flex-wrap gap-3">
+                      <Link
+                        href={`/admin/matchdays/${md.id}/entry`}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        {md.status === "published"
+                          ? "Edit results →"
+                          : "Enter results →"}
+                      </Link>
+                      {md.status === "published" ? (
+                        <Link
+                          href={`/admin/matchdays/${md.id}/inspector`}
+                          className="text-sm font-medium text-muted-foreground hover:text-primary hover:underline"
+                        >
+                          Scoring inspector
+                        </Link>
+                      ) : null}
+                    </div>
                   ) : null}
                 </div>
                 <MatchdayRowActions

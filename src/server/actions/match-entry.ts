@@ -58,6 +58,9 @@ export async function saveMatchdayAttendanceAction(
       attendeeIds,
     );
     revalidatePath(`/admin/matchdays/${matchdayId}/entry`);
+    revalidatePath(`/admin/matchdays/${matchdayId}/inspector`);
+    revalidatePath("/");
+    revalidatePath("/table");
     return actionOk();
   } catch (error) {
     return mapEntryError(error) ?? actionFail("ERROR", "Could not save attendance.");
@@ -88,6 +91,9 @@ export async function saveMatchDraftAction(
       attendeeIds,
     );
     revalidatePath(`/admin/matchdays/${matchdayId}/entry`);
+    revalidatePath(`/admin/matchdays/${matchdayId}/inspector`);
+    revalidatePath("/");
+    revalidatePath("/table");
     return actionOk(result);
   } catch (error) {
     return (

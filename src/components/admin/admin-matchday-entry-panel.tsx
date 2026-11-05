@@ -22,7 +22,7 @@ export async function AdminMatchdayEntryPanel({
       <PageHeader
         eyebrow={`Gameweek ${entry.number}`}
         title="Match entry"
-        description={`${entry.playedOn} · ${entry.status} — drafts autosave.`}
+        description={`${entry.playedOn} · ${entry.status} — autosave; publish when results are final.`}
       />
       <MatchdayEntryClient initial={entry} />
     </div>

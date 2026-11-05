@@ -54,7 +54,7 @@ function mapMatchdayError(error: unknown): ActionFailure | null {
     case "PUBLISHED":
       return actionFail(
         "INVALID_STATE",
-        "Published matchdays cannot be postponed here. Unpublish first (coming soon).",
+        "Published matchdays cannot be postponed here. Unpublish from match entry first.",
       );
     case "ALREADY_CANCELLED":
       return actionFail("INVALID_STATE", "Matchday is already cancelled.");

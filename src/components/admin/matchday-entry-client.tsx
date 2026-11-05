@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Copy, Plus } from "lucide-react";
+import { Copy, Plus, Trash2 } from "lucide-react";
 import { PlayerAvatar } from "@/components/fantasy/player-avatar";
 import { SectionHeading } from "@/components/fantasy/section-heading";
 import { FormError } from "@/components/auth/form-error";
@@ -13,6 +13,12 @@ import {
   saveMatchDraftAction,
   saveMatchdayAttendanceAction,
 } from "@/server/actions/match-entry";
+import {
+  deleteMatchAction,
+  publishMatchdayAction,
+  recalculateMatchdayAction,
+  unpublishMatchdayAction,
+} from "@/server/actions/matchday-publish";
 import type {
   MatchdayEntryData,
   MatchDraftInput,
@@ -81,6 +87,7 @@ export function MatchdayEntryClient({
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [workflowBusy, setWorkflowBusy] = useState(false);
 
   const playerMap = useMemo(
     () => new Map(initial.players.map((p) => [p.id, p])),
@@ -178,19 +185,48 @@ export function MatchdayEntryClient({
     router.refresh();
   }
 
+  async function runWorkflow(
+    fn: () => Promise<{ ok: boolean; message?: string }>,
+  ) {
+    setWorkflowBusy(true);
+    setErrorMessage(null);
+    const result = await fn();
+    setWorkflowBusy(false);
+    if (result.ok === false) {
+      setErrorMessage(result.message ?? "Action failed.");
+      return;
+    }
+    router.refresh();
+  }
+
+  async function handleDeleteMatch(matchId: string, matchNo: number) {
+    if (!window.confirm(`Delete match ${matchNo}? This cannot be undone.`)) {
+      return;
+    }
+    const result = await deleteMatchAction(initial.matchdayId, matchId);
+    if (result.ok === false) {
+      setErrorMessage(result.message);
+      return;
+    }
+    setMatches((prev) => prev.filter((m) => m.id !== matchId));
+    router.refresh();
+  }
+
   useEffect(() => {
     if (saveState !== "saved") return;
     const t = setTimeout(() => setSaveState("idle"), 2000);
     return () => clearTimeout(t);
   }, [saveState]);
 
-  if (initial.status === "published" || initial.status === "cancelled") {
+  if (initial.status === "cancelled") {
     return (
       <p className="text-sm text-muted-foreground">
-        This matchday is {initial.status} and cannot be edited here.
+        This matchday is cancelled and cannot be edited.
       </p>
     );
   }
+
+  const isPublished = initial.status === "published";
 
   return (
     <div className="space-y-8">
@@ -201,6 +237,60 @@ export function MatchdayEntryClient({
         >
           ← Matchdays
         </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/admin/matchdays/${initial.matchdayId}/inspector`}
+            className="rounded-full border border-border/60 px-3 py-1 text-xs font-medium hover:border-primary/40"
+          >
+            Scoring inspector
+          </Link>
+          {isPublished ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={workflowBusy}
+                onClick={() =>
+                  runWorkflow(() => recalculateMatchdayAction(initial.matchdayId))
+                }
+              >
+                Recalculate
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={workflowBusy}
+                onClick={() =>
+                  runWorkflow(() => unpublishMatchdayAction(initial.matchdayId))
+                }
+              >
+                Unpublish
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              disabled={workflowBusy}
+              onClick={() =>
+                runWorkflow(() => publishMatchdayAction(initial.matchdayId))
+              }
+            >
+              Publish gameweek
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {isPublished ? (
+        <p className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+          Published — edits autosave and recalculate player and manager scores.
+        </p>
+      ) : null}
+
+      <div className="flex justify-end">
         <span
           className={cn(
             "rounded-full px-3 py-1 text-xs font-medium capitalize",
@@ -211,9 +301,13 @@ export function MatchdayEntryClient({
           role="status"
         >
           {saveState === "saving"
-            ? "Saving draft…"
+            ? isPublished
+              ? "Saving…"
+              : "Saving draft…"
             : saveState === "saved"
-              ? "Draft saved"
+              ? isPublished
+                ? "Saved"
+                : "Draft saved"
               : saveState === "error"
                 ? "Save failed"
                 : "Autosave on"}
@@ -280,6 +374,11 @@ export function MatchdayEntryClient({
                   ? () => handleCopyLineup(match.id)
                   : undefined
               }
+              onDelete={
+                !match.id.startsWith("temp-")
+                  ? () => handleDeleteMatch(match.id, match.matchNo)
+                  : undefined
+              }
             />
           ))
         )}
@@ -295,6 +394,7 @@ function MatchCardEditor({
   attendeeIds,
   onChange,
   onCopyLineup,
+  onDelete,
 }: {
   match: MatchEntryMatch;
   players: MatchdayEntryData["players"];
@@ -302,6 +402,7 @@ function MatchCardEditor({
   attendeeIds: string[];
   onChange: (match: MatchEntryMatch) => void;
   onCopyLineup?: () => void;
+  onDelete?: () => void;
 }) {
   function toggleSide(side: "A" | "B", playerId: string) {
     const key = side === "A" ? "sideAPlayerIds" : "sideBPlayerIds";
@@ -373,12 +474,31 @@ function MatchCardEditor({
         <h3 className="font-heading text-lg font-semibold tabular-nums">
           Match {match.matchNo}
         </h3>
-        {onCopyLineup ? (
-          <Button type="button" variant="outline" size="sm" onClick={onCopyLineup}>
-            <Copy className="size-3.5" aria-hidden />
-            Copy previous lineup
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {onCopyLineup ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onCopyLineup}
+            >
+              <Copy className="size-3.5" aria-hidden />
+              Copy previous lineup
+            </Button>
+          ) : null}
+          {onDelete ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={onDelete}
+            >
+              <Trash2 className="size-3.5" aria-hidden />
+              Delete
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
