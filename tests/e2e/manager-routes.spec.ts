@@ -17,7 +17,6 @@ test.describe("manager auth and /my routes", () => {
   }) => {
     const assertDiagnostics = attachPageDiagnostics(page);
     await loginAsManager(page);
-    await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
     await expect(
       page.getByRole("heading", { level: 1, name: "My Team" }),
     ).toBeVisible();

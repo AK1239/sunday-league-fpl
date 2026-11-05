@@ -8,7 +8,7 @@ export function MyPagesShell({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={<MyAuthLoading />}>
       <MyProtectedGate>
-        <div className="space-y-6">
+        <div className="mx-auto max-w-3xl space-y-6">
           <ManagerSubnav />
           <Suspense
             fallback={

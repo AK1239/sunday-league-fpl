@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   Home,
+  LayoutDashboard,
   MoreHorizontal,
   Shirt,
   Trophy,
@@ -16,6 +17,7 @@ const ITEMS = [
   { href: "/table", label: "Table", icon: Trophy },
   { href: "/matchdays", label: "Days", icon: CalendarDays },
   { href: "/pick", label: "Pick", icon: Shirt },
+  { href: "/my", label: "Dashboard", icon: LayoutDashboard },
   { href: "/more", label: "More", icon: MoreHorizontal },
 ] as const;
 
@@ -32,9 +34,11 @@ export function BottomNav() {
           const active =
             href === "/"
               ? pathname === "/"
-              : href === "/more"
-                ? pathname === "/more"
-                : pathname.startsWith(href);
+              : href === "/my"
+                ? pathname === "/my" || pathname.startsWith("/my/")
+                : href === "/more"
+                  ? pathname === "/more"
+                  : pathname.startsWith(href);
           return (
             <li key={href} className="flex-1">
               <Link
