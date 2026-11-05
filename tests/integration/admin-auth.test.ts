@@ -5,7 +5,7 @@ import { resetLoginRateLimits } from "@/server/auth/rate-limit";
 import { requireAdmin, UnauthorizedError } from "@/server/auth/require-admin";
 import { createPlayerAction } from "@/server/actions/players";
 import { getDb } from "@/server/db";
-import { adminUsers } from "@/server/db/schema";
+import { users } from "@/server/db/schema";
 import { resetDatabase } from "./helpers";
 
 vi.mock("next/server", () => ({
@@ -26,10 +26,13 @@ describe.skipIf(!hasDatabase)("admin auth", () => {
     resetLoginRateLimits();
     await resetDatabase();
     await getDb()
-      .insert(adminUsers)
+      .insert(users)
       .values({
         email: "admin@mkate.test",
+        displayName: "Admin",
         passwordHash: await hashPassword("test-password-12"),
+        role: "admin",
+        status: "active",
       });
   });
 
@@ -47,6 +50,7 @@ describe.skipIf(!hasDatabase)("admin auth", () => {
       "admin@mkate.test",
       "test-password-12",
       "127.0.0.1",
+      { allowedRoles: ["admin"] },
     );
     expect(result.ok).toBe(true);
   });

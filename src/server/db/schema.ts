@@ -47,6 +47,10 @@ export const seasonAwardEnum = pgEnum("season_award", [
   "most_wins",
 ]);
 
+export const userRoleEnum = pgEnum("user_role", ["manager", "admin"]);
+
+export const userStatusEnum = pgEnum("user_status", ["active", "disabled"]);
+
 export const players = pgTable(
   "players",
   {
@@ -294,27 +298,45 @@ export const seasonAwards = pgTable("season_awards", {
   value: integer("value").notNull(),
 });
 
-export const adminUsers = pgTable("admin_users", {
+export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
+  displayName: text("display_name").notNull(),
+  role: userRoleEnum("role").notNull().default("manager"),
+  linkedPlayerId: uuid("linked_player_id").references(() => players.id),
+  status: userStatusEnum("status").notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });
 
+export const managerInvites = pgTable("manager_invites", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  tokenHash: text("token_hash").notNull().unique(),
+  label: text("label"),
+  linkedPlayerId: uuid("linked_player_id").references(() => players.id),
+  createdByUserId: uuid("created_by_user_id")
+    .notNull()
+    .references(() => users.id),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  usedByUserId: uuid("used_by_user_id").references(() => users.id),
+  resetUserId: uuid("reset_user_id").references(() => users.id),
+});
+
 export const sessions = pgTable("sessions", {
   id: uuid("id").defaultRandom().primaryKey(),
-  adminUserId: uuid("admin_user_id")
+  userId: uuid("user_id")
     .notNull()
-    .references(() => adminUsers.id, { onDelete: "cascade" }),
+    .references(() => users.id, { onDelete: "cascade" }),
   tokenHash: text("token_hash").notNull().unique(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 });
 
 export const auditLog = pgTable("audit_log", {
   id: uuid("id").defaultRandom().primaryKey(),
-  adminId: uuid("admin_id").references(() => adminUsers.id),
+  userId: uuid("user_id").references(() => users.id),
   action: text("action").notNull(),
   entity: text("entity").notNull(),
   entityId: uuid("entity_id"),

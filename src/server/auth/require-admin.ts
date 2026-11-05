@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import type { AdminSession } from "./session";
-import { getAdminSession } from "./session";
+import { getUserSession } from "./session";
 
 export class UnauthorizedError extends Error {
   constructor(message = "Unauthorized") {
@@ -9,11 +9,21 @@ export class UnauthorizedError extends Error {
   }
 }
 
+export class ForbiddenError extends Error {
+  constructor(message = "Forbidden") {
+    super(message);
+    this.name = "ForbiddenError";
+  }
+}
+
 export async function requireAdmin(): Promise<AdminSession> {
   await connection();
-  const session = await getAdminSession();
+  const session = await getUserSession();
   if (!session) {
     throw new UnauthorizedError();
   }
-  return session;
+  if (session.role !== "admin") {
+    throw new ForbiddenError();
+  }
+  return { ...session, adminId: session.userId };
 }

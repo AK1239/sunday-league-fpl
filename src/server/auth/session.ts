@@ -2,14 +2,21 @@ import { and, eq, gt } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { getEnv } from "@/env";
 import { getDb } from "@/server/db";
-import { adminUsers, sessions } from "@/server/db/schema";
+import { sessions, users } from "@/server/db/schema";
 import { SESSION_COOKIE_NAME, SESSION_TTL_MS } from "./constants";
 import { createSessionToken, hashSessionToken } from "./session-token";
 
-export type AdminSession = {
-  adminId: string;
+export type UserRole = "manager" | "admin";
+
+export type UserSession = {
+  userId: string;
   email: string;
+  role: UserRole;
+  displayName: string;
 };
+
+/** @deprecated Prefer userId on UserSession; kept for admin audit call sites. */
+export type AdminSession = UserSession & { adminId: string };
 
 function cookieOptions() {
   const secure =
@@ -23,13 +30,13 @@ function cookieOptions() {
   };
 }
 
-export async function createAdminSession(adminUserId: string): Promise<void> {
+export async function createUserSession(userId: string): Promise<void> {
   const token = createSessionToken();
   const tokenHash = hashSessionToken(token);
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
   await getDb().insert(sessions).values({
-    adminUserId,
+    userId,
     tokenHash,
     expiresAt,
   });
@@ -38,7 +45,10 @@ export async function createAdminSession(adminUserId: string): Promise<void> {
   jar.set(SESSION_COOKIE_NAME, token, cookieOptions());
 }
 
-export async function destroyAdminSession(): Promise<void> {
+/** @deprecated Use createUserSession */
+export const createAdminSession = createUserSession;
+
+export async function destroyUserSession(): Promise<void> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE_NAME)?.value;
   if (token) {
@@ -48,7 +58,26 @@ export async function destroyAdminSession(): Promise<void> {
   jar.set(SESSION_COOKIE_NAME, "", { ...cookieOptions(), maxAge: 0 });
 }
 
-export async function getAdminSession(): Promise<AdminSession | null> {
+/** @deprecated Use destroyUserSession */
+export const destroyAdminSession = destroyUserSession;
+
+function mapRow(row: {
+  userId: string;
+  email: string;
+  role: UserRole;
+  displayName: string;
+  status: "active" | "disabled";
+}): UserSession | null {
+  if (row.status !== "active") return null;
+  return {
+    userId: row.userId,
+    email: row.email,
+    role: row.role,
+    displayName: row.displayName,
+  };
+}
+
+export async function getUserSession(): Promise<UserSession | null> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
@@ -56,11 +85,14 @@ export async function getAdminSession(): Promise<AdminSession | null> {
   const tokenHash = hashSessionToken(token);
   const rows = await getDb()
     .select({
-      adminId: adminUsers.id,
-      email: adminUsers.email,
+      userId: users.id,
+      email: users.email,
+      role: users.role,
+      displayName: users.displayName,
+      status: users.status,
     })
     .from(sessions)
-    .innerJoin(adminUsers, eq(sessions.adminUserId, adminUsers.id))
+    .innerJoin(users, eq(sessions.userId, users.id))
     .where(
       and(
         eq(sessions.tokenHash, tokenHash),
@@ -71,5 +103,11 @@ export async function getAdminSession(): Promise<AdminSession | null> {
 
   const row = rows[0];
   if (!row) return null;
-  return { adminId: row.adminId, email: row.email };
+  return mapRow(row);
+}
+
+export async function getAdminSession(): Promise<AdminSession | null> {
+  const session = await getUserSession();
+  if (!session || session.role !== "admin") return null;
+  return { ...session, adminId: session.userId };
 }

@@ -32,6 +32,16 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  if (pathname.startsWith("/my")) {
+    const session = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+    if (!session) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.searchParams.set("next", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   const response = NextResponse.next();
   for (const [key, value] of Object.entries(securityHeaders(isProduction))) {
     response.headers.set(key, value);

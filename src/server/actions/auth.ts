@@ -30,6 +30,7 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
     email,
     password,
     clientKeyFromHeaders(headerStore),
+    { allowedRoles: ["admin"] },
   );
 
   if (!result.ok) {

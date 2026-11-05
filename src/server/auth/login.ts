@@ -1,13 +1,13 @@
 import { sql } from "drizzle-orm";
 import { getDb } from "@/server/db";
-import { adminUsers } from "@/server/db/schema";
+import { users } from "@/server/db/schema";
 import {
   checkLoginRateLimit,
   clearLoginFailures,
   recordLoginFailure,
 } from "./rate-limit";
 import { verifyPassword } from "./password";
-import { createAdminSession } from "./session";
+import { createUserSession, type UserRole } from "./session";
 
 export type LoginResult =
   | { ok: true }
@@ -17,10 +17,15 @@ export type LoginResult =
       retryAfterMs?: number;
     };
 
+export type LoginOptions = {
+  allowedRoles?: UserRole[];
+};
+
 export async function loginWithCredentials(
   email: string,
   password: string,
   rateLimitKey: string,
+  options: LoginOptions = {},
 ): Promise<LoginResult> {
   const normalizedEmail = email.trim().toLowerCase();
   const limit = checkLoginRateLimit(`${rateLimitKey}:${normalizedEmail}`);
@@ -34,22 +39,31 @@ export async function loginWithCredentials(
 
   const rows = await getDb()
     .select({
-      id: adminUsers.id,
-      passwordHash: adminUsers.passwordHash,
+      id: users.id,
+      passwordHash: users.passwordHash,
+      role: users.role,
+      status: users.status,
     })
-    .from(adminUsers)
-    .where(sql`lower(${adminUsers.email}) = ${normalizedEmail}`)
+    .from(users)
+    .where(sql`lower(${users.email}) = ${normalizedEmail}`)
     .limit(1);
 
-  const admin = rows[0];
-  const valid = admin && (await verifyPassword(password, admin.passwordHash));
+  const user = rows[0];
+  const valid =
+    user &&
+    user.status === "active" &&
+    (await verifyPassword(password, user.passwordHash));
 
-  if (!valid) {
+  const allowedRoles = options.allowedRoles;
+  const roleOk =
+    !allowedRoles || (user && allowedRoles.includes(user.role));
+
+  if (!valid || !roleOk) {
     recordLoginFailure(`${rateLimitKey}:${normalizedEmail}`);
     return { ok: false, code: "INVALID_CREDENTIALS" };
   }
 
   clearLoginFailures(`${rateLimitKey}:${normalizedEmail}`);
-  await createAdminSession(admin!.id);
+  await createUserSession(user!.id);
   return { ok: true };
 }

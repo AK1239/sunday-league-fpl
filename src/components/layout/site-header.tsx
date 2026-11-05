@@ -11,6 +11,7 @@ const NAV = [
   { href: "/table", label: "Table" },
   { href: "/matchdays", label: "Matchdays" },
   { href: "/awards", label: "Awards" },
+  { href: "/my", label: "My Team" },
 ] as const;
 
 export function SiteHeader() {
@@ -53,7 +54,15 @@ export function SiteHeader() {
             );
           })}
         </nav>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <Link
+            href="/login"
+            className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Log in
+          </Link>
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { BottomNav } from "./bottom-nav";
 import { SiteHeader } from "./site-header";
 
@@ -10,14 +11,18 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       >
         Skip to content
       </a>
-      <SiteHeader />
+      <Suspense fallback={<div className="h-14 border-b border-border/60" />}>
+        <SiteHeader />
+      </Suspense>
       <main
         id="main-content"
         className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-6 md:pb-10"
       >
         {children}
       </main>
-      <BottomNav />
+      <Suspense fallback={null}>
+        <BottomNav />
+      </Suspense>
     </>
   );
 }

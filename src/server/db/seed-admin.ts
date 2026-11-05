@@ -1,6 +1,6 @@
 import { hashPassword } from "@/server/auth/password";
 import type { AppDb } from "./index";
-import { adminUsers } from "./schema";
+import { users } from "./schema";
 
 export async function seedAdminUser(db: AppDb): Promise<void> {
   const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
@@ -8,13 +8,17 @@ export async function seedAdminUser(db: AppDb): Promise<void> {
   if (!email || !password) return;
 
   const existing = await db
-    .select({ id: adminUsers.id })
-    .from(adminUsers)
+    .select({ id: users.id })
+    .from(users)
     .limit(1);
   if (existing.length > 0) return;
 
-  await db.insert(adminUsers).values({
+  const localPart = email.split("@")[0] ?? "Admin";
+  await db.insert(users).values({
     email,
     passwordHash: await hashPassword(password),
+    displayName: localPart.charAt(0).toUpperCase() + localPart.slice(1),
+    role: "admin",
+    status: "active",
   });
 }
