@@ -10,7 +10,7 @@ export default function MorePage() {
       <ul className="space-y-3">
         <MoreLink
           href="/table"
-          label="Full standings"
+          label="Manager table"
           icon={<Trophy />}
           i={0}
         />
