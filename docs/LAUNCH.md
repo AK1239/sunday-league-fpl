@@ -18,7 +18,7 @@ pnpm lint && pnpm typecheck && pnpm test
 pnpm build && pnpm test:e2e
 ```
 
-E2E uses a production build on port **3100** with the same `DATABASE_URL`.
+E2E uses a production build on port **3100**, runs `db:migrate` + `db:seed` in global setup, and logs in with `ADMIN_EMAIL` / `ADMIN_PASSWORD` (or `E2E_MANAGER_*` overrides). Manager route tests fail if a **Blocking Route** / prerender overlay appears in the HTML.
 
 ## 3. Backups
 

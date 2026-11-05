@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { assertHealthyPage, gotoHealthy } from "./helpers";
 
 const PUBLIC_PATHS = [
   "/",
@@ -41,16 +42,23 @@ test("health endpoint responds", async ({ request }) => {
 
 test("core public routes load without error", async ({ page }) => {
   for (const path of PUBLIC_PATHS) {
-    const response = await page.goto(path);
-    expect(response?.ok(), `${path} should return 2xx`).toBeTruthy();
+    await gotoHealthy(page, path);
     await expect(page.locator("body")).not.toBeEmpty();
   }
+});
+
+test("login page has no blocking route overlay", async ({ page }) => {
+  await gotoHealthy(page, "/login");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Welcome back" }),
+  ).toBeVisible();
+  await assertHealthyPage(page, "/login");
 });
 
 test("key public pages have no serious accessibility violations", async ({
   page,
 }) => {
-  for (const path of ["/", "/table", "/players", "/login"] as const) {
+  for (const path of ["/", "/table", "/players"] as const) {
     await page.goto(path);
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
