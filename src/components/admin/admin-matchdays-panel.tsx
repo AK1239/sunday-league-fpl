@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { connection } from "next/server";
 import { max, eq } from "drizzle-orm";
 import { CreateMatchdayForm } from "@/components/admin/create-matchday-form";
@@ -99,6 +100,16 @@ export async function AdminMatchdaysPanel() {
                     {md.playedOn} ·{" "}
                     <span className={statusClass(md.status)}>{md.status}</span>
                   </p>
+                  {md.status !== "cancelled" ? (
+                    <Link
+                      href={`/admin/matchdays/${md.id}/entry`}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      {md.status === "published"
+                        ? "View entry"
+                        : "Enter results →"}
+                    </Link>
+                  ) : null}
                 </div>
                 <MatchdayRowActions
                   matchday={{
