@@ -19,7 +19,13 @@ export default function PlayerProfilePage({
 
 function PlayerProfileSkeleton() {
   return (
-    <div className="space-y-6" aria-busy aria-label="Loading profile">
+    <div
+      className="space-y-6"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <span className="sr-only">Loading profile</span>
       <Skeleton className="h-4 w-32" />
       <Skeleton className="h-40 w-full rounded-2xl" />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

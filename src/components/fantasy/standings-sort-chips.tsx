@@ -21,7 +21,7 @@ export function StandingsSortChips() {
   return (
     <div
       className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      role="tablist"
+      role="group"
       aria-label="Sort standings"
     >
       {OPTIONS.map((option) => {
@@ -35,8 +35,7 @@ export function StandingsSortChips() {
           <Link
             key={option.value}
             href={href}
-            role="tab"
-            aria-selected={active}
+            aria-current={active ? "true" : undefined}
             className={cn(
               "shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               active
