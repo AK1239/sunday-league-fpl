@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { PlayerAvatar } from "@/components/fantasy/player-avatar";
+import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { CaptainBadge } from "@/components/pick/captain-badge";
 import type { PickTeamPlayerRow } from "@/server/queries/pick-team-data";
 import { cn } from "@/lib/utils";
@@ -67,11 +67,7 @@ export function PitchSlots({
               {player ? (
                 <>
                   <div className="relative">
-                    <PlayerAvatar
-                      name={player.displayName}
-                      avatarUrl={player.avatarUrl ?? undefined}
-                      size="lg"
-                    />
+                    <PlayerShirt name={player.displayName} size="lg" />
                     {isCaptain ? (
                       <CaptainBadge
                         role="captain"

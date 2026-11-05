@@ -1,4 +1,4 @@
-import { PlayerAvatar } from "@/components/fantasy/player-avatar";
+import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { CaptainBadge } from "@/components/pick/captain-badge";
 import type { FantasyTeamView } from "@/server/queries/fantasy-team-view";
 
@@ -44,11 +44,7 @@ export function FantasyTeamCard({
             className="surface flex items-center gap-3 rounded-2xl px-3 py-2.5"
           >
             <div className="relative">
-              <PlayerAvatar
-                name={slot.displayName}
-                avatarUrl={slot.avatarUrl ?? undefined}
-                size="md"
-              />
+              <PlayerShirt name={slot.displayName} size="md" />
               {slot.role === "captain" ? (
                 <CaptainBadge role="captain" className="absolute -right-1 -bottom-1" />
               ) : null}

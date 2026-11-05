@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Check } from "lucide-react";
-import { PlayerAvatar } from "@/components/fantasy/player-avatar";
+import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { BottomSheet } from "@/components/pick/bottom-sheet";
 import { FormPips } from "@/components/pick/form-pips";
 import type { PickTeamPlayerRow } from "@/server/queries/pick-team-data";
@@ -131,11 +131,7 @@ export function PlayerPickerSheet({
                     setQuery("");
                   }}
                 >
-                  <PlayerAvatar
-                    name={player.displayName}
-                    avatarUrl={player.avatarUrl ?? undefined}
-                    size="md"
-                  />
+                  <PlayerShirt name={player.displayName} size="md" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-foreground">
                       {player.displayName}

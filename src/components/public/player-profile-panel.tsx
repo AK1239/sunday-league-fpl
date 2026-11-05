@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { CountUp } from "@/components/fantasy/count-up";
 import { FormBars } from "@/components/fantasy/form-bars";
-import { PlayerAvatar } from "@/components/fantasy/player-avatar";
+import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { StatTile } from "@/components/fantasy/stat-tile";
 import { getDb } from "@/server/db";
 import { getPlayerPublicProfile } from "@/server/queries/public-players";
@@ -30,12 +30,8 @@ export async function PlayerProfilePanel({ playerId }: { playerId: string }) {
       </Link>
 
       <header className="relative flex flex-col items-center overflow-hidden rounded-3xl border border-border/60 bg-card/60 px-6 py-10 text-center sm:flex-row sm:items-end sm:gap-6 sm:text-left">
-        <div className="relative rounded-full ring-4 ring-primary/20">
-          <PlayerAvatar
-            name={player.displayName}
-            avatarUrl={player.avatarUrl ?? undefined}
-            size="xl"
-          />
+        <div className="relative">
+          <PlayerShirt name={player.displayName} size="xl" className="w-28" />
         </div>
         <div className="relative mt-4 sm:mt-0 sm:flex-1">
           <p className="inline-block rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary tabular-nums">

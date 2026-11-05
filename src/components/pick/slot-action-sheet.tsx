@@ -2,7 +2,7 @@
 
 import { ArrowLeftRight, Crown, ShieldCheck, Trash2 } from "lucide-react";
 import { BottomSheet } from "@/components/pick/bottom-sheet";
-import { PlayerAvatar } from "@/components/fantasy/player-avatar";
+import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { cn } from "@/lib/utils";
 
 type Action = {
@@ -78,7 +78,7 @@ export function SlotActionSheet({
       onClose={onClose}
       title={playerName}
       description={role}
-      leading={<PlayerAvatar name={playerName} size="lg" />}
+      leading={<PlayerShirt name={playerName} size="lg" />}
     >
       <ul className="space-y-2 pt-1" role="menu">
         {actions
