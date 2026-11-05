@@ -1,20 +1,18 @@
-import { PageHeader } from "@/components/fantasy/page-header";
-import { Award } from "lucide-react";
-import { EmptyState } from "@/components/fantasy/empty-state";
+import { Suspense } from "react";
+import { AwardsPanel } from "@/components/public/awards-panel";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default function AwardsPlaceholderPage() {
+export default function AwardsPage() {
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Honours"
-        title="Awards"
-        description="Season trophies and hall of fame will appear here."
-      />
-      <EmptyState
-        icon={<Award className="mx-auto size-10" />}
-        title="Awards hall coming soon"
-        description="Golden Boot, Playmaker, and season champions will be tracked automatically once seasons are live."
-      />
-    </div>
+    <Suspense
+      fallback={
+        <div className="space-y-4" role="status">
+          <Skeleton className="h-12 w-2/3 rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-2xl" />
+        </div>
+      }
+    >
+      <AwardsPanel />
+    </Suspense>
   );
 }

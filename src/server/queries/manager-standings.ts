@@ -130,3 +130,54 @@ export async function getManagerStandings(
     };
   });
 }
+
+export async function getAllTimeManagerStandings(
+  db: AppDb,
+): Promise<ManagerStandingRow[]> {
+  const totals = db
+    .select({
+      managerId: managerMatchdayScores.managerId,
+      totalPoints:
+        sql<number>`coalesce(sum(${managerMatchdayScores.totalPoints}), 0)::int`.as(
+          "total_points",
+        ),
+      bestGameweekPoints:
+        sql<number>`coalesce(max(${managerMatchdayScores.totalPoints}), 0)::int`.as(
+          "best_gw",
+        ),
+    })
+    .from(managerMatchdayScores)
+    .innerJoin(matchdays, eq(managerMatchdayScores.matchdayId, matchdays.id))
+    .where(eq(matchdays.status, "published"))
+    .groupBy(managerMatchdayScores.managerId)
+    .as("manager_totals");
+
+  const rows = await db
+    .select({
+      managerId: users.id,
+      displayName: users.displayName,
+      totalPoints: totals.totalPoints,
+      bestGameweekPoints: totals.bestGameweekPoints,
+    })
+    .from(users)
+    .innerJoin(totals, eq(users.id, totals.managerId))
+    .where(inArray(users.role, ["manager", "admin"]));
+
+  const sorted = rows.sort((a, b) => {
+    if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+    if (b.bestGameweekPoints !== a.bestGameweekPoints) {
+      return b.bestGameweekPoints - a.bestGameweekPoints;
+    }
+    return a.displayName.localeCompare(b.displayName);
+  });
+
+  return sorted.map((row, index) => ({
+    managerId: row.managerId,
+    displayName: row.displayName,
+    rank: index + 1,
+    rankDelta: 0,
+    totalPoints: row.totalPoints,
+    bestGameweekPoints: row.bestGameweekPoints,
+    lastGameweekPoints: 0,
+  }));
+}

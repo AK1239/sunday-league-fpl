@@ -1,4 +1,5 @@
 import { ActivateSeasonButton } from "@/components/admin/activate-season-button";
+import { CloseSeasonButton } from "@/components/admin/close-season-button";
 import { getDb } from "@/server/db";
 import { listSeasonsAdmin } from "@/server/domain/seasons-admin";
 
@@ -32,9 +33,14 @@ export async function AdminSeasonsList() {
                 </span>
               </p>
             </div>
-            {season.status !== "active" && season.status !== "closed" ? (
-              <ActivateSeasonButton seasonId={season.id} />
-            ) : null}
+            <div className="flex flex-wrap gap-2">
+              {season.status === "upcoming" ? (
+                <ActivateSeasonButton seasonId={season.id} />
+              ) : null}
+              {season.status === "active" ? (
+                <CloseSeasonButton seasonId={season.id} />
+              ) : null}
+            </div>
           </li>
         ))}
       </ul>

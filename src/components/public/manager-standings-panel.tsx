@@ -4,43 +4,70 @@ import { ManagerStandingsRow } from "@/components/fantasy/manager-standings-row"
 import { EmptyState } from "@/components/fantasy/empty-state";
 import { getDb } from "@/server/db";
 import { getActiveSeasonId } from "@/server/queries/public-competition";
-import { getManagerStandings } from "@/server/queries/manager-standings";
+import { StandingsScopeChips } from "@/components/fantasy/standings-scope-chips";
+import {
+  getAllTimeManagerStandings,
+  getManagerStandings,
+} from "@/server/queries/manager-standings";
 import { seasons } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
-export async function ManagerStandingsPanel() {
+export async function ManagerStandingsPanel({
+  searchParams,
+}: {
+  searchParams: PageProps<"/table">["searchParams"];
+}) {
   await connection();
   const db = getDb();
-  const seasonId = await getActiveSeasonId(db);
-  if (!seasonId) {
+  const params = await searchParams;
+  const allTime = params.scope === "all-time";
+
+  const seasonId = allTime ? null : await getActiveSeasonId(db);
+  if (!allTime && !seasonId) {
     return (
-      <EmptyState
-        title="No active season"
-        description="The manager table will appear when a season is active."
-      />
+      <>
+        <StandingsScopeChips basePath="/table" />
+        <EmptyState
+          title="No active season"
+          description="The manager table will appear when a season is active."
+        />
+      </>
     );
   }
 
-  const [season] = await db
-    .select({ name: seasons.name })
-    .from(seasons)
-    .where(eq(seasons.id, seasonId))
-    .limit(1);
+  const [season] =
+    seasonId != null
+      ? await db
+          .select({ name: seasons.name })
+          .from(seasons)
+          .where(eq(seasons.id, seasonId))
+          .limit(1)
+      : [];
 
-  const rows = await getManagerStandings(db, seasonId);
+  const rows = allTime
+    ? await getAllTimeManagerStandings(db)
+    : await getManagerStandings(db, seasonId!);
 
   if (rows.length === 0) {
     return (
-      <EmptyState
-        title="No manager scores yet"
-        description="Publish a gameweek with manager teams to populate the table."
-      />
+      <>
+        <StandingsScopeChips basePath="/table" />
+        <EmptyState
+          title="No manager scores yet"
+          description="Publish a gameweek with manager teams to populate the table."
+        />
+      </>
     );
   }
 
   return (
     <>
-      <p className="text-sm text-muted-foreground">{season?.name}</p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <StandingsScopeChips basePath="/table" />
+        <p className="text-sm text-muted-foreground">
+          {allTime ? "All seasons combined" : season?.name}
+        </p>
+      </div>
 
       <ul className="space-y-2 md:hidden" aria-label="Manager leaderboard">
         {rows.map((row, i) => (

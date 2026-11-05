@@ -9,24 +9,32 @@ import { getActiveSeasonId } from "@/server/queries/public-competition";
 import { seasons } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
-export default function ManagerTablePage() {
+export default function ManagerTablePage({
+  searchParams,
+}: PageProps<"/table">) {
   return (
     <div className="space-y-6">
       <Suspense fallback={<PageHeaderSkeleton />}>
-        <TablePageHeader />
+        <TablePageHeader searchParams={searchParams} />
       </Suspense>
 
       <Suspense fallback={<StandingsSkeleton />}>
-        <ManagerStandingsPanel />
+        <ManagerStandingsPanel searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function TablePageHeader() {
+async function TablePageHeader({
+  searchParams,
+}: {
+  searchParams: PageProps<"/table">["searchParams"];
+}) {
   await connection();
-  const seasonId = await getActiveSeasonId(getDb());
-  let seasonName = "Season";
+  const params = await searchParams;
+  const allTime = params.scope === "all-time";
+  const seasonId = allTime ? null : await getActiveSeasonId(getDb());
+  let seasonName = allTime ? "All-time" : "Season";
   if (seasonId) {
     const [season] = await getDb()
       .select({ name: seasons.name })

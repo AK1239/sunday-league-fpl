@@ -30,9 +30,22 @@ export type StandingRow = {
   averagePoints: number;
 };
 
+function publishedMatchdayFilter(seasonId: string | null) {
+  return seasonId
+    ? and(eq(matchdays.seasonId, seasonId), eq(matchdays.status, "published"))
+    : eq(matchdays.status, "published");
+}
+
+export async function getAllTimeStandings(
+  db: AppDb,
+  sort: StandingsSort = "points",
+): Promise<StandingRow[]> {
+  return getStandings(db, null, sort);
+}
+
 export async function getStandings(
   db: AppDb,
-  seasonId: string,
+  seasonId: string | null,
   sort: StandingsSort = "points",
 ): Promise<StandingRow[]> {
   const pointsTotals = db
@@ -43,7 +56,7 @@ export async function getStandings(
       ),
     })
     .from(pointLedger)
-    .where(eq(pointLedger.seasonId, seasonId))
+    .where(seasonId ? eq(pointLedger.seasonId, seasonId) : sql`true`)
     .groupBy(pointLedger.playerId)
     .as("points_totals");
 
@@ -55,9 +68,7 @@ export async function getStandings(
     .from(goals)
     .innerJoin(matches, eq(goals.matchId, matches.id))
     .innerJoin(matchdays, eq(matches.matchdayId, matchdays.id))
-    .where(
-      and(eq(matchdays.seasonId, seasonId), eq(matchdays.status, "published")),
-    )
+    .where(publishedMatchdayFilter(seasonId))
     .groupBy(goals.scorerId)
     .as("goal_totals");
 
@@ -71,8 +82,7 @@ export async function getStandings(
     .innerJoin(matchdays, eq(matches.matchdayId, matchdays.id))
     .where(
       and(
-        eq(matchdays.seasonId, seasonId),
-        eq(matchdays.status, "published"),
+        publishedMatchdayFilter(seasonId),
         sql`${goals.assistId} is not null`,
       ),
     )
@@ -89,9 +99,7 @@ export async function getStandings(
     })
     .from(matchdayAttendance)
     .innerJoin(matchdays, eq(matchdayAttendance.matchdayId, matchdays.id))
-    .where(
-      and(eq(matchdays.seasonId, seasonId), eq(matchdays.status, "published")),
-    )
+    .where(publishedMatchdayFilter(seasonId))
     .groupBy(matchdayAttendance.playerId)
     .as("appearance_totals");
 
@@ -106,8 +114,7 @@ export async function getStandings(
     .innerJoin(matchdays, eq(matches.matchdayId, matchdays.id))
     .where(
       and(
-        eq(matchdays.seasonId, seasonId),
-        eq(matchdays.status, "published"),
+        publishedMatchdayFilter(seasonId),
         sql`(
           (${matchSides.side} = 'A' and ${matches.scoreA} > ${matches.scoreB}) or
           (${matchSides.side} = 'B' and ${matches.scoreB} > ${matches.scoreA})
@@ -157,53 +164,55 @@ export async function getStandings(
 
   const sorted = [...withAverage].sort((a, b) => compareForSort(a, b, sort));
 
-  const latestPublished = await db
-    .select({ id: matchdays.id, number: matchdays.number })
-    .from(matchdays)
-    .where(
-      and(eq(matchdays.seasonId, seasonId), eq(matchdays.status, "published")),
-    )
-    .orderBy(desc(matchdays.number))
-    .limit(1);
+  let latestRank = new Map<string, number>();
+  let previousRank = new Map<string, number>();
 
-  const previousPublished =
-    latestPublished[0] &&
-    (await db
-      .select({ id: matchdays.id })
+  if (seasonId) {
+    const latestPublished = await db
+      .select({ id: matchdays.id, number: matchdays.number })
       .from(matchdays)
-      .where(
-        and(
-          eq(matchdays.seasonId, seasonId),
-          eq(matchdays.status, "published"),
-          sql`${matchdays.number} = ${latestPublished[0].number - 1}`,
-        ),
-      )
-      .limit(1));
+      .where(publishedMatchdayFilter(seasonId))
+      .orderBy(desc(matchdays.number))
+      .limit(1);
 
-  const latestSnapshots =
-    latestPublished[0] &&
-    (await db
-      .select()
-      .from(matchdaySnapshots)
-      .where(eq(matchdaySnapshots.matchdayId, latestPublished[0].id)));
+    const previousPublished =
+      latestPublished[0] &&
+      (await db
+        .select({ id: matchdays.id })
+        .from(matchdays)
+        .where(
+          and(
+            publishedMatchdayFilter(seasonId),
+            sql`${matchdays.number} = ${latestPublished[0].number - 1}`,
+          ),
+        )
+        .limit(1));
 
-  const previousSnapshots =
-    previousPublished?.[0] &&
-    (await db
-      .select()
-      .from(matchdaySnapshots)
-      .where(eq(matchdaySnapshots.matchdayId, previousPublished[0].id)));
+    const latestSnapshots =
+      latestPublished[0] &&
+      (await db
+        .select()
+        .from(matchdaySnapshots)
+        .where(eq(matchdaySnapshots.matchdayId, latestPublished[0].id)));
 
-  const latestRank = new Map(
-    latestSnapshots
-      ? latestSnapshots.map((row) => [row.playerId, row.rankAfter])
-      : [],
-  );
-  const previousRank = new Map(
-    previousSnapshots
-      ? previousSnapshots.map((row) => [row.playerId, row.rankAfter])
-      : [],
-  );
+    const previousSnapshots =
+      previousPublished?.[0] &&
+      (await db
+        .select()
+        .from(matchdaySnapshots)
+        .where(eq(matchdaySnapshots.matchdayId, previousPublished[0].id)));
+
+    latestRank = new Map(
+      latestSnapshots
+        ? latestSnapshots.map((row) => [row.playerId, row.rankAfter])
+        : [],
+    );
+    previousRank = new Map(
+      previousSnapshots
+        ? previousSnapshots.map((row) => [row.playerId, row.rankAfter])
+        : [],
+    );
+  }
 
   return sorted.map((row, index) => {
     const rank = index + 1;

@@ -61,6 +61,7 @@ export const pointKindEnum = pgEnum("point_kind", [
 
 export const seasonAwardEnum = pgEnum("season_award", [
   "champion",
+  "manager_champion",
   "golden_boot",
   "playmaker",
   "most_appearances",
@@ -308,17 +309,29 @@ export const matchdaySnapshots = pgTable(
   ],
 );
 
-export const seasonAwards = pgTable("season_awards", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  seasonId: uuid("season_id")
-    .notNull()
-    .references(() => seasons.id),
-  award: seasonAwardEnum("award").notNull(),
-  playerId: uuid("player_id")
-    .notNull()
-    .references(() => players.id),
-  value: integer("value").notNull(),
-});
+export const seasonAwards = pgTable(
+  "season_awards",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    seasonId: uuid("season_id")
+      .notNull()
+      .references(() => seasons.id),
+    award: seasonAwardEnum("award").notNull(),
+    playerId: uuid("player_id").references(() => players.id),
+    managerId: uuid("manager_id").references(() => users.id),
+    value: integer("value").notNull(),
+  },
+  (table) => [
+    uniqueIndex("season_awards_season_award_unique").on(
+      table.seasonId,
+      table.award,
+    ),
+    check(
+      "season_awards_winner_check",
+      sql`(((${table.playerId} IS NOT NULL)::integer + (${table.managerId} IS NOT NULL)::integer) = 1)`,
+    ),
+  ],
+);
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),

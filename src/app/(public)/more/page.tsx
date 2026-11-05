@@ -1,4 +1,5 @@
 import {
+  Award,
   BookOpen,
   CalendarDays,
   ChevronRight,
@@ -33,6 +34,7 @@ export default function MorePage() {
           i={2}
         />
         <MoreLink href="/rules" label="Scoring rules" icon={<BookOpen />} i={3} />
+        <MoreLink href="/awards" label="Awards & archive" icon={<Award />} i={4} />
       </ul>
     </div>
   );

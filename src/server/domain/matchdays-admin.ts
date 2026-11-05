@@ -55,12 +55,17 @@ async function assertPlayedOnInSeason(
   playedOn: string,
 ) {
   const season = await db
-    .select({ startsOn: seasons.startsOn, endsOn: seasons.endsOn })
+    .select({
+      startsOn: seasons.startsOn,
+      endsOn: seasons.endsOn,
+      status: seasons.status,
+    })
     .from(seasons)
     .where(eq(seasons.id, seasonId))
     .limit(1);
   const s = season[0];
   if (!s) throw new Error("SEASON_NOT_FOUND");
+  if (s.status === "closed") throw new Error("SEASON_CLOSED");
   if (playedOn < s.startsOn || playedOn > s.endsOn) {
     throw new Error("PLAYED_ON_OUT_OF_SEASON");
   }

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDb } from "@/server/db";
+import { closeSeasonAdmin } from "@/server/domain/close-season";
 import {
   activateSeasonAdmin,
   createSeasonAdmin,
@@ -70,6 +71,33 @@ export async function activateSeasonAction(
       return actionFail(
         "SEASON_CLOSED",
         "Closed seasons cannot be reactivated.",
+      );
+    }
+    throw error;
+  }
+}
+
+export async function closeSeasonAction(
+  seasonId: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+
+  try {
+    await closeSeasonAdmin(getDb(), seasonId);
+    revalidatePath("/admin/seasons");
+    revalidatePath("/awards");
+    revalidatePath("/table");
+    revalidatePath("/players");
+    revalidatePath("/");
+    return actionOk();
+  } catch (error) {
+    if (error instanceof Error && error.message === "NOT_FOUND") {
+      return actionFail("NOT_FOUND", "Season not found.");
+    }
+    if (error instanceof Error && error.message === "NOT_ACTIVE") {
+      return actionFail(
+        "NOT_ACTIVE",
+        "Only the active season can be closed.",
       );
     }
     throw error;
