@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { requireAdmin } from "@/server/auth/require-admin";
-
-export default async function AdminHomePage() {
-  await requireAdmin();
+export default function AdminHomePage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-heading text-2xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-tight">
+          Dashboard
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Manage squad, seasons, and matchdays (match entry comes next).
         </p>

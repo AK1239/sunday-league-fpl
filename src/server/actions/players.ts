@@ -62,9 +62,13 @@ export async function createPlayerAction(
     return actionOk({ id: player.id });
   } catch (error) {
     if (error instanceof Error && error.message === "DUPLICATE_NAME") {
-      return actionFail("DUPLICATE_NAME", "A player with this name already exists.", {
-        displayName: "Already registered",
-      });
+      return actionFail(
+        "DUPLICATE_NAME",
+        "A player with this name already exists.",
+        {
+          displayName: "Already registered",
+        },
+      );
     }
     throw error;
   }
@@ -103,7 +107,10 @@ export async function updatePlayerAction(
     return actionOk();
   } catch (error) {
     if (error instanceof Error && error.message === "DUPLICATE_NAME") {
-      return actionFail("DUPLICATE_NAME", "A player with this name already exists.");
+      return actionFail(
+        "DUPLICATE_NAME",
+        "A player with this name already exists.",
+      );
     }
     if (error instanceof Error && error.message === "NOT_FOUND") {
       return actionFail("NOT_FOUND", "Player not found.");

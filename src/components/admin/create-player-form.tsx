@@ -14,11 +14,19 @@ export function CreatePlayerForm() {
   >(async (_prev, formData) => createPlayerAction(formData), null);
 
   return (
-    <form action={action} className="space-y-3 rounded-2xl border border-border/60 bg-card/70 p-4">
+    <form
+      action={action}
+      className="space-y-3 rounded-2xl border border-border/60 bg-card/70 p-4"
+    >
       <h2 className="font-heading text-lg font-semibold">Add player</h2>
       <div className="space-y-2">
         <Label htmlFor="displayName">Display name</Label>
-        <Input id="displayName" name="displayName" required disabled={pending} />
+        <Input
+          id="displayName"
+          name="displayName"
+          required
+          disabled={pending}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="nickname">Nickname (optional)</Label>

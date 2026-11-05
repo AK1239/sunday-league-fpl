@@ -7,7 +7,10 @@ export async function seedAdminUser(db: AppDb): Promise<void> {
   const password = process.env.ADMIN_PASSWORD;
   if (!email || !password) return;
 
-  const existing = await db.select({ id: adminUsers.id }).from(adminUsers).limit(1);
+  const existing = await db
+    .select({ id: adminUsers.id })
+    .from(adminUsers)
+    .limit(1);
   if (existing.length > 0) return;
 
   await db.insert(adminUsers).values({

@@ -18,7 +18,10 @@ export function LoginForm() {
   const [state, formAction, pending] = useActionState(loginStateAction, null);
 
   return (
-    <form action={formAction} className="space-y-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+    <form
+      action={formAction}
+      className="space-y-4 rounded-2xl border border-border/60 bg-card/80 p-4"
+    >
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input
@@ -44,7 +47,9 @@ export function LoginForm() {
           disabled={pending}
         />
         {state?.ok === false && state.fieldErrors?.password ? (
-          <p className="text-sm text-destructive">{state.fieldErrors.password}</p>
+          <p className="text-sm text-destructive">
+            {state.fieldErrors.password}
+          </p>
         ) : null}
       </div>
       {state?.ok === false && !state.fieldErrors ? (

@@ -11,7 +11,11 @@ import { createAdminSession } from "./session";
 
 export type LoginResult =
   | { ok: true }
-  | { ok: false; code: "RATE_LIMITED" | "INVALID_CREDENTIALS"; retryAfterMs?: number };
+  | {
+      ok: false;
+      code: "RATE_LIMITED" | "INVALID_CREDENTIALS";
+      retryAfterMs?: number;
+    };
 
 export async function loginWithCredentials(
   email: string,
@@ -21,7 +25,11 @@ export async function loginWithCredentials(
   const normalizedEmail = email.trim().toLowerCase();
   const limit = checkLoginRateLimit(`${rateLimitKey}:${normalizedEmail}`);
   if (!limit.allowed) {
-    return { ok: false, code: "RATE_LIMITED", retryAfterMs: limit.retryAfterMs };
+    return {
+      ok: false,
+      code: "RATE_LIMITED",
+      retryAfterMs: limit.retryAfterMs,
+    };
   }
 
   const rows = await getDb()
@@ -34,8 +42,7 @@ export async function loginWithCredentials(
     .limit(1);
 
   const admin = rows[0];
-  const valid =
-    admin && (await verifyPassword(password, admin.passwordHash));
+  const valid = admin && (await verifyPassword(password, admin.passwordHash));
 
   if (!valid) {
     recordLoginFailure(`${rateLimitKey}:${normalizedEmail}`);

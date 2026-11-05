@@ -16,7 +16,11 @@ const envSchema = z
     ADMIN_PASSWORD: z.string().min(12).optional(),
   })
   .superRefine((value, ctx) => {
-    if (value.NODE_ENV === "production" && !value.SESSION_SECRET) {
+    if (
+      value.NODE_ENV === "production" &&
+      process.env.NEXT_PHASE !== "phase-production-build" &&
+      !value.SESSION_SECRET
+    ) {
       ctx.addIssue({
         code: "custom",
         message: "SESSION_SECRET is required in production (min 32 characters)",

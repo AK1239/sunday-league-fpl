@@ -62,7 +62,10 @@ export async function getAdminSession(): Promise<AdminSession | null> {
     .from(sessions)
     .innerJoin(adminUsers, eq(sessions.adminUserId, adminUsers.id))
     .where(
-      and(eq(sessions.tokenHash, tokenHash), gt(sessions.expiresAt, new Date())),
+      and(
+        eq(sessions.tokenHash, tokenHash),
+        gt(sessions.expiresAt, new Date()),
+      ),
     )
     .limit(1);
 

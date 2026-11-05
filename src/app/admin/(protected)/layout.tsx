@@ -1,18 +1,20 @@
-import { redirect } from "next/navigation";
-import { AdminShell } from "@/components/admin/admin-shell";
-import { getAdminSession } from "@/server/auth/session";
+import { Suspense } from "react";
+import { AdminProtectedGate } from "@/components/admin/admin-protected-gate";
 
-export const dynamic = "force-dynamic";
-
-export default async function AdminProtectedLayout({
+export default function AdminProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getAdminSession();
-  if (!session) {
-    redirect("/admin/login");
-  }
-
-  return <AdminShell email={session.email}>{children}</AdminShell>;
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-full items-center justify-center p-8 text-sm text-muted-foreground">
+          Loading admin…
+        </div>
+      }
+    >
+      <AdminProtectedGate>{children}</AdminProtectedGate>
+    </Suspense>
+  );
 }

@@ -67,7 +67,10 @@ export async function activateSeasonAction(
       return actionFail("NOT_FOUND", "Season not found.");
     }
     if (error instanceof Error && error.message === "SEASON_CLOSED") {
-      return actionFail("SEASON_CLOSED", "Closed seasons cannot be reactivated.");
+      return actionFail(
+        "SEASON_CLOSED",
+        "Closed seasons cannot be reactivated.",
+      );
     }
     throw error;
   }

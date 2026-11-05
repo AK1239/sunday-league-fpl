@@ -11,7 +11,11 @@ export async function listPlayersAdmin(db: AppDb) {
 
 export async function createPlayerAdmin(
   db: AppDb,
-  input: { displayName: string; nickname?: string | null; joinedOn?: string | null },
+  input: {
+    displayName: string;
+    nickname?: string | null;
+    joinedOn?: string | null;
+  },
 ) {
   const displayName = input.displayName.trim();
   const duplicate = await db
@@ -40,7 +44,11 @@ export async function createPlayerAdmin(
 export async function updatePlayerAdmin(
   db: AppDb,
   playerId: string,
-  input: { displayName: string; nickname?: string | null; joinedOn?: string | null },
+  input: {
+    displayName: string;
+    nickname?: string | null;
+    joinedOn?: string | null;
+  },
 ) {
   const displayName = input.displayName.trim();
   const duplicate = await db

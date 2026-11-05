@@ -14,7 +14,10 @@ export function CreateSeasonForm() {
   >(async (_prev, formData) => createSeasonAction(formData), null);
 
   return (
-    <form action={action} className="space-y-3 rounded-2xl border border-border/60 bg-card/70 p-4">
+    <form
+      action={action}
+      className="space-y-3 rounded-2xl border border-border/60 bg-card/70 p-4"
+    >
       <h2 className="font-heading text-lg font-semibold">New season</h2>
       <div className="space-y-2">
         <Label htmlFor="name">Name</Label>
@@ -29,11 +32,23 @@ export function CreateSeasonForm() {
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="startsOn">Starts</Label>
-          <Input id="startsOn" name="startsOn" type="date" required disabled={pending} />
+          <Input
+            id="startsOn"
+            name="startsOn"
+            type="date"
+            required
+            disabled={pending}
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="endsOn">Ends</Label>
-          <Input id="endsOn" name="endsOn" type="date" required disabled={pending} />
+          <Input
+            id="endsOn"
+            name="endsOn"
+            type="date"
+            required
+            disabled={pending}
+          />
         </div>
       </div>
       {state?.ok === false ? (

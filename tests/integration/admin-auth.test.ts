@@ -25,10 +25,12 @@ describe.skipIf(!hasDatabase)("admin auth", () => {
   beforeEach(async () => {
     resetLoginRateLimits();
     await resetDatabase();
-    await getDb().insert(adminUsers).values({
-      email: "admin@mkate.test",
-      passwordHash: await hashPassword("test-password-12"),
-    });
+    await getDb()
+      .insert(adminUsers)
+      .values({
+        email: "admin@mkate.test",
+        passwordHash: await hashPassword("test-password-12"),
+      });
   });
 
   it("rejects invalid credentials", async () => {
