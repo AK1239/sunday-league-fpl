@@ -26,11 +26,11 @@ export async function getManagerStandings(
       managerId: managerMatchdayScores.managerId,
       totalPoints:
         sql<number>`coalesce(sum(${managerMatchdayScores.totalPoints}), 0)::int`.as(
-          "total_points",
+          "mgr_season_total_pts",
         ),
       bestGameweekPoints:
         sql<number>`coalesce(max(${managerMatchdayScores.totalPoints}), 0)::int`.as(
-          "best_gw",
+          "mgr_best_gw_pts",
         ),
     })
     .from(managerMatchdayScores)
@@ -56,7 +56,9 @@ export async function getManagerStandings(
   const lastGwPoints = db
     .select({
       managerId: managerMatchdayScores.managerId,
-      points: managerMatchdayScores.totalPoints,
+      lastGwPoints: sql<number>`${managerMatchdayScores.totalPoints}`.as(
+        "mgr_last_gw_pts",
+      ),
     })
     .from(managerMatchdayScores)
     .where(
@@ -72,7 +74,7 @@ export async function getManagerStandings(
       displayName: users.displayName,
       totalPoints: totals.totalPoints,
       bestGameweekPoints: totals.bestGameweekPoints,
-      lastGameweekPoints: sql<number>`coalesce(${lastGwPoints.points}, 0)::int`,
+      lastGameweekPoints: sql<number>`coalesce(${lastGwPoints.lastGwPoints}, 0)::int`,
     })
     .from(users)
     .innerJoin(totals, eq(users.id, totals.managerId))
@@ -139,11 +141,11 @@ export async function getAllTimeManagerStandings(
       managerId: managerMatchdayScores.managerId,
       totalPoints:
         sql<number>`coalesce(sum(${managerMatchdayScores.totalPoints}), 0)::int`.as(
-          "total_points",
+          "mgr_alltime_total_pts",
         ),
       bestGameweekPoints:
         sql<number>`coalesce(max(${managerMatchdayScores.totalPoints}), 0)::int`.as(
-          "best_gw",
+          "mgr_alltime_best_gw_pts",
         ),
     })
     .from(managerMatchdayScores)
