@@ -35,7 +35,7 @@ export function BottomSheet({
     <dialog
       ref={dialogRef}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 m-0 max-h-[85dvh] w-full max-w-none translate-y-0 rounded-t-3xl border border-border/60 bg-background p-0 shadow-2xl backdrop:bg-black/50 open:animate-in open:slide-in-from-bottom",
+        "fixed inset-x-0 bottom-0 z-50 m-0 max-h-[85dvh] w-full max-w-none translate-y-0 rounded-t-3xl border border-border/60 bg-background p-0 text-foreground shadow-2xl backdrop:bg-black/50 open:animate-in open:slide-in-from-bottom",
         className,
       )}
       onClose={onClose}
@@ -45,7 +45,9 @@ export function BottomSheet({
     >
       <div className="flex max-h-[85dvh] flex-col">
         <div className="flex items-center justify-between gap-2 border-b border-border/50 px-4 py-3">
-          <h2 className="font-heading text-lg font-semibold">{title}</h2>
+          <h2 className="font-heading text-lg font-semibold text-foreground">
+            {title}
+          </h2>
           <Button
             type="button"
             variant="outline"

@@ -52,7 +52,7 @@ export function PitchSlots({
               disabled={disabled}
               onClick={() => onSlotPress(index)}
               className={cn(
-                "relative flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/50 bg-background/60 px-2 py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-70",
+                "relative flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/50 bg-background/60 px-2 py-3 text-center text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-70",
                 layoutClass,
                 !player && "border-dashed hover:border-primary/40 hover:bg-primary/5",
                 player && "hover:border-primary/30",
@@ -84,7 +84,7 @@ export function PitchSlots({
                       />
                     ) : null}
                   </div>
-                  <span className="line-clamp-2 text-xs font-medium leading-tight">
+                  <span className="line-clamp-2 text-xs font-medium leading-tight text-foreground">
                     {player.displayName}
                   </span>
                   <span className="text-[10px] text-muted-foreground tabular-nums">

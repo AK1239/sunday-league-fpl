@@ -167,6 +167,14 @@
   html {
     @apply font-sans;
   }
+  /* Native <dialog> top layer uses system colors unless themed explicitly. */
+  dialog {
+    color: var(--foreground);
+    background-color: var(--background);
+  }
+  dialog button {
+    color: inherit;
+  }
   a[href],
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),

@@ -122,7 +122,7 @@ export function PlayerPickerSheet({
                 <button
                   type="button"
                   role="option"
-                  className="flex w-full items-center gap-3 rounded-2xl border border-border/50 bg-card/50 px-3 py-2.5 text-left transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex w-full items-center gap-3 rounded-2xl border border-border/50 bg-card/50 px-3 py-2.5 text-left text-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={() => {
                     onSelect(player.id);
                     onClose();
@@ -135,7 +135,7 @@ export function PlayerPickerSheet({
                     size="md"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
+                    <p className="truncate text-sm font-medium text-foreground">
                       {player.displayName}
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
