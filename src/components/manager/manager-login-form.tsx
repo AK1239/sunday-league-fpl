@@ -2,6 +2,7 @@
 
 import { Lock, Mail } from "lucide-react";
 import { useActionState } from "react";
+import { useLoginFields } from "@/components/auth/use-login-fields";
 import { FormError } from "@/components/auth/form-error";
 import { FormField } from "@/components/auth/form-field";
 import { SubmitButton } from "@/components/auth/submit-button";
@@ -17,6 +18,7 @@ async function loginStateAction(
 
 export function ManagerLoginForm() {
   const [state, formAction, pending] = useActionState(loginStateAction, null);
+  const { email, setEmail, password, setPassword } = useLoginFields();
 
   return (
     <form action={formAction} className="space-y-5">
@@ -29,6 +31,8 @@ export function ManagerLoginForm() {
         icon={<Mail />}
         required
         disabled={pending}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
       />
       <FormField
         label="Password"
@@ -39,6 +43,8 @@ export function ManagerLoginForm() {
         icon={<Lock />}
         required
         disabled={pending}
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
       />
       {state?.ok === false ? <FormError message={state.message} /> : null}
       <SubmitButton pending={pending} idle="Sign in" busy="Signing in…" />

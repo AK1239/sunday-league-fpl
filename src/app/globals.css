@@ -170,14 +170,16 @@
   ::selection {
     background: oklch(0.88 0.19 120 / 35%);
   }
-  /* Stop browser autofill from painting a pale blue box over dark inputs */
+  /* Keep autofill/hover on theme background (no pale browser default) */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus {
-    -webkit-text-fill-color: var(--foreground);
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-text-fill-color: var(--foreground) !important;
     caret-color: var(--foreground);
     transition: background-color 9999s ease-out 0s;
-    box-shadow: 0 0 0 100px color-mix(in oklch, var(--card) 92%, white) inset;
+    -webkit-box-shadow: 0 0 0 1000px var(--background) inset !important;
+    box-shadow: 0 0 0 1000px var(--background) inset !important;
   }
 }
 

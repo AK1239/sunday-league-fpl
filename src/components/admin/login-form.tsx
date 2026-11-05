@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useLoginFields } from "@/components/auth/use-login-fields";
 import { loginAction } from "@/server/actions/auth";
 import { Lock, Mail } from "lucide-react";
 import { FormError } from "@/components/auth/form-error";
@@ -17,6 +18,7 @@ async function loginStateAction(
 
 export function LoginForm() {
   const [state, formAction, pending] = useActionState(loginStateAction, null);
+  const { email, setEmail, password, setPassword } = useLoginFields();
 
   return (
     <form action={formAction} className="space-y-5">
@@ -28,6 +30,8 @@ export function LoginForm() {
         icon={<Mail />}
         required
         disabled={pending}
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
         error={state?.ok === false ? state.fieldErrors?.email : undefined}
       />
       <FormField
@@ -38,6 +42,8 @@ export function LoginForm() {
         icon={<Lock />}
         required
         disabled={pending}
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
         error={state?.ok === false ? state.fieldErrors?.password : undefined}
       />
       {state?.ok === false && !state.fieldErrors ? (
