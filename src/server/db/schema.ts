@@ -11,6 +11,7 @@ import {
   pgTable,
   primaryKey,
   text,
+  time,
   timestamp,
   uniqueIndex,
   uuid,
@@ -23,8 +24,16 @@ export const seasonStatusEnum = pgEnum("season_status", [
 ]);
 
 export const matchdayStatusEnum = pgEnum("matchday_status", [
+  "scheduled",
   "draft",
   "published",
+  "cancelled",
+]);
+
+export const fantasyTeamSourceEnum = pgEnum("fantasy_team_source", [
+  "manual",
+  "carry_over",
+  "admin",
 ]);
 
 export const matchSideEnum = pgEnum("match_side", ["A", "B"]);
@@ -81,6 +90,7 @@ export const scoringRuleSets = pgTable("scoring_rule_sets", {
   assistPts: integer("assist_pts").notNull(),
   mvpPts: integer("mvp_pts").notNull(),
   cleanSheetPts: integer("clean_sheet_pts").notNull(),
+  captainMultiplier: integer("captain_multiplier").notNull().default(2),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -114,7 +124,8 @@ export const matchdays = pgTable(
       .references(() => seasons.id),
     number: integer("number").notNull(),
     playedOn: date("played_on").notNull(),
-    status: matchdayStatusEnum("status").notNull().default("draft"),
+    deadlineAt: timestamp("deadline_at", { withTimezone: true }).notNull(),
+    status: matchdayStatusEnum("status").notNull().default("scheduled"),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     notes: text("notes"),
   },
@@ -344,3 +355,68 @@ export const auditLog = pgTable("audit_log", {
   after: jsonb("after"),
   at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const leagueSettings = pgTable("league_settings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  timezone: text("timezone").notNull().default("Africa/Dar_es_Salaam"),
+  defaultKickoffTime: time("default_kickoff_time")
+    .notNull()
+    .default("16:00:00"),
+  deadlineOffsetMinutes: integer("deadline_offset_minutes")
+    .notNull()
+    .default(0),
+});
+
+export const fantasyTeams = pgTable(
+  "fantasy_teams",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    managerId: uuid("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    matchdayId: uuid("matchday_id")
+      .notNull()
+      .references(() => matchdays.id, { onDelete: "cascade" }),
+    captainPlayerId: uuid("captain_player_id")
+      .notNull()
+      .references(() => players.id),
+    viceCaptainPlayerId: uuid("vice_captain_player_id")
+      .notNull()
+      .references(() => players.id),
+    source: fantasyTeamSourceEnum("source").notNull().default("manual"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    version: integer("version").notNull().default(1),
+  },
+  (table) => [
+    uniqueIndex("fantasy_teams_manager_matchday_unique").on(
+      table.managerId,
+      table.matchdayId,
+    ),
+    check(
+      "fantasy_teams_captain_vice_distinct",
+      sql`${table.captainPlayerId} <> ${table.viceCaptainPlayerId}`,
+    ),
+    index("fantasy_teams_matchday_idx").on(table.matchdayId),
+  ],
+);
+
+export const fantasyTeamPlayers = pgTable(
+  "fantasy_team_players",
+  {
+    fantasyTeamId: uuid("fantasy_team_id")
+      .notNull()
+      .references(() => fantasyTeams.id, { onDelete: "cascade" }),
+    playerId: uuid("player_id")
+      .notNull()
+      .references(() => players.id),
+  },
+  (table) => [
+    primaryKey({ columns: [table.fantasyTeamId, table.playerId] }),
+    index("fantasy_team_players_player_idx").on(table.playerId),
+  ],
+);

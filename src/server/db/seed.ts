@@ -73,6 +73,7 @@ export async function seedDatabase() {
       seasonId: season!.id,
       number: 1,
       playedOn: "2026-11-02",
+      deadlineAt: new Date("2026-11-02T13:00:00.000Z"),
       status: "published",
       publishedAt: new Date(),
     })

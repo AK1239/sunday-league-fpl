@@ -16,9 +16,12 @@ export async function resetDatabase() {
   await db.execute(sql`
     truncate table
       audit_log,
+      fantasy_team_players,
+      fantasy_teams,
       manager_invites,
       sessions,
       users,
+      league_settings,
       season_awards,
       matchday_snapshots,
       point_ledger,

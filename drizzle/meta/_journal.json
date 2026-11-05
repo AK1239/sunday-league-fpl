@@ -29,6 +29,20 @@
       "when": 1793884100000,
       "tag": "0003_users_and_invites",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793884200000,
+      "tag": "0004_matchday_status_enum",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793884201000,
+      "tag": "0005_fantasy_schema",
+      "breakpoints": true
     }
   ]
 }
