@@ -1,5 +1,6 @@
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { getEnv } from "@/env";
 import { getDb } from "@/server/db";
 import { sessions, users } from "@/server/db/schema";
@@ -78,6 +79,7 @@ function mapRow(row: {
 }
 
 export async function getUserSession(): Promise<UserSession | null> {
+  await connection();
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
@@ -96,7 +98,7 @@ export async function getUserSession(): Promise<UserSession | null> {
     .where(
       and(
         eq(sessions.tokenHash, tokenHash),
-        gt(sessions.expiresAt, new Date()),
+        gt(sessions.expiresAt, sql`now()`),
       ),
     )
     .limit(1);
