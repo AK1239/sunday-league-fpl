@@ -36,6 +36,17 @@ export const fantasyTeamSourceEnum = pgEnum("fantasy_team_source", [
   "admin",
 ]);
 
+export const managerScoreLineRoleEnum = pgEnum("manager_score_line_role", [
+  "player",
+  "captain",
+  "vice_captain",
+]);
+
+export const managerMatchdayTeamSourceEnum = pgEnum(
+  "manager_matchday_team_source",
+  ["manual", "carry_over", "admin", "none"],
+);
+
 export const matchSideEnum = pgEnum("match_side", ["A", "B"]);
 
 export const pointKindEnum = pgEnum("point_kind", [
@@ -418,5 +429,78 @@ export const fantasyTeamPlayers = pgTable(
   (table) => [
     primaryKey({ columns: [table.fantasyTeamId, table.playerId] }),
     index("fantasy_team_players_player_idx").on(table.playerId),
+  ],
+);
+
+export const managerScoreLines = pgTable(
+  "manager_score_lines",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    managerId: uuid("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    matchdayId: uuid("matchday_id")
+      .notNull()
+      .references(() => matchdays.id, { onDelete: "cascade" }),
+    seasonId: uuid("season_id")
+      .notNull()
+      .references(() => seasons.id),
+    playerId: uuid("player_id")
+      .notNull()
+      .references(() => players.id),
+    role: managerScoreLineRoleEnum("role").notNull(),
+    basePoints: integer("base_points").notNull(),
+    multiplier: integer("multiplier").notNull(),
+    points: integer("points").notNull(),
+    attended: boolean("attended").notNull(),
+    teamSource: managerMatchdayTeamSourceEnum("team_source").notNull(),
+  },
+  (table) => [
+    uniqueIndex("manager_score_lines_manager_matchday_player_unique").on(
+      table.managerId,
+      table.matchdayId,
+      table.playerId,
+    ),
+    index("manager_score_lines_matchday_idx").on(table.matchdayId),
+  ],
+);
+
+export const managerMatchdayScores = pgTable(
+  "manager_matchday_scores",
+  {
+    managerId: uuid("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    matchdayId: uuid("matchday_id")
+      .notNull()
+      .references(() => matchdays.id, { onDelete: "cascade" }),
+    seasonId: uuid("season_id")
+      .notNull()
+      .references(() => seasons.id),
+    totalPoints: integer("total_points").notNull(),
+    multiplierPlayerId: uuid("multiplier_player_id").references(() => players.id),
+    teamSource: managerMatchdayTeamSourceEnum("team_source").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.managerId, table.matchdayId] }),
+    index("manager_matchday_scores_season_idx").on(table.seasonId),
+  ],
+);
+
+export const managerRankSnapshots = pgTable(
+  "manager_rank_snapshots",
+  {
+    matchdayId: uuid("matchday_id")
+      .notNull()
+      .references(() => matchdays.id, { onDelete: "cascade" }),
+    managerId: uuid("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    rankAfter: integer("rank_after").notNull(),
+    pointsAfter: integer("points_after").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.matchdayId, table.managerId] }),
+    index("manager_rank_snapshots_matchday_idx").on(table.matchdayId),
   ],
 );

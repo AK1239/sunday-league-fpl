@@ -11,17 +11,17 @@ import {
   scoringRuleSets,
   seasons,
 } from "@/server/db/schema";
+import type { ManagerScoringRules } from "@/server/scoring/manager-types";
 import type {
   ScoreMatch,
   ScoreMatchdayInput,
-  ScoringRules,
 } from "@/server/scoring/types";
 
 export async function loadScoringRulesForMatchday(
   db: DbExecutor,
   matchdayId: string,
 ): Promise<{
-  rules: ScoringRules;
+  rules: ManagerScoringRules;
   ruleSetId: string;
   seasonId: string;
 } | null> {
@@ -36,6 +36,7 @@ export async function loadScoringRulesForMatchday(
       assistPts: scoringRuleSets.assistPts,
       mvpPts: scoringRuleSets.mvpPts,
       cleanSheetPts: scoringRuleSets.cleanSheetPts,
+      captainMultiplier: scoringRuleSets.captainMultiplier,
     })
     .from(matchdays)
     .innerJoin(seasons, eq(matchdays.seasonId, seasons.id))
@@ -57,6 +58,7 @@ export async function loadScoringRulesForMatchday(
       assistPts: row.assistPts,
       mvpPts: row.mvpPts,
       cleanSheetPts: row.cleanSheetPts,
+      captainMultiplier: row.captainMultiplier,
     },
   };
 }

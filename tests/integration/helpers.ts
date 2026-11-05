@@ -16,6 +16,9 @@ export async function resetDatabase() {
   await db.execute(sql`
     truncate table
       audit_log,
+      manager_rank_snapshots,
+      manager_matchday_scores,
+      manager_score_lines,
       fantasy_team_players,
       fantasy_teams,
       manager_invites,

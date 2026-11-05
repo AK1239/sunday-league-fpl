@@ -11,6 +11,7 @@ import {
   loadScoringRulesForMatchday,
 } from "./load-matchday-scoring";
 import { scoreMatchday } from "@/server/scoring/score";
+import { rebuildManagerScoresFromMatchday } from "./recompute-manager-scores";
 
 export async function recomputeMatchday(matchdayId: string): Promise<void> {
   const db = getDb();
@@ -37,6 +38,11 @@ export async function recomputeMatchday(matchdayId: string): Promise<void> {
 
     if (matchday.status !== "published") {
       await rebuildSnapshotsFromMatchday(
+        tx,
+        matchday.seasonId,
+        matchday.number,
+      );
+      await rebuildManagerScoresFromMatchday(
         tx,
         matchday.seasonId,
         matchday.number,
@@ -70,6 +76,11 @@ export async function recomputeMatchday(matchdayId: string): Promise<void> {
     }
 
     await rebuildSnapshotsFromMatchday(tx, matchday.seasonId, matchday.number);
+    await rebuildManagerScoresFromMatchday(
+      tx,
+      matchday.seasonId,
+      matchday.number,
+    );
   });
 }
 

@@ -43,6 +43,13 @@
       "when": 1793884201000,
       "tag": "0005_fantasy_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793884300000,
+      "tag": "0006_manager_scoring",
+      "breakpoints": true
     }
   ]
 }
