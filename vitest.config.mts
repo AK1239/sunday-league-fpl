@@ -5,6 +5,11 @@ export default defineConfig({
   resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts", "tests/unit/**/*.test.ts"],
+    include: [
+      "src/**/*.test.ts",
+      "tests/unit/**/*.test.ts",
+      "tests/integration/**/*.test.ts",
+    ],
+    testTimeout: 30_000,
   },
 });

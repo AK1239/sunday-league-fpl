@@ -1,9 +1,10 @@
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { getEnv } from "@/env";
 import * as schema from "./schema";
 
-const globalForDb = globalThis as unknown as { pgPool?: Pool };
+const globalForDb = globalThis as unknown as { pgPool?: Pool; drizzle?: AppDb };
 
 function getPool(): Pool {
   globalForDb.pgPool ??= new Pool({
@@ -13,8 +14,13 @@ function getPool(): Pool {
   return globalForDb.pgPool;
 }
 
-export function getDb() {
-  return drizzle(getPool(), { schema });
+export type AppDb = NodePgDatabase<typeof schema>;
+export type DbExecutor =
+  AppDb | Parameters<Parameters<AppDb["transaction"]>[0]>[0];
+
+export function getDb(): AppDb {
+  globalForDb.drizzle ??= drizzle(getPool(), { schema });
+  return globalForDb.drizzle;
 }
 
 export async function checkDatabase(): Promise<boolean> {
