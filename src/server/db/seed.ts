@@ -4,6 +4,7 @@ import { parseEnv } from "@/env";
 import { SQUAD_DISPLAY_NAMES } from "@/lib/squad";
 import { recomputeMatchday } from "@/server/domain/recompute-matchday";
 import { getDb } from "./index";
+import { seedAdminUser } from "./seed-admin";
 import {
   goals,
   matchMvps,
@@ -114,6 +115,8 @@ export async function seedDatabase() {
   for (const row of published) {
     await recomputeMatchday(row.id);
   }
+
+  await seedAdminUser(db);
 
   console.log("Seed complete:", {
     seasonId: season!.id,

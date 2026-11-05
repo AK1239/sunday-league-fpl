@@ -24,6 +24,9 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgres://fantasy:fantasy@localhost:5432/fantasy
+      SESSION_SECRET: ci-session-secret-minimum-32-characters
+      ADMIN_EMAIL: ci@mkate.test
+      ADMIN_PASSWORD: ci-password-12
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

@@ -42,6 +42,8 @@ next-env.d.ts
 
 # project
 /backups
+/public/avatars/*
+!/public/avatars/.gitkeep
 /playwright-report
 /test-results
 !.env.example
