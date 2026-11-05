@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { Trophy } from "lucide-react";
 import { LEAGUE_NAME, LEAGUE_SHORT } from "@/lib/league";
 
@@ -6,7 +7,7 @@ import { LEAGUE_NAME, LEAGUE_SHORT } from "@/lib/league";
  * Full-bleed, split-screen shell for sign-in / join / admin login.
  * Left: brand panel (hidden on mobile). Right: the form card.
  */
-export function AuthShell({
+export async function AuthShell({
   eyebrow,
   title,
   subtitle,
@@ -19,6 +20,9 @@ export function AuthShell({
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
+  await connection();
+  const year = new Date().getFullYear();
+
   return (
     <div className="relative isolate grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
       {/* Brand panel */}
@@ -71,7 +75,7 @@ export function AuthShell({
         </div>
 
         <p className="relative z-10 text-xs text-muted-foreground">
-          © {new Date().getFullYear()} {LEAGUE_NAME}
+          © {year} {LEAGUE_NAME}
         </p>
       </aside>
 
