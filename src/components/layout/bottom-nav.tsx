@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Award,
   CalendarDays,
   Home,
   MoreHorizontal,
+  Shirt,
   Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,7 @@ const ITEMS = [
   { href: "/", label: "Home", icon: Home },
   { href: "/table", label: "Table", icon: Trophy },
   { href: "/matchdays", label: "Days", icon: CalendarDays },
-  { href: "/awards", label: "Awards", icon: Award },
+  { href: "/pick", label: "Pick", icon: Shirt },
   { href: "/more", label: "More", icon: MoreHorizontal },
 ] as const;
 

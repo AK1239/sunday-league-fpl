@@ -11,7 +11,8 @@ const NAV = [
   { href: "/table", label: "Table" },
   { href: "/matchdays", label: "Matchdays" },
   { href: "/awards", label: "Awards" },
-  { href: "/my", label: "My Team" },
+  { href: "/pick", label: "Pick Team" },
+  { href: "/my", label: "My" },
 ] as const;
 
 export function SiteHeader() {

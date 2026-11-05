@@ -1,10 +1,11 @@
-import { Shirt } from "lucide-react";
+import Link from "next/link";
 import { Suspense } from "react";
-import { EmptyState } from "@/components/fantasy/empty-state";
 import { PageHeader } from "@/components/fantasy/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MyProtectedGate } from "@/components/manager/my-protected-gate";
 import { requireUser } from "@/server/auth/require-user";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 async function MyHomeContent() {
   const user = await requireUser();
@@ -14,13 +15,19 @@ async function MyHomeContent() {
       <PageHeader
         eyebrow={`Welcome, ${user.displayName}`}
         title="My Team"
-        description="Your squad and matchday points live here."
+        description="Your squad and gameweek points live here."
       />
-      <EmptyState
-        icon={<Shirt />}
-        title="Team selection is coming"
-        description="Team selection and gameweek points arrive in the next phase — for now this confirms your manager account works."
-      />
+      <div className="surface flex flex-col gap-4 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Build or update your five-a-side lineup before each Sunday deadline.
+        </p>
+        <Link
+          href="/pick"
+          className={cn(buttonVariants({ size: "lg" }), "shrink-0")}
+        >
+          Pick Team
+        </Link>
+      </div>
     </div>
   );
 }

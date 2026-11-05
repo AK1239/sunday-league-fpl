@@ -32,7 +32,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  if (pathname.startsWith("/my")) {
+  if (pathname.startsWith("/my") || pathname.startsWith("/pick")) {
     const session = request.cookies.get(SESSION_COOKIE_NAME)?.value;
     if (!session) {
       const loginUrl = request.nextUrl.clone();
