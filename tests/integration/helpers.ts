@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { parseEnv } from "@/env";
 import { getDb } from "@/server/db";
+import { leagueSettings } from "@/server/db/schema";
 
 export function requireDatabaseUrl(): string {
   const url = process.env.DATABASE_URL;
@@ -40,4 +41,9 @@ export async function resetDatabase() {
       players
     restart identity cascade
   `);
+  await db.insert(leagueSettings).values({
+    timezone: "Africa/Dar_es_Salaam",
+    defaultKickoffTime: "16:00:00",
+    deadlineOffsetMinutes: 0,
+  });
 }
