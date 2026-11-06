@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { appToast } from "@/lib/app-toast";
 import { PlayerShirt } from "@/components/fantasy/player-shirt";
@@ -142,15 +149,9 @@ export function TransfersTeamClient({
   ]);
   const [extrasOpen, setExtrasOpen] = useState(false);
 
-  // Restore an in-progress draft (same server version) before falling back to
-  // the saved team, then the base squad.
-  const [initialDraft] = useState(() =>
-    readLocalDraft(pick.matchday.id, initial.teamVersion),
-  );
+  // Initial state must match SSR — localStorage draft is restored in useEffect
+  // so server and client markup agree on first paint (avoids hydration errors).
   const [slots, setSlots] = useState<(string | null)[]>(() => {
-    if (initialDraft?.playerIds.length === 5) {
-      return teamToSlots(initialDraft.playerIds);
-    }
     return pick.myTeam?.playerIds.length === 5
       ? teamToSlots(pick.myTeam.playerIds)
       : freeBuild
@@ -160,13 +161,11 @@ export function TransfersTeamClient({
 
   const [captainPlayerId, setCaptainPlayerId] = useState<string | null>(
     () =>
-      initialDraft?.captainPlayerId ??
       pick.myTeam?.captainPlayerId ??
       (permanentBasePlayerIds.length === 5 ? permanentBasePlayerIds[0]! : null),
   );
   const [viceCaptainPlayerId, setViceCaptainPlayerId] = useState<string | null>(
     () =>
-      initialDraft?.viceCaptainPlayerId ??
       pick.myTeam?.viceCaptainPlayerId ??
       (permanentBasePlayerIds.length === 5
         ? (permanentBasePlayerIds.find(
@@ -186,14 +185,21 @@ export function TransfersTeamClient({
   const readOnly = pick.locked || !pick.selectionOpen;
   const savedTeam = pick.myTeam;
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  useLayoutEffect(() => {
+    const draft = readLocalDraft(pick.matchday.id, initial.teamVersion);
+    if (draft?.playerIds.length === 5) {
+      /* eslint-disable react-hooks/set-state-in-effect -- restore localStorage draft after first paint so SSR HTML matches client (hydration) */
+      setSlots(teamToSlots(draft.playerIds));
+      setCaptainPlayerId(draft.captainPlayerId);
+      setViceCaptainPlayerId(draft.viceCaptainPlayerId);
+      /* eslint-enable react-hooks/set-state-in-effect */
+      return;
+    }
     const raw = localStorage.getItem(transferDraftStorageKey(pick.matchday.id));
     if (!raw) return;
     try {
-      const draft = JSON.parse(raw) as LocalTransferDraft;
-      if (draft.baseVersion !== initial.teamVersion) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- reads localStorage, which only exists in the browser
+      const parsed = JSON.parse(raw) as LocalTransferDraft;
+      if (parsed.baseVersion !== initial.teamVersion) {
         setDraftStaleNotice(true);
         clearLocalDraft(pick.matchday.id);
       }

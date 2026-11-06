@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { appToast } from "@/lib/app-toast";
 import { PageHeader } from "@/components/fantasy/page-header";
@@ -88,22 +94,14 @@ export function PickTeamClient({
     if (initial.myTeam?.playerIds.length === 5) {
       return teamToSlots(initial.myTeam.playerIds);
     }
-    const draft = readLocalDraft(initial.matchday.id);
-    if (draft?.slots?.length === 5) return draft.slots;
     return [...EMPTY_SLOTS];
   });
 
   const [captainPlayerId, setCaptainPlayerId] = useState<string | null>(
-    () =>
-      initial.myTeam?.captainPlayerId ??
-      readLocalDraft(initial.matchday.id)?.captainPlayerId ??
-      null,
+    () => initial.myTeam?.captainPlayerId ?? null,
   );
   const [viceCaptainPlayerId, setViceCaptainPlayerId] = useState<string | null>(
-    () =>
-      initial.myTeam?.viceCaptainPlayerId ??
-      readLocalDraft(initial.matchday.id)?.viceCaptainPlayerId ??
-      null,
+    () => initial.myTeam?.viceCaptainPlayerId ?? null,
   );
 
   const [teamVersion, setTeamVersion] = useState(initial.myTeamVersion);
@@ -120,6 +118,18 @@ export function PickTeamClient({
     () => new Set(slots.filter((id): id is string => Boolean(id))),
     [slots],
   );
+
+  useLayoutEffect(() => {
+    if (initial.myTeam?.playerIds.length === 5) return;
+    const draft = readLocalDraft(initial.matchday.id);
+    if (draft?.slots?.length === 5) {
+      /* eslint-disable react-hooks/set-state-in-effect -- restore localStorage draft after first paint so SSR matches client (hydration) */
+      setSlots(draft.slots);
+      setCaptainPlayerId(draft.captainPlayerId);
+      setViceCaptainPlayerId(draft.viceCaptainPlayerId);
+      /* eslint-enable react-hooks/set-state-in-effect */
+    }
+  }, [initial.matchday.id, initial.myTeam]);
 
   useEffect(() => {
     if (initial.myTeam?.playerIds.length === 5) {
