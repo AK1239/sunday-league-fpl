@@ -30,6 +30,7 @@ export function scoreManagers(
   playerPoints: ReadonlyMap<string, number>,
   attended: ReadonlySet<string>,
   teams: readonly TeamForManagerScoring[],
+  transferPenalties: ReadonlyMap<string, number> = new Map(),
 ): ScoredManagerMatchday[] {
   return teams.map((team) => {
     const multipliedPlayerId = pickMultiplierPlayer(team, attended);
@@ -53,10 +54,14 @@ export function scoreManagers(
       };
     });
 
-    const totalPoints = lines.reduce((sum, line) => sum + line.points, 0);
+    const squadPoints = lines.reduce((sum, line) => sum + line.points, 0);
+    const transferPenalty = transferPenalties.get(team.managerId) ?? 0;
+    const totalPoints = squadPoints + transferPenalty;
 
     return {
       managerId: team.managerId,
+      squadPoints,
+      transferPenalty,
       totalPoints,
       multiplierPlayerId: multipliedPlayerId,
       teamSource: team.teamSource,
@@ -70,6 +75,8 @@ export function scoreManagerWithNoTeam(
 ): ScoredManagerMatchday {
   return {
     managerId,
+    squadPoints: 0,
+    transferPenalty: 0,
     totalPoints: 0,
     multiplierPlayerId: null,
     teamSource: "none",

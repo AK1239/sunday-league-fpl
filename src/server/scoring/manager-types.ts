@@ -29,6 +29,11 @@ export type ScoredManagerLine = {
 
 export type ScoredManagerMatchday = {
   managerId: string;
+  /** Sum of player line points after captain multiplier (stage 4). */
+  squadPoints: number;
+  /** Non-positive transfer hit (stage 5); 0 when transfers disabled or no extras. */
+  transferPenalty: number;
+  /** squadPoints + transferPenalty (stage 6). */
   totalPoints: number;
   multiplierPlayerId: string | null;
   teamSource: ManagerTeamSource;

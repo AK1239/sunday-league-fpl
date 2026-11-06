@@ -36,7 +36,9 @@ describe("scoreManagers", () => {
     const attended = new Set(["p1", "p3"]);
 
     const [result] = scoreManagers(rules, playerPoints, attended, [team]);
-    expect(result.totalPoints).toBe(10 * 2 + 4);
+    expect(result.squadPoints).toBe(10 * 2 + 4);
+    expect(result.transferPenalty).toBe(0);
+    expect(result.totalPoints).toBe(result.squadPoints);
     expect(result.multiplierPlayerId).toBe("p1");
     const captainLine = result.lines.find((l) => l.playerId === "p1");
     expect(captainLine).toMatchObject({
@@ -88,10 +90,51 @@ describe("scoreManagers", () => {
   it("scoreManagerWithNoTeam returns none source", () => {
     expect(scoreManagerWithNoTeam("m9")).toEqual({
       managerId: "m9",
+      squadPoints: 0,
+      transferPenalty: 0,
       totalPoints: 0,
       multiplierPlayerId: null,
       teamSource: "none",
       lines: [],
     });
+  });
+
+  it("applies transfer penalty after squad subtotal (stages 5–6)", () => {
+    const playerPoints = new Map([
+      ["p1", 10],
+      ["p2", 0],
+      ["p3", 0],
+      ["p4", 0],
+      ["p5", 0],
+    ]);
+    const attended = new Set(["p1"]);
+    const penalties = new Map([["m1", -8]]);
+
+    const [result] = scoreManagers(
+      rules,
+      playerPoints,
+      attended,
+      [team],
+      penalties,
+    );
+    expect(result.squadPoints).toBe(20);
+    expect(result.transferPenalty).toBe(-8);
+    expect(result.totalPoints).toBe(12);
+  });
+
+  it("allows negative matchday totals (D4)", () => {
+    const playerPoints = new Map<string, number>();
+    const attended = new Set<string>();
+    const penalties = new Map([["m1", -8]]);
+
+    const [result] = scoreManagers(
+      rules,
+      playerPoints,
+      attended,
+      [team],
+      penalties,
+    );
+    expect(result.squadPoints).toBe(0);
+    expect(result.totalPoints).toBe(-8);
   });
 });
