@@ -159,7 +159,9 @@ export const scoringRuleSets = pgTable("scoring_rule_sets", {
   /** Captain fantasy multiplier as hundredths (200 = 2×). */
   captainMultiplier: integer("captain_multiplier").notNull().default(200),
   /** Vice-captain fantasy multiplier as hundredths (150 = 1.5×). */
-  viceCaptainMultiplier: integer("vice_captain_multiplier").notNull().default(150),
+  viceCaptainMultiplier: integer("vice_captain_multiplier")
+    .notNull()
+    .default(150),
   freeTransfersPerMatchday: smallint("free_transfers_per_matchday")
     .notNull()
     .default(2),

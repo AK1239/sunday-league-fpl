@@ -37,11 +37,14 @@ function multiplierMetadata(
   const viceOk =
     inSquad(team.viceCaptainPlayerId) && attended.has(team.viceCaptainPlayerId);
   const captainMultiplierPlayerId = captainOk ? team.captainPlayerId : null;
-  const viceCaptainMultiplierPlayerId = viceOk ? team.viceCaptainPlayerId : null;
+  const viceCaptainMultiplierPlayerId = viceOk
+    ? team.viceCaptainPlayerId
+    : null;
   return {
     captainMultiplierPlayerId,
     viceCaptainMultiplierPlayerId,
-    multiplierPlayerId: captainMultiplierPlayerId ?? viceCaptainMultiplierPlayerId,
+    multiplierPlayerId:
+      captainMultiplierPlayerId ?? viceCaptainMultiplierPlayerId,
   };
 }
 
@@ -58,8 +61,11 @@ function buildSquadLines(
   captainMultiplierPlayerId: string | null;
   viceCaptainMultiplierPlayerId: string | null;
 } {
-  const { captainMultiplierPlayerId, viceCaptainMultiplierPlayerId, multiplierPlayerId } =
-    multiplierMetadata(team, attended);
+  const {
+    captainMultiplierPlayerId,
+    viceCaptainMultiplierPlayerId,
+    multiplierPlayerId,
+  } = multiplierMetadata(team, attended);
   const lines: ScoredManagerLine[] = team.playerIds.map((playerId) => {
     const basePoints = playerPoints.get(playerId) ?? 0;
     const attendedPlayer = attended.has(playerId);
@@ -126,13 +132,7 @@ export function scoreOneManagerTeam(
     multiplierPlayerId,
     captainMultiplierPlayerId,
     viceCaptainMultiplierPlayerId,
-  } = buildSquadLines(
-    rules,
-    playerPoints,
-    attended,
-    team,
-    chip,
-  );
+  } = buildSquadLines(rules, playerPoints, attended, team, chip);
   const transferPenalty = transferPenalties.get(team.managerId) ?? 0;
   const chipBonus = computeChipBonus(
     rules,

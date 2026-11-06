@@ -13,9 +13,7 @@ export type PointKind =
 
 export type GoalKind = "open_play" | "penalty" | "own_goal";
 export type IncidentKind =
-  | "penalty_saved"
-  | "handball_blocked"
-  | "penalty_missed";
+  "penalty_saved" | "handball_blocked" | "penalty_missed";
 
 export type ScoringRules = {
   attendancePts: number;
