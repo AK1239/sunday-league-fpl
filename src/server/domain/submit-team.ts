@@ -10,11 +10,21 @@ import {
   seasons,
   users,
 } from "@/server/db/schema";
+import { validateChipSubmission } from "@/server/chips/validate-chip";
+import type { ChipCode } from "@/server/chips/registry";
+import { isChipCode } from "@/server/chips/registry";
+import type { SquadKind } from "@/server/fantasy/effective-team";
 import { isSelectionOpen } from "@/server/fantasy/lock";
 import {
   hasPriorSubmittedSquadInSeason,
   resolveBaseSquadPlayerIds,
 } from "@/server/fantasy/transfer-base-squad";
+import {
+  loadManagerActiveChipPlays,
+  loadSeasonChipConfigs,
+  syncManagerChipPlayForSubmit,
+  syncTransferWindowChipMirror,
+} from "@/server/domain/chip-plays";
 import { syncManagerTransferMaterialisation } from "@/server/domain/transfer-materialisation";
 import {
   isTransferModeEnabled,
@@ -41,6 +51,10 @@ import { computeFreeAvailableForMatchday } from "./transfer-balance";
 export type SubmitTeamRequest = FantasyTeamPick & {
   expectedVersion: number;
   acknowledgedPenalty: number;
+  /** Omit to leave unchanged; null to clear the chip for this gameweek. */
+  chipCode?: string | null;
+  /** Omit to leave unchanged; null to clear (Bench Boost only). */
+  reservePlayerId?: string | null;
 };
 
 export type SubmitTeamResult = {
@@ -80,6 +94,65 @@ function pickEquals(a: FantasyTeamPick, b: FantasyTeamPick): boolean {
   return b.playerIds.every((id) => setA.has(id));
 }
 
+function resolveDesiredChipCode(
+  request: SubmitTeamRequest,
+  activeOnMatchday: ChipCode | null,
+): string | null {
+  if (request.chipCode === undefined) {
+    return activeOnMatchday;
+  }
+  if (request.chipCode == null || request.chipCode === "") {
+    return null;
+  }
+  return request.chipCode;
+}
+
+function resolveDesiredSquadKind(chipCode: string | null): SquadKind {
+  return chipCode === "free_hit" ? "free_hit" : "permanent";
+}
+
+function resolveDesiredReserve(
+  request: SubmitTeamRequest,
+  beforeReserve: string | null,
+  chipCode: string | null,
+): string | null {
+  const raw =
+    request.reservePlayerId === undefined
+      ? beforeReserve
+      : request.reservePlayerId;
+  return chipCode === "bench_boost" ? raw : null;
+}
+
+function submissionStateEquals(
+  request: SubmitTeamRequest,
+  current: {
+    pick: FantasyTeamPick;
+    squadKind: SquadKind;
+    reservePlayerId: string | null;
+    chipCode: string | null;
+  },
+  desired: {
+    squadKind: SquadKind;
+    reservePlayerId: string | null;
+    chipCode: string | null;
+  },
+): boolean {
+  if (!pickEquals(current.pick, request)) return false;
+  if (current.squadKind !== desired.squadKind) return false;
+  if (current.reservePlayerId !== desired.reservePlayerId) return false;
+  const normalizedCurrent = current.chipCode ?? null;
+  const normalizedDesired = desired.chipCode ?? null;
+  return normalizedCurrent === normalizedDesired;
+}
+
+function assertChipValidation(
+  result: ReturnType<typeof validateChipSubmission>,
+): asserts result is { ok: true } {
+  if (!result.ok) {
+    throw new FantasyTeamError(result.message, result.code);
+  }
+}
+
 async function loadExistingTeamPlayers(
   tx: DbExecutor,
   teamId: string,
@@ -99,6 +172,8 @@ async function persistSquadInPlace(
     nextVersion: number;
     dbNow: Date;
     source: "manual" | "admin";
+    squadKind: SquadKind;
+    reservePlayerId: string | null;
   },
 ) {
   await tx
@@ -106,6 +181,8 @@ async function persistSquadInPlace(
     .set({
       captainPlayerId: options.pick.captainPlayerId,
       viceCaptainPlayerId: options.pick.viceCaptainPlayerId,
+      squadKind: options.squadKind,
+      reservePlayerId: options.reservePlayerId,
       version: options.nextVersion,
       updatedAt: options.dbNow,
       source: options.source,
@@ -254,12 +331,22 @@ export async function submitTeam(
       seasonStartsOn: row.seasonStartsOn,
     };
 
+    const [seasonChipsConfig, activePlays] = await Promise.all([
+      loadSeasonChipConfigs(tx, row.seasonId),
+      loadManagerActiveChipPlays(tx, row.seasonId, managerId),
+    ]);
+
+    const activeChipOnMatchday =
+      activePlays.find((p) => p.matchdayId === matchdayId)?.chipCode ?? null;
+
     const existing = await tx
       .select({
         id: fantasyTeams.id,
         version: fantasyTeams.version,
         captainPlayerId: fantasyTeams.captainPlayerId,
         viceCaptainPlayerId: fantasyTeams.viceCaptainPlayerId,
+        squadKind: fantasyTeams.squadKind,
+        reservePlayerId: fantasyTeams.reservePlayerId,
       })
       .from(fantasyTeams)
       .where(
@@ -272,28 +359,16 @@ export async function submitTeam(
 
     const beforeTeam = existing[0] ?? null;
 
-    if (beforeTeam) {
-      const currentPlayers = await loadExistingTeamPlayers(tx, beforeTeam.id);
-      const currentPick: FantasyTeamPick = {
-        playerIds: currentPlayers,
-        captainPlayerId: beforeTeam.captainPlayerId,
-        viceCaptainPlayerId: beforeTeam.viceCaptainPlayerId,
-      };
-      if (pickEquals(currentPick, request)) {
-        result = {
-          teamId: beforeTeam.id,
-          version: beforeTeam.version,
-          summary: null,
-        };
-        return;
-      }
-      if (request.expectedVersion !== beforeTeam.version) {
-        throw new FantasyTeamError(
-          "This team was updated elsewhere. Reload and try again.",
-          "CONFLICT",
-        );
-      }
-    }
+    const desiredChipRaw = resolveDesiredChipCode(
+      request,
+      activeChipOnMatchday,
+    );
+    const desiredSquadKind = resolveDesiredSquadKind(desiredChipRaw);
+    const desiredReserve = resolveDesiredReserve(
+      request,
+      beforeTeam?.reservePlayerId ?? null,
+      desiredChipRaw,
+    );
 
     const eligibleById = await loadEligiblePlayersMap(tx);
     const basePlayerIds = resolveBaseSquadPlayerIds(
@@ -309,6 +384,70 @@ export async function submitTeam(
         submittedTeams,
       ) && basePlayerIds == null;
 
+    assertChipValidation(
+      validateChipSubmission({
+        chipCode: desiredChipRaw,
+        reservePlayerId: desiredReserve,
+        squadKind: desiredSquadKind,
+        playerIds: request.playerIds,
+        captainPlayerId: request.captainPlayerId,
+        viceCaptainPlayerId: request.viceCaptainPlayerId,
+        matchdayNumber: matchday.number,
+        targetMatchdayId: matchdayId,
+        transferRulesApply: transferMode,
+        hasBaseSquad: basePlayerIds != null && basePlayerIds.length === 5,
+        isInitialBuild,
+        seasonChips: seasonChipsConfig,
+        activePlays,
+        reserveEligible: (playerId) => eligibleById.get(playerId)?.active === true,
+      }),
+    );
+
+    const resolvedChip: ChipCode | null =
+      desiredChipRaw && isChipCode(desiredChipRaw) ? desiredChipRaw : null;
+
+    if (beforeTeam) {
+      const currentPlayers = await loadExistingTeamPlayers(tx, beforeTeam.id);
+      const currentPick: FantasyTeamPick = {
+        playerIds: currentPlayers,
+        captainPlayerId: beforeTeam.captainPlayerId,
+        viceCaptainPlayerId: beforeTeam.viceCaptainPlayerId,
+      };
+      if (
+        submissionStateEquals(
+          request,
+          {
+            pick: currentPick,
+            squadKind: beforeTeam.squadKind,
+            reservePlayerId: beforeTeam.reservePlayerId,
+            chipCode: activeChipOnMatchday,
+          },
+          {
+            squadKind: desiredSquadKind,
+            reservePlayerId: desiredReserve,
+            chipCode: desiredChipRaw,
+          },
+        )
+      ) {
+        result = {
+          teamId: beforeTeam.id,
+          version: beforeTeam.version,
+          summary: null,
+        };
+        return;
+      }
+      if (request.expectedVersion !== beforeTeam.version) {
+        throw new FantasyTeamError(
+          "This team was updated elsewhere. Reload and try again.",
+          "CONFLICT",
+        );
+      }
+    }
+
+    const isFreeHit = resolvedChip === "free_hit";
+    const unlimitedTransfers =
+      resolvedChip === "wildcard" || resolvedChip === "free_hit";
+
     if (isInitialBuild) {
       const validation = validateInitialFantasyTeamBuild(request, eligibleById);
       if (!validation.ok) {
@@ -318,6 +457,13 @@ export async function submitTeam(
       const nextVersion = (beforeTeam?.version ?? 0) + 1;
       let teamId = beforeTeam?.id ?? "";
 
+      await syncManagerChipPlayForSubmit(tx, {
+        seasonId: row.seasonId,
+        managerId,
+        matchdayId,
+        desiredChipCode: resolvedChip,
+      });
+
       if (beforeTeam) {
         await persistSquadInPlace(tx, {
           teamId: beforeTeam.id,
@@ -325,6 +471,8 @@ export async function submitTeam(
           nextVersion,
           dbNow,
           source: "manual",
+          squadKind: desiredSquadKind,
+          reservePlayerId: desiredReserve,
         });
         teamId = beforeTeam.id;
       } else {
@@ -336,6 +484,8 @@ export async function submitTeam(
             captainPlayerId: request.captainPlayerId,
             viceCaptainPlayerId: request.viceCaptainPlayerId,
             source: "manual",
+            squadKind: desiredSquadKind,
+            reservePlayerId: desiredReserve,
             version: nextVersion,
             submittedAt: dbNow,
             updatedAt: dbNow,
@@ -361,13 +511,20 @@ export async function submitTeam(
       );
     }
 
-    const validation = validateFantasyTeamTransferPick(
-      request,
-      basePlayerIds,
-      eligibleById,
-    );
-    if (!validation.ok) {
-      throw new FantasyTeamError(validation.message, validation.code);
+    if (isFreeHit) {
+      const validation = validateInitialFantasyTeamBuild(request, eligibleById);
+      if (!validation.ok) {
+        throw new FantasyTeamError(validation.message, validation.code);
+      }
+    } else {
+      const validation = validateFantasyTeamTransferPick(
+        request,
+        basePlayerIds,
+        eligibleById,
+      );
+      if (!validation.ok) {
+        throw new FantasyTeamError(validation.message, validation.code);
+      }
     }
 
     const freeRules = {
@@ -390,6 +547,7 @@ export async function submitTeam(
       nextSquad: request.playerIds,
       freeAvailable,
       penaltyPerExtra: transferRules.penaltyPerExtra,
+      unlimited: unlimitedTransfers,
     });
 
     if (!isPenaltyAcknowledged(summary, request.acknowledgedPenalty)) {
@@ -408,6 +566,13 @@ export async function submitTeam(
     const nextVersion = (beforeTeam?.version ?? 0) + 1;
     let teamId = beforeTeam?.id ?? "";
 
+    await syncManagerChipPlayForSubmit(tx, {
+      seasonId: row.seasonId,
+      managerId,
+      matchdayId,
+      desiredChipCode: resolvedChip,
+    });
+
     if (beforeTeam) {
       await persistSquadInPlace(tx, {
         teamId: beforeTeam.id,
@@ -415,6 +580,8 @@ export async function submitTeam(
         nextVersion,
         dbNow,
         source: "manual",
+        squadKind: desiredSquadKind,
+        reservePlayerId: desiredReserve,
       });
       teamId = beforeTeam.id;
     } else {
@@ -426,6 +593,8 @@ export async function submitTeam(
           captainPlayerId: request.captainPlayerId,
           viceCaptainPlayerId: request.viceCaptainPlayerId,
           source: "manual",
+          squadKind: desiredSquadKind,
+          reservePlayerId: desiredReserve,
           version: nextVersion,
           submittedAt: dbNow,
           updatedAt: dbNow,
@@ -448,6 +617,17 @@ export async function submitTeam(
       pick: request,
       freeAvailable,
       penaltyPerExtra: transferRules.penaltyPerExtra,
+      recordTransfers: !isFreeHit,
+    });
+
+    await syncTransferWindowChipMirror(tx, {
+      managerId,
+      matchdayId,
+      seasonId: row.seasonId,
+      chipCode: resolvedChip,
+      freeAvailable,
+      penaltyPerExtra: transferRules.penaltyPerExtra,
+      dbNow,
     });
 
     result = { teamId, version: nextVersion, summary };

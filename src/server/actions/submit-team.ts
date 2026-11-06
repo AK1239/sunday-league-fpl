@@ -18,6 +18,8 @@ const submitSchema = z.object({
   viceCaptainPlayerId: z.string().uuid(),
   expectedVersion: z.number().int().min(0),
   acknowledgedPenalty: z.number().int().min(0),
+  chipCode: z.string().nullable().optional(),
+  reservePlayerId: z.string().uuid().nullable().optional(),
 });
 
 function mapSubmitError(error: unknown): ActionFailure | null {

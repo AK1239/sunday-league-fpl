@@ -25,6 +25,8 @@ export async function syncManagerTransferMaterialisation(
     pick: FantasyTeamPick;
     freeAvailable: number;
     penaltyPerExtra: number;
+    /** Free Hit: no transfer ledger rows. */
+    recordTransfers?: boolean;
   },
 ) {
   await tx
@@ -37,48 +39,25 @@ export async function syncManagerTransferMaterialisation(
       ),
     );
 
-  const pairs = pairTransferSlots(
-    diffSquads(input.basePlayerIds, input.pick.playerIds),
-  );
-
-  if (pairs.length > 0) {
-    await tx.insert(fantasyTransfers).values(
-      pairs.map((pair, index) => ({
-        seasonId: input.seasonId,
-        managerId: input.managerId,
-        matchdayId: input.matchdayId,
-        seq: index + 1,
-        playerOutId: pair.playerOutId,
-        playerInId: pair.playerInId,
-        source: "manager" as const,
-      })),
+  if (input.recordTransfers !== false) {
+    const pairs = pairTransferSlots(
+      diffSquads(input.basePlayerIds, input.pick.playerIds),
     );
-  }
 
-  const dbNow = await readDbNow(tx);
-  await tx
-    .insert(managerTransferWindows)
-    .values({
-      managerId: input.managerId,
-      matchdayId: input.matchdayId,
-      seasonId: input.seasonId,
-      freeAvailable: input.freeAvailable,
-      unlimited: false,
-      penaltyPerExtra: input.penaltyPerExtra,
-      updatedAt: dbNow,
-    })
-    .onConflictDoUpdate({
-      target: [
-        managerTransferWindows.managerId,
-        managerTransferWindows.matchdayId,
-      ],
-      set: {
-        freeAvailable: input.freeAvailable,
-        penaltyPerExtra: input.penaltyPerExtra,
-        updatedAt: dbNow,
-        voidedAt: null,
-      },
-    });
+    if (pairs.length > 0) {
+      await tx.insert(fantasyTransfers).values(
+        pairs.map((pair, index) => ({
+          seasonId: input.seasonId,
+          managerId: input.managerId,
+          matchdayId: input.matchdayId,
+          seq: index + 1,
+          playerOutId: pair.playerOutId,
+          playerInId: pair.playerInId,
+          source: "manager" as const,
+        })),
+      );
+    }
+  }
 }
 
 /** Locked / admin path: void prior active rows, insert correction rows. */
