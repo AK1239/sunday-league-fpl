@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useActionResultToast } from "@/hooks/use-action-result-toast";
+import { InviteJoinLink } from "@/components/admin/invite-join-link";
 import { createManagerInviteAction } from "@/server/actions/invites";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,15 +83,7 @@ export function CreateInviteForm({
         </select>
       </div>
       {state?.ok === true && state.data?.joinPath ? (
-        <div
-          className="animate-pop rounded-xl border border-primary/30 bg-primary/10 p-4 text-sm"
-          role="status"
-        >
-          <p className="font-medium">One-time invite link (copy now):</p>
-          <p className="mt-1 break-all font-mono text-xs">
-            {state.data.joinPath}
-          </p>
-        </div>
+        <InviteJoinLink joinPath={state.data.joinPath} />
       ) : null}
       <Button type="submit" disabled={pending}>
         {pending ? "Creating…" : "Create invite"}
