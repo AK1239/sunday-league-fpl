@@ -66,13 +66,21 @@ export async function updatePlayerAdmin(
     throw new Error("DUPLICATE_NAME");
   }
 
+  const patch: {
+    displayName: string;
+    nickname?: string | null;
+    joinedOn?: string | null;
+  } = { displayName };
+  if (input.nickname !== undefined) {
+    patch.nickname = input.nickname?.trim() || null;
+  }
+  if (input.joinedOn !== undefined) {
+    patch.joinedOn = input.joinedOn ?? null;
+  }
+
   const [row] = await db
     .update(players)
-    .set({
-      displayName,
-      nickname: input.nickname?.trim() || null,
-      joinedOn: input.joinedOn ?? null,
-    })
+    .set(patch)
     .where(eq(players.id, playerId))
     .returning();
 

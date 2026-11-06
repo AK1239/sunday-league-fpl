@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useActionResultToast } from "@/hooks/use-action-result-toast";
 import { createPlayerAction } from "@/server/actions/players";
 import { Button } from "@/components/ui/button";
@@ -8,47 +9,43 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ActionResult } from "@/server/actions/action-result";
 
-export function CreatePlayerForm() {
+export function CreatePlayerForm({ onSuccess }: { onSuccess?: () => void }) {
+  const router = useRouter();
   const [state, action, pending] = useActionState<
     ActionResult<{ id: string }> | null,
     FormData
   >(async (_prev, formData) => createPlayerAction(formData), null);
   useActionResultToast(state, "Player added");
 
+  useEffect(() => {
+    if (!state?.ok) return;
+    onSuccess?.();
+    router.refresh();
+  }, [state, onSuccess, router]);
+
   return (
-    <form
-      action={action}
-      className="space-y-3 rounded-2xl border border-border/60 bg-card/70 p-4"
-    >
-      <h2 className="font-heading text-lg font-semibold">Add player</h2>
+    <form action={action} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="displayName">Display name</Label>
+        <Label htmlFor="create-displayName">Display name</Label>
         <Input
-          id="displayName"
+          id="create-displayName"
           name="displayName"
           required
           disabled={pending}
+          autoComplete="off"
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="nickname">Nickname (optional)</Label>
-        <Input id="nickname" name="nickname" disabled={pending} />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="joinedOn">Joined (optional)</Label>
-        <Input id="joinedOn" name="joinedOn" type="date" disabled={pending} />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="avatar">Avatar (optional)</Label>
+        <Label htmlFor="create-avatar">Avatar (optional)</Label>
         <Input
-          id="avatar"
+          id="create-avatar"
           name="avatar"
           type="file"
           accept="image/jpeg,image/png,image/webp"
           disabled={pending}
         />
       </div>
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" className="w-full sm:w-auto" disabled={pending}>
         {pending ? "Saving…" : "Add player"}
       </Button>
     </form>

@@ -16,17 +16,20 @@ export function PlayerRowActions({
   player: {
     id: string;
     displayName: string;
-    nickname: string | null;
-    joinedOn: string | null;
     active: boolean;
   };
 }) {
   const [pending, startTransition] = useTransition();
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+    <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+      {!player.active ? (
+        <span className="hidden text-xs text-muted-foreground sm:mr-1 sm:block sm:w-16 sm:shrink-0">
+          Inactive
+        </span>
+      ) : null}
       <form
-        className="flex flex-1 flex-wrap gap-2"
+        className="flex min-w-0 flex-1 flex-wrap items-center gap-2"
         action={async (formData) => {
           startTransition(async () => {
             const result = await updatePlayerAction(player.id, formData);
@@ -37,22 +40,9 @@ export function PlayerRowActions({
         <Input
           name="displayName"
           defaultValue={player.displayName}
-          className="min-w-[8rem] flex-1"
+          aria-label={`Display name for ${player.displayName}`}
+          className="min-w-0 flex-1"
           required
-          disabled={pending}
-        />
-        <Input
-          name="nickname"
-          defaultValue={player.nickname ?? ""}
-          placeholder="Nickname"
-          className="min-w-[6rem] flex-1"
-          disabled={pending}
-        />
-        <Input
-          name="joinedOn"
-          type="date"
-          defaultValue={player.joinedOn ?? ""}
-          className="w-[9.5rem]"
           disabled={pending}
         />
         <Button type="submit" size="sm" variant="secondary" disabled={pending}>

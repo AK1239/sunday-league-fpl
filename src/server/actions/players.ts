@@ -82,8 +82,6 @@ export async function updatePlayerAction(
 
   const parsed = playerSchema.safeParse({
     displayName: formData.get("displayName"),
-    nickname: formData.get("nickname") || undefined,
-    joinedOn: formData.get("joinedOn") || undefined,
   });
 
   if (!parsed.success) {
@@ -93,8 +91,6 @@ export async function updatePlayerAction(
   try {
     await updatePlayerAdmin(getDb(), playerId, {
       displayName: parsed.data.displayName,
-      nickname: parsed.data.nickname,
-      joinedOn: parsed.data.joinedOn || null,
     });
 
     const avatar = formData.get("avatar");

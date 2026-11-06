@@ -15,29 +15,27 @@ export async function AdminPlayersList() {
       <ul className="space-y-3">
         {players.map((player) => (
           <li key={player.id} className="surface animate-rise rounded-2xl p-4">
-            <div className="mb-2 flex items-center gap-3">
-              <PlayerAvatar
-                name={player.displayName}
-                avatarUrl={player.avatarUrl ?? undefined}
-                size="md"
-              />
-              <div>
-                <p className="font-medium">
-                  {player.displayName}
-                  {!player.active ? (
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      (inactive)
-                    </span>
-                  ) : null}
-                </p>
-                {player.nickname ? (
-                  <p className="text-sm text-muted-foreground">
-                    {player.nickname}
-                  </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-3 sm:shrink-0">
+                <PlayerAvatar
+                  name={player.displayName}
+                  avatarUrl={player.avatarUrl ?? undefined}
+                  size="md"
+                />
+                {!player.active ? (
+                  <span className="text-xs text-muted-foreground sm:hidden">
+                    Inactive
+                  </span>
                 ) : null}
               </div>
+              <PlayerRowActions
+                player={{
+                  id: player.id,
+                  displayName: player.displayName,
+                  active: player.active,
+                }}
+              />
             </div>
-            <PlayerRowActions player={player} />
           </li>
         ))}
       </ul>
