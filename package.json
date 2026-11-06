@@ -18,6 +18,7 @@
     "e2e:prepare-chips": "tsx scripts/e2e-prepare-chips.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/server/db/migrate.ts",
+    "db:reset-season": "tsx scripts/reset-season-data.ts",
     "db:seed": "tsx src/server/db/seed.ts",
     "db:seed-admin": "tsx src/server/db/upsert-admin.ts",
     "db:backup": "bash scripts/db-backup.sh",

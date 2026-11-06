@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { useActionResultToast } from "@/hooks/use-action-result-toast";
 import { toastActionResult } from "@/lib/app-toast";
@@ -124,17 +125,19 @@ export function MatchdayCard({
     };
   }, [menuOpen]);
 
-  async function onCancel() {
-    setMenuOpen(false);
-    if (
-      !confirm(`Cancel GW${matchday.number}? This removes it from scoring.`)
-    ) {
-      return;
-    }
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
+  async function doCancel() {
     setCancelPending(true);
     const result = await cancelMatchdayAction(matchday.id);
     setCancelPending(false);
+    setConfirmCancel(false);
     toastActionResult(result, "Matchday cancelled");
+  }
+
+  function onCancel() {
+    setMenuOpen(false);
+    setConfirmCancel(true);
   }
 
   const dirty =
@@ -354,6 +357,17 @@ export function MatchdayCard({
           </form>
         ) : null}
       </article>
+      <ConfirmDialog
+        open={confirmCancel}
+        title={`Cancel GW${matchday.number}?`}
+        description="This removes it from scoring."
+        confirmLabel="Cancel gameweek"
+        cancelLabel="Keep it"
+        destructive
+        pending={cancelPending}
+        onCancel={() => setConfirmCancel(false)}
+        onConfirm={doCancel}
+      />
     </li>
   );
 }
