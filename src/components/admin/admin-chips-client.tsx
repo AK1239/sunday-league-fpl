@@ -1,5 +1,13 @@
 "use client";
 
+import {
+  Armchair,
+  Crown,
+  Shuffle,
+  Sparkles,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { SectionHeading } from "@/components/fantasy/section-heading";
@@ -14,8 +22,23 @@ import { Button } from "@/components/ui/button";
 import { CHIP_REGISTRY } from "@/server/chips/registry";
 import type { ChipCode } from "@/server/chips/registry";
 
+const CHIP_META: Record<string, { icon: LucideIcon; blurb: string }> = {
+  bench_boost: { icon: Armchair, blurb: "A 6th reserve player scores too." },
+  free_hit: {
+    icon: Zap,
+    blurb: "Unlimited transfers for one week, then revert.",
+  },
+  triple_captain: { icon: Crown, blurb: "Captain scores triple points." },
+  wildcard: {
+    icon: Shuffle,
+    blurb: "Unlimited free transfers, kept for good.",
+  },
+};
+
 function chipLabel(code: string): string {
-  return isChipCodeSafe(code) ? CHIP_REGISTRY[code].label : code.replace(/_/g, " ");
+  return isChipCodeSafe(code)
+    ? CHIP_REGISTRY[code].label
+    : code.replace(/_/g, " ");
 }
 
 function isChipCodeSafe(code: string): code is ChipCode {
@@ -30,7 +53,9 @@ export function AdminChipsClient({ data }: { data: AdminChipsPageData }) {
   const [forceOpen, setForceOpen] = useState(false);
   const [forceManagerId, setForceManagerId] = useState("");
   const [forceMatchdayId, setForceMatchdayId] = useState("");
-  const [forceChip, setForceChip] = useState<string>(data.chipOptions[0]?.code ?? "");
+  const [forceChip, setForceChip] = useState<string>(
+    data.chipOptions[0]?.code ?? "",
+  );
   const [forceReason, setForceReason] = useState("");
 
   function refresh() {
@@ -80,9 +105,7 @@ export function AdminChipsClient({ data }: { data: AdminChipsPageData }) {
       return {
         chipCode: row.chipCode,
         enabled: enabledEl?.checked,
-        availableFromMatchday: fromEl?.value
-          ? Number(fromEl.value)
-          : undefined,
+        availableFromMatchday: fromEl?.value ? Number(fromEl.value) : undefined,
       };
     });
 
@@ -108,56 +131,78 @@ export function AdminChipsClient({ data }: { data: AdminChipsPageData }) {
             </p>
           ) : (
             <>
-              <div className="surface overflow-x-auto rounded-2xl">
-                <table className="w-full min-w-[28rem] text-sm">
-                  <thead>
-                    <tr className="border-b border-border/60 text-left text-xs text-muted-foreground">
-                      <th className="px-4 py-3 font-medium">Chip</th>
-                      <th className="px-4 py-3 font-medium">Enabled</th>
-                      <th className="px-4 py-3 font-medium tabular-nums">
-                        From GW
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.seasonChips.map((row) => (
-                      <tr
-                        key={row.chipCode}
-                        className="border-b border-border/40"
-                      >
-                        <td className="px-4 py-2.5 font-medium">
-                          {chipLabel(row.chipCode)}
-                        </td>
-                        <td className="px-4 py-2.5">
+              <ul className="grid gap-3 sm:grid-cols-2">
+                {data.seasonChips.map((row) => {
+                  const meta = CHIP_META[row.chipCode];
+                  const Icon = meta?.icon ?? Sparkles;
+                  return (
+                    <li
+                      key={row.chipCode}
+                      className="surface group/row flex flex-col gap-4 rounded-2xl p-4"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          aria-hidden
+                          className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-gradient-to-b from-primary/20 to-primary/5 text-primary"
+                        >
+                          <Icon className="size-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-heading text-lg leading-tight font-semibold">
+                            {chipLabel(row.chipCode)}
+                          </p>
+                          {meta ? (
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              {meta.blurb}
+                            </p>
+                          ) : null}
+                        </div>
+                        <label className="relative inline-flex shrink-0 cursor-pointer items-center">
                           <input
                             id={`chip-enabled-${row.chipCode}`}
                             type="checkbox"
                             defaultChecked={row.enabled}
-                            className="size-4 rounded border-border"
+                            aria-label={`Enable ${chipLabel(row.chipCode)}`}
+                            className="peer sr-only"
                           />
-                        </td>
-                        <td className="px-4 py-2.5">
+                          <span
+                            aria-hidden
+                            className="h-6 w-11 rounded-full bg-muted transition-colors peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring after:absolute after:top-0.5 after:left-0.5 after:size-5 after:rounded-full after:bg-foreground after:shadow after:transition-transform peer-checked:after:translate-x-5 peer-checked:after:bg-primary-foreground"
+                          />
+                        </label>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 border-t border-border/40 pt-3 transition-opacity group-has-[input[type=checkbox]:not(:checked)]/row:opacity-50">
+                        <label
+                          htmlFor={`chip-from-${row.chipCode}`}
+                          className="text-sm text-muted-foreground"
+                        >
+                          Available from gameweek
+                        </label>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-semibold tracking-widest text-muted-foreground">
+                            GW
+                          </span>
                           <input
                             id={`chip-from-${row.chipCode}`}
                             type="number"
                             min={1}
                             defaultValue={row.availableFromMatchday}
-                            className="w-20 rounded-lg border border-border bg-background px-2 py-1 tabular-nums"
+                            className="h-9 w-16 rounded-lg border border-border bg-background px-2 text-center font-semibold tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
               <Button
                 type="button"
                 size="sm"
-                className="mt-3"
+                className="mt-4"
                 disabled={pending}
                 onClick={saveSeasonConfig}
               >
-                Save configuration
+                {pending ? "Saving…" : "Save configuration"}
               </Button>
             </>
           )}
@@ -197,7 +242,9 @@ export function AdminChipsClient({ data }: { data: AdminChipsPageData }) {
                 {data.usage.map((row) => (
                   <tr key={row.playId} className="border-b border-border/40">
                     <td className="px-4 py-2.5">{row.managerName}</td>
-                    <td className="px-4 py-2.5 tabular-nums">{row.matchdayNumber}</td>
+                    <td className="px-4 py-2.5 tabular-nums">
+                      {row.matchdayNumber}
+                    </td>
                     <td className="px-4 py-2.5">{chipLabel(row.chipCode)}</td>
                     <td className="px-4 py-2.5 capitalize">{row.status}</td>
                     <td className="px-4 py-2.5 capitalize">{row.source}</td>
