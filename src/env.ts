@@ -1,16 +1,31 @@
 import { z } from "zod";
 
+/** Only set while `next build` prerenders; real URL is required at runtime. */
+const BUILD_DUMMY_DATABASE_URL =
+  "postgres://build:build@127.0.0.1:5432/dummy_build_only";
+
 const envSchema = z
   .object({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
-    DATABASE_URL: z
-      .string()
-      .min(1, "DATABASE_URL is required")
-      .refine((value) => /^postgres(ql)?:\/\//.test(value), {
-        message: "DATABASE_URL must be a postgres:// or postgresql:// URL",
-      }),
+    DATABASE_URL: z.preprocess(
+      (raw) => {
+        if (
+          process.env.NEXT_PHASE === "phase-production-build" &&
+          (raw === undefined || raw === "")
+        ) {
+          return BUILD_DUMMY_DATABASE_URL;
+        }
+        return raw;
+      },
+      z
+        .string()
+        .min(1, "DATABASE_URL is required")
+        .refine((value) => /^postgres(ql)?:\/\//.test(value), {
+          message: "DATABASE_URL must be a postgres:// or postgresql:// URL",
+        }),
+    ),
     SESSION_SECRET: z.string().min(32).optional(),
     ADMIN_EMAIL: z.string().email().optional(),
     ADMIN_PASSWORD: z.string().min(12).optional(),
