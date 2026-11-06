@@ -57,7 +57,11 @@ export function MatchdayInspectorClient({
               <thead>
                 <tr className="border-b border-border/60 text-left text-xs text-muted-foreground">
                   <th className="px-4 py-3 font-medium">Manager</th>
-                  <th className="px-4 py-3 font-medium tabular-nums">Points</th>
+                  <th className="px-4 py-3 font-medium tabular-nums">Total</th>
+                  <th className="px-4 py-3 font-medium">Chip</th>
+                  <th className="px-4 py-3 font-medium tabular-nums">Squad</th>
+                  <th className="px-4 py-3 font-medium tabular-nums">Hit</th>
+                  <th className="px-4 py-3 font-medium tabular-nums">Bonus</th>
                   <th className="px-4 py-3 font-medium">Captain mult.</th>
                   <th className="px-4 py-3 font-medium">Team source</th>
                 </tr>
@@ -68,6 +72,18 @@ export function MatchdayInspectorClient({
                     <td className="px-4 py-2.5">{row.managerName}</td>
                     <td className="px-4 py-2.5 tabular-nums font-medium">
                       {row.totalPoints}
+                    </td>
+                    <td className="px-4 py-2.5 capitalize text-muted-foreground">
+                      {row.chipCode?.replaceAll("_", " ") ?? "—"}
+                    </td>
+                    <td className="px-4 py-2.5 tabular-nums text-muted-foreground">
+                      {row.squadPoints}
+                    </td>
+                    <td className="px-4 py-2.5 tabular-nums text-muted-foreground">
+                      {row.transferPenalty}
+                    </td>
+                    <td className="px-4 py-2.5 tabular-nums text-muted-foreground">
+                      {row.chipBonus > 0 ? `+${row.chipBonus}` : "—"}
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">
                       {row.multiplierPlayerName ?? "—"}
@@ -109,7 +125,16 @@ export function MatchdayInspectorClient({
                   >
                     <td className="px-4 py-2">{line.managerName}</td>
                     <td className="px-4 py-2">{line.playerName}</td>
-                    <td className="px-4 py-2 capitalize">{line.role}</td>
+                    <td
+                      className={
+                        "px-4 py-2 capitalize " +
+                        (line.role === "reserve"
+                          ? "font-medium text-primary"
+                          : "")
+                      }
+                    >
+                      {line.role}
+                    </td>
                     <td className="px-4 py-2 tabular-nums">{line.basePoints}</td>
                     <td className="px-4 py-2 tabular-nums">{line.multiplier}</td>
                     <td className="px-4 py-2 tabular-nums font-medium">

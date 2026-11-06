@@ -34,6 +34,10 @@ export type ManagerScoreInspectorLine = {
 export type ManagerMatchdayTotal = {
   managerId: string;
   managerName: string;
+  squadPoints: number;
+  transferPenalty: number;
+  chipCode: string | null;
+  chipBonus: number;
   totalPoints: number;
   multiplierPlayerId: string | null;
   multiplierPlayerName: string | null;
@@ -105,6 +109,10 @@ export async function loadScoringInspector(
     .select({
       managerId: managerMatchdayScores.managerId,
       managerName: users.displayName,
+      squadPoints: managerMatchdayScores.squadPoints,
+      transferPenalty: managerMatchdayScores.transferPenalty,
+      chipCode: managerMatchdayScores.chipCode,
+      chipBonus: managerMatchdayScores.chipBonus,
       totalPoints: managerMatchdayScores.totalPoints,
       multiplierPlayerId: managerMatchdayScores.multiplierPlayerId,
       teamSource: managerMatchdayScores.teamSource,
@@ -143,6 +151,10 @@ export async function loadScoringInspector(
     managerTotals: totalRows.map((row) => ({
       managerId: row.managerId,
       managerName: row.managerName,
+      squadPoints: row.squadPoints,
+      transferPenalty: row.transferPenalty,
+      chipCode: row.chipCode,
+      chipBonus: row.chipBonus,
       totalPoints: row.totalPoints,
       multiplierPlayerId: row.multiplierPlayerId,
       multiplierPlayerName: row.multiplierPlayerId

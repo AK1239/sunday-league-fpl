@@ -139,6 +139,8 @@ export async function enableSeasonChipsAction(
         : undefined,
     );
     revalidatePath("/admin/seasons");
+    revalidatePath("/admin/chips");
+    revalidatePath("/pick");
     return actionOk(result);
   } catch (error) {
     if (error instanceof EnableSeasonChipsError) {
