@@ -1,8 +1,8 @@
 import { getDb } from "@/server/db";
 import { ensureAutoScheduledMatchday } from "@/server/domain/auto-schedule-matchdays";
 
-export const dynamic = "force-dynamic";
-
+// With `cacheComponents`, route handlers are dynamic per request by default
+// (and `export const dynamic` is rejected at build time).
 function authorizeCron(request: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim();
   if (!secret) {
