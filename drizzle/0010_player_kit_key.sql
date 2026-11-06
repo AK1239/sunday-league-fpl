@@ -16,7 +16,10 @@ FROM (VALUES
   ('garnacho', 'neutral'),
   ('spana', 'neutral'),
   ('alaqmar', 'neutral'),
-  ('dula', 'neutral')
+  ('dula', 'neutral'),
+  ('dulli', 'chelsea'),
+  ('nasir', 'neutral'),
+  ('soldier', 'neutral')
 ) AS v(name_lower, k)
 WHERE lower(trim("players"."display_name")) = v.name_lower
   AND "players"."kit_key" IS NULL;

@@ -89,6 +89,10 @@ const PLAYER_KIT: Record<string, KitKey> = {
   garnacho: "neutral",
   spana: "neutral",
   alaqmar: "neutral",
+  dula: "neutral",
+  dulli: "chelsea",
+  nasir: "neutral",
+  soldier: "neutral",
 };
 
 export function kitKeyForPlayer(displayName: string): KitKey {

@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { parseEnv } from "@/env";
-import { SQUAD_DISPLAY_NAMES } from "@/lib/squad";
+import { SQUAD_PLAYERS } from "@/lib/squad";
 import { getDb } from "./index";
 import { seedAdminUser } from "./seed-admin";
 import { players, scoringRuleSets, seasons } from "./schema";
@@ -44,10 +44,22 @@ export async function seedDatabase() {
   const insertedPlayers = await db
     .insert(players)
     .values(
-      SQUAD_DISPLAY_NAMES.map((displayName) => ({
-        displayName,
-        joinedOn: "2026-11-01",
-      })),
+      SQUAD_PLAYERS.map((p) => {
+        const row: {
+          displayName: string;
+          joinedOn: string;
+          active: boolean;
+          kitKey?: string;
+        } = {
+          displayName: p.displayName,
+          joinedOn: "2026-11-01",
+          active: p.id !== "jeff",
+        };
+        if (p.id === "dulli") {
+          row.kitKey = "chelsea";
+        }
+        return row;
+      }),
     )
     .returning();
 
