@@ -415,6 +415,10 @@ export const auditLog = pgTable("audit_log", {
   entityId: uuid("entity_id"),
   before: jsonb("before"),
   after: jsonb("after"),
+  /** Client IP when known (e.g. login). */
+  ipAddress: text("ip_address"),
+  /** User-Agent when known. */
+  userAgent: text("user_agent"),
   at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
 });
 

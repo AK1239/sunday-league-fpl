@@ -85,6 +85,13 @@
       "when": 1793884800000,
       "tag": "0011_bench_boost_extras",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793884900000,
+      "tag": "0012_audit_log_metadata",
+      "breakpoints": true
     }
   ]
 }

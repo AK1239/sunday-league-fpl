@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { getDb } from "@/server/db";
 import { users } from "@/server/db/schema";
+import { writeAuditLog } from "@/server/domain/audit-log";
 import {
   checkLoginRateLimit,
   clearLoginFailures,
@@ -19,6 +20,12 @@ export type LoginResult =
 
 export type LoginOptions = {
   allowedRoles?: UserRole[];
+  /** When set, a successful login is written to `audit_log`. */
+  audit?: {
+    ipAddress: string | null;
+    userAgent: string | null;
+    surface: "admin" | "manager";
+  };
 };
 
 export async function loginWithCredentials(
@@ -64,5 +71,21 @@ export async function loginWithCredentials(
 
   clearLoginFailures(`${rateLimitKey}:${normalizedEmail}`);
   await createUserSession(user!.id);
+
+  if (options.audit) {
+    await writeAuditLog(getDb(), {
+      userId: user!.id,
+      action: "auth.login",
+      entity: "session",
+      after: {
+        role: user!.role,
+        surface: options.audit.surface,
+        email: normalizedEmail,
+      },
+      ipAddress: options.audit.ipAddress,
+      userAgent: options.audit.userAgent,
+    });
+  }
+
   return { ok: true };
 }

@@ -1,9 +1,10 @@
 import { and, eq, gt, sql } from "drizzle-orm";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { connection } from "next/server";
 import { getEnv } from "@/env";
 import { getDb } from "@/server/db";
 import { sessions, users } from "@/server/db/schema";
+import { writeAuditLog } from "@/server/domain/audit-log";
 import { SESSION_COOKIE_NAME, SESSION_TTL_MS } from "./constants";
 import { createSessionToken, hashSessionToken } from "./session-token";
 
@@ -49,12 +50,42 @@ export async function createUserSession(userId: string): Promise<void> {
 /** @deprecated Use createUserSession */
 export const createAdminSession = createUserSession;
 
+function clientMetaFromHeaders(headerStore: Headers): {
+  ipAddress: string | null;
+  userAgent: string | null;
+} {
+  return {
+    ipAddress:
+      headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      headerStore.get("x-real-ip") ||
+      null,
+    userAgent: headerStore.get("user-agent") || null,
+  };
+}
+
 export async function destroyUserSession(): Promise<void> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE_NAME)?.value;
   if (token) {
     const tokenHash = hashSessionToken(token);
+    const [row] = await getDb()
+      .select({ userId: sessions.userId })
+      .from(sessions)
+      .where(eq(sessions.tokenHash, tokenHash))
+      .limit(1);
     await getDb().delete(sessions).where(eq(sessions.tokenHash, tokenHash));
+    if (row?.userId) {
+      const headerStore = await headers();
+      const { ipAddress, userAgent } = clientMetaFromHeaders(headerStore);
+      await writeAuditLog(getDb(), {
+        userId: row.userId,
+        action: "auth.logout",
+        entity: "session",
+        after: { source: "cookie" },
+        ipAddress,
+        userAgent,
+      });
+    }
   }
   jar.set(SESSION_COOKIE_NAME, "", { ...cookieOptions(), maxAge: 0 });
 }

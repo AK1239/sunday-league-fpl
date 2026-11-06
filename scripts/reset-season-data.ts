@@ -1,7 +1,7 @@
 /**
  * Wipes all season / gameweek / match / scoring / fantasy data and creates one fresh "Season 1".
  *
- * KEEPS: players, users, sessions, manager_invites, scoring_rule_sets, league_settings
+ * KEEPS: players, users, sessions, manager_invites, scoring_rule_sets, league_settings, audit_log (activity history)
  *
  * Usage:
  *   CONFIRM_RESET_SEASON=YES pnpm db:reset-season
@@ -65,8 +65,6 @@ async function main() {
   await db.transaction(async (tx) => {
     // Cascades to matchdays, matches, goals, fantasy_teams, transfers, scores, chips, etc.
     await tx.execute(sql`truncate table seasons cascade`);
-    // Admin / import history — not tied to seasons
-    await tx.execute(sql`truncate table audit_log`);
 
     await tx.insert(seasons).values({
       name: seasonName,

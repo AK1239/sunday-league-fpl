@@ -14,6 +14,19 @@ function clientKeyFromHeaders(headerStore: Headers): string {
   );
 }
 
+function clientAuditFromHeaders(headerStore: Headers): {
+  ipAddress: string | null;
+  userAgent: string | null;
+} {
+  return {
+    ipAddress:
+      headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      headerStore.get("x-real-ip") ||
+      null,
+    userAgent: headerStore.get("user-agent") || null,
+  };
+}
+
 export async function loginAction(formData: FormData): Promise<ActionResult> {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
@@ -26,11 +39,15 @@ export async function loginAction(formData: FormData): Promise<ActionResult> {
   }
 
   const headerStore = await headers();
+  const audit = clientAuditFromHeaders(headerStore);
   const result = await loginWithCredentials(
     email,
     password,
     clientKeyFromHeaders(headerStore),
-    { allowedRoles: ["admin"] },
+    {
+      allowedRoles: ["admin"],
+      audit: { ...audit, surface: "admin" },
+    },
   );
 
   if (!result.ok) {

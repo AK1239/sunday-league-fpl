@@ -40,6 +40,11 @@ export default function AdminHomePage() {
           title="Invites"
           description="One-time links for managers to join."
         />
+        <AdminLinkCard
+          href="/admin/activity"
+          title="Activity"
+          description="Logins, logouts, and audited actions with usage charts."
+        />
       </ul>
     </div>
   );
