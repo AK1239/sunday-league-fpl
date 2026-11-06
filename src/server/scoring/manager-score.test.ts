@@ -96,6 +96,8 @@ describe("scoreManagers", () => {
       multiplierPlayerId: null,
       teamSource: "none",
       lines: [],
+      chipCode: null,
+      chipBonus: 0,
     });
   });
 

@@ -1,6 +1,7 @@
 import {
   compareMatchdaysChronologically,
   isMatchdayBefore,
+  isPermanentSubmittedTeam,
   type MatchdayTimelineEntry,
   type SubmittedFantasyTeam,
 } from "./effective-team";
@@ -16,6 +17,7 @@ export function resolveBaseSquadPlayerIds(
       (t) =>
         t.managerId === managerId &&
         (t.source === "manual" || t.source === "admin") &&
+        isPermanentSubmittedTeam(t) &&
         isMatchdayBefore(t.matchday, targetMatchday),
     )
     .sort((a, b) =>

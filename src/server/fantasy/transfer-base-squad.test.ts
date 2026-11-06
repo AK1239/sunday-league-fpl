@@ -62,6 +62,21 @@ describe("resolveBaseSquadPlayerIds", () => {
     expect(base).toEqual(["a", "b", "c", "d", "e"]);
   });
 
+  it("ignores a free hit squad when resolving base", () => {
+    const managerId = "m1";
+    const permanent = team(managerId, 2, ["a", "b", "c", "d", "e"]);
+    const freeHit = {
+      ...team(managerId, 3, ["f1", "f2", "f3", "f4", "f5"]),
+      squadKind: "free_hit" as const,
+    };
+    const base = resolveBaseSquadPlayerIds(
+      managerId,
+      freeHit.matchday,
+      [permanent, freeHit],
+    );
+    expect(base).toEqual(["a", "b", "c", "d", "e"]);
+  });
+
   it("returns null when there is no prior squad", () => {
     expect(
       hasPriorSubmittedSquadInSeason(

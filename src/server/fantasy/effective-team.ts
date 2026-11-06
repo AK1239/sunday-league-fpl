@@ -1,5 +1,7 @@
 import type { ManagerTeamSource } from "@/server/scoring/manager-types";
 
+export type SquadKind = "permanent" | "free_hit";
+
 export type MatchdayTimelineEntry = {
   matchdayId: string;
   playedOn: string;
@@ -14,7 +16,22 @@ export type SubmittedFantasyTeam = {
   captainPlayerId: string;
   viceCaptainPlayerId: string;
   playerIds: readonly string[];
+  /** Defaults to permanent when omitted (pre-chips rows). */
+  squadKind?: SquadKind;
+  reservePlayerId?: string | null;
 };
+
+export function submittedSquadKind(team: SubmittedFantasyTeam): SquadKind {
+  return team.squadKind ?? "permanent";
+}
+
+export function isPermanentSubmittedTeam(team: SubmittedFantasyTeam): boolean {
+  return submittedSquadKind(team) === "permanent";
+}
+
+function isSubmittedPickSource(source: SubmittedFantasyTeam["source"]): boolean {
+  return source === "manual" || source === "admin";
+}
 
 export type EffectiveFantasyTeam = {
   managerId: string;
@@ -52,7 +69,7 @@ export function resolveEffectiveTeam(
   const onMatchday = forManager.find(
     (t) =>
       t.matchday.matchdayId === targetMatchday.matchdayId &&
-      (t.source === "manual" || t.source === "admin"),
+      isSubmittedPickSource(t.source),
   );
   if (onMatchday) {
     return {
@@ -67,7 +84,8 @@ export function resolveEffectiveTeam(
   const priorManual = forManager
     .filter(
       (t) =>
-        (t.source === "manual" || t.source === "admin") &&
+        isSubmittedPickSource(t.source) &&
+        isPermanentSubmittedTeam(t) &&
         isMatchdayBefore(t.matchday, targetMatchday),
     )
     .sort((a, b) => compareMatchdaysChronologically(b.matchday, a.matchday))[0];

@@ -208,6 +208,8 @@ Rules:
 
 ## 5. Chips: design constraints (not implemented now)
 
+> **Superseded in detail by [`CHIPS_PLAN.md`](./CHIPS_PLAN.md)** (2026-11-06). That document defines the four official chips (Triple Captain, Wildcard, Free Hit, Bench Boost) and replaces the sketches below. Two differences to be aware of: (1) Free Hit squads use a squad **kind** (`permanent` / `free_hit`) on `fantasy_teams` rather than the `is_temporary` boolean mentioned in §5.1, and every lineage function must ignore them; (2) the "other proposed chips" table in §5.4 (Underdog Boost, Safety Net, Goal Rush, Team Spirit) is out of scope for the first chips release. The Wildcard/Free Hit free-transfer rule below (`carry = base_m`) is confirmed and already implemented in `computeBalanceChain`.
+
 Chips will be a thin layer over the same two primitives (window + squad lineage), so no later rewrite of transfers is needed.
 
 ### 5.1 Extension points reserved now

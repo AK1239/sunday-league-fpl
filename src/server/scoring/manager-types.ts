@@ -6,6 +6,9 @@ export type ManagerScoringRules = ScoringRules & {
 
 export type ManagerScoreLineRole = "player" | "captain" | "vice_captain";
 
+/** In-memory scoring roles (DB enum gains `reserve` in migration 0009). */
+export type ScoredLineRole = ManagerScoreLineRole | "reserve";
+
 export type ManagerTeamSource = "manual" | "carry_over" | "admin" | "none";
 
 export type TeamForManagerScoring = {
@@ -19,7 +22,7 @@ export type TeamForManagerScoring = {
 export type ScoredManagerLine = {
   managerId: string;
   playerId: string;
-  role: ManagerScoreLineRole;
+  role: ScoredLineRole;
   basePoints: number;
   multiplier: number;
   points: number;
@@ -38,4 +41,8 @@ export type ScoredManagerMatchday = {
   multiplierPlayerId: string | null;
   teamSource: ManagerTeamSource;
   lines: ScoredManagerLine[];
+  /** Scoring chip on this matchday (result metadata). */
+  chipCode: string | null;
+  /** squadPoints difference attributable to score-affecting chips. */
+  chipBonus: number;
 };

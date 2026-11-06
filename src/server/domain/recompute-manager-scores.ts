@@ -257,7 +257,12 @@ export async function rebuildManagerScoresFromMatchday(
     if (scored.some((s) => s.lines.length > 0)) {
       await tx.insert(managerScoreLines).values(
         scored.flatMap((entry) =>
-          entry.lines.map((line) => ({
+          entry.lines
+            .filter(
+              (line): line is typeof line & { role: "player" | "captain" | "vice_captain" } =>
+                line.role !== "reserve",
+            )
+            .map((line) => ({
             managerId: line.managerId,
             matchdayId: md.id,
             seasonId,
