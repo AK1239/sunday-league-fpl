@@ -8,6 +8,7 @@ export default function AdminActivityPage({
     days?: string;
     surface?: string;
     actions?: string;
+    page?: string;
   }>;
 }) {
   return (

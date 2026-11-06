@@ -8,7 +8,12 @@ export type AdminActivityFilters = {
   actions?: string[];
   /** Filter by actor role (from users join). */
   surface?: "all" | "manager" | "admin";
+  /** 1-based page of the activity list. */
+  page?: number;
+  pageSize?: number;
 };
+
+export const ACTIVITY_PAGE_SIZE = 15;
 
 export type ActivityRow = {
   id: string;
@@ -33,6 +38,12 @@ export type AdminActivityData = {
   };
   loginsByDay: { day: string; count: number }[];
   recent: ActivityRow[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    pageCount: number;
+    total: number;
+  };
 };
 
 function periodStart(days: number): Date {
@@ -67,6 +78,7 @@ export async function getAdminActivityData(
   const surface = filters.surface ?? "all";
   const actionFilter = filters.actions?.length ? filters.actions : null;
   const roleFilter = surfaceRoleFilter(surface);
+  const pageSize = Math.min(Math.max(filters.pageSize ?? ACTIVITY_PAGE_SIZE, 5), 100);
 
   const periodCond = gte(auditLog.at, since);
   const actionCond =
@@ -147,6 +159,10 @@ export async function getAdminActivityData(
     loginsByDay.push({ day: k, count: byDay.get(k) ?? 0 });
   }
 
+  const total = countRow?.c ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(Math.max(filters.page ?? 1, 1), pageCount);
+
   const recentRows = await db
     .select({
       id: auditLog.id,
@@ -165,7 +181,8 @@ export async function getAdminActivityData(
     .leftJoin(users, eq(auditLog.userId, users.id))
     .where(listWhere)
     .orderBy(desc(auditLog.at))
-    .limit(200);
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
 
   const recent: ActivityRow[] = recentRows.map((r) => ({
     id: r.id,
@@ -191,5 +208,6 @@ export async function getAdminActivityData(
     },
     loginsByDay,
     recent,
+    pagination: { page, pageSize, pageCount, total },
   };
 }
