@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, startTransition } from "react";
 import {
   deleteManagerUserAction,
   setManagerStatusAction,
@@ -160,7 +160,9 @@ export function AdminManagersPanel({
           setConfirmDeleteId(null);
           const fd = new FormData();
           fd.set("userId", id);
-          deleteForm(fd);
+          startTransition(() => {
+            deleteForm(fd);
+          });
         }}
       />
     </div>

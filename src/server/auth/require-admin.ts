@@ -1,4 +1,3 @@
-import { connection } from "next/server";
 import type { AdminSession } from "./session";
 import { getUserSession } from "./session";
 
@@ -17,7 +16,6 @@ export class ForbiddenError extends Error {
 }
 
 export async function requireAdmin(): Promise<AdminSession> {
-  await connection();
   const session = await getUserSession();
   if (!session) {
     throw new UnauthorizedError();
