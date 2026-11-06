@@ -392,9 +392,11 @@ export async function forceActivateChipAdmin(
       "VALIDATION",
     );
   }
-  if (!isChipCode(input.chipCode)) {
+  const chipCodeRaw = input.chipCode;
+  if (!isChipCode(chipCodeRaw)) {
     throw new AdminChipsError("Unknown chip.", "CHIP_UNKNOWN");
   }
+  const chipCode = chipCodeRaw;
 
   return db.transaction(async (tx) => {
     const [md] = await tx
@@ -424,7 +426,7 @@ export async function forceActivateChipAdmin(
     }
 
     const seasonChipsConfig = await loadSeasonChipConfigs(tx, md.seasonId);
-    const config = seasonChipsConfig.find((c) => c.chipCode === input.chipCode);
+    const config = seasonChipsConfig.find((c) => c.chipCode === chipCode);
     if (!config?.enabled) {
       throw new AdminChipsError(
         "This chip is not enabled for the season.",
@@ -447,7 +449,7 @@ export async function forceActivateChipAdmin(
     const otherOnMatchday = activePlays.find(
       (p) => p.matchdayId === input.matchdayId,
     );
-    if (otherOnMatchday && otherOnMatchday.chipCode !== input.chipCode) {
+    if (otherOnMatchday && otherOnMatchday.chipCode !== chipCode) {
       throw new AdminChipsError(
         "Manager already has a different chip active this gameweek.",
         "CHIP_MATCHDAY_TAKEN",
@@ -455,7 +457,7 @@ export async function forceActivateChipAdmin(
     }
 
     const usedSameChip = activePlays.find(
-      (p) => p.chipCode === input.chipCode,
+      (p) => p.chipCode === chipCode,
     );
     if (
       usedSameChip &&
@@ -473,12 +475,11 @@ export async function forceActivateChipAdmin(
       .where(
         and(
           eq(seasonChips.seasonId, md.seasonId),
-          eq(seasonChips.chipCode, input.chipCode),
+          eq(seasonChips.chipCode, chipCode),
         ),
       )
       .limit(1);
 
-    const chipCode = input.chipCode;
     const params = {
       ...CHIP_REGISTRY[chipCode].defaultParams,
       ...(seasonChipRow?.params &&
@@ -541,7 +542,7 @@ export async function forceActivateChipAdmin(
       after: {
         managerId: input.managerId,
         matchdayId: input.matchdayId,
-        chipCode: input.chipCode,
+        chipCode,
         reason: trimmed,
         source: "admin",
       },

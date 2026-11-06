@@ -80,8 +80,7 @@ describe.skipIf(!hasDatabase)("admin chips (phase 8)", () => {
         number: 10,
         playedOn: "2026-11-10",
         deadlineAt: new Date("2099-11-10T13:00:00.000Z"),
-        status: "published",
-        publishedAt: new Date(),
+        status: "scheduled",
       })
       .returning();
 
@@ -95,6 +94,14 @@ describe.skipIf(!hasDatabase)("admin chips (phase 8)", () => {
       },
       { mode: "manager", managerId },
     );
+
+    await db
+      .update(matchdays)
+      .set({
+        status: "published",
+        publishedAt: new Date(),
+      })
+      .where(eq(matchdays.id, prior!.id));
 
     const [open] = await db
       .insert(matchdays)
