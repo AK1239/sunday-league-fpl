@@ -40,7 +40,7 @@ Open [http://localhost:3000](http://localhost:3000).
 docker compose up -d
 ```
 
-See **[docs/LAUNCH.md](docs/LAUNCH.md)** for invite rollout, backups, and go-live checks.
+See **[docs/LAUNCH.md](docs/LAUNCH.md)** for invite rollout, backups, and go-live checks. Transfers and optional **chips** are documented in **[docs/TRANSFERS_ENABLE.md](docs/TRANSFERS_ENABLE.md)** ([`CHIPS_PLAN.md`](docs/CHIPS_PLAN.md)).
 
 ## Health
 

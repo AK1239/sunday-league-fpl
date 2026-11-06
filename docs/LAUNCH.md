@@ -42,9 +42,10 @@ pnpm db:restore -- ./backups/fantasy-YYYYMMDD-HHMMSS.sql.gz
 ## 5. First gameweek
 
 1. Admin → **Seasons** — active season with correct dates.
-2. Schedule matchday with deadline (`Africa/Dar_es_Salaam` via league settings).
-3. After Sunday: enter matches, publish, verify `/table` and `/players`.
-4. At season end: **Close season** on Admin → Seasons; winners appear on `/awards`.
+2. If using chips: **Enable chips** on the active season (see [`TRANSFERS_ENABLE.md`](./TRANSFERS_ENABLE.md#chips-opt-in-per-season)).
+3. Schedule matchday with deadline (`Africa/Dar_es_Salaam` via league settings).
+4. After Sunday: enter matches, publish, verify `/table` and `/players`.
+5. At season end: **Close season** on Admin → Seasons; winners appear on `/awards`.
 
 ## 6. Performance (manual)
 

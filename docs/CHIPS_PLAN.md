@@ -1,6 +1,6 @@
 # Fantasy Chips — Product & Technical Plan
 
-> **Status:** In progress — Phase 1 (pure domain) landed; migration and wiring follow in later phases.
+> **Status:** Shipped — Phases 1–9 complete; enable chips per season when ready (`docs/TRANSFERS_ENABLE.md`).
 > **Date:** 2026-11-06
 > **Amends:** [`TRANSFERS_PLAN.md`](./TRANSFERS_PLAN.md) (§5 "Chips: design constraints" is superseded in detail by this document) and [`TRANSFERS_ENABLE.md`](./TRANSFERS_ENABLE.md).
 > **Scope:** Mkate Champions League — private Sunday 5-a-side fantasy league, ~12 matchdays per ~3-month season, ~12 managers.
@@ -530,7 +530,7 @@ Transfers (migration `0008`, `submit-team`, balance chain, windows) are **alread
 - [x] Phase 6: cancel refund; season/disabled handling; "Enable chips" admin action
 - [x] Phase 7: Chips tab/drawer, confirm flows, banners, pitch treatments, points badges
 - [x] Phase 8: admin usage/config/corrections/inspector
-- [ ] Phase 9: Playwright + a11y; docs; rollout
+- [x] Phase 9: Playwright + a11y; docs; rollout
 
 ---
 

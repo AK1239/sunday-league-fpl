@@ -65,3 +65,16 @@ Set `enabled = false` on `season_chips` rows (or delete rows only if no plays re
 ### Cancelled gameweeks
 
 When a gameweek is cancelled, active chip plays on that matchday are **voided** (refunded for inventory), pending squads are removed, and transfer windows are voided — same transaction as transfers (see `CHIPS_PLAN.md` §6).
+
+### Admin
+
+- **Admin → Chips** — usage table, void/refund, force-activate, season chip configuration (locked after the first locked gameweek).
+
+### E2E
+
+```bash
+E2E_CHIPS=1 pnpm e2e:prepare-chips
+E2E_CHIPS=1 pnpm test:e2e tests/e2e/chips.spec.ts
+```
+
+Requires transfer mode (the prepare script runs `e2e-prepare-transfers` first). Full product plan: [`CHIPS_PLAN.md`](./CHIPS_PLAN.md).

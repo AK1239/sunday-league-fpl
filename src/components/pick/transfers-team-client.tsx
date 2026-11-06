@@ -614,7 +614,11 @@ export function TransfersTeamClient({
         </p>
       ) : null}
 
-      <div className="flex gap-2 rounded-xl bg-muted/40 p-1">
+      <div
+        className="flex gap-2 rounded-xl bg-muted/40 p-1"
+        role="tablist"
+        aria-label="Transfers sections"
+      >
         {(
           [
             ["team", "Team"],
@@ -625,6 +629,8 @@ export function TransfersTeamClient({
           <button
             key={key}
             type="button"
+            role="tab"
+            aria-selected={tab === key}
             onClick={() => setTab(key)}
             className={cn(
               "flex-1 rounded-lg py-2 text-sm font-medium transition-colors",
