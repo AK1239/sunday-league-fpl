@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { EmptyShirt } from "@/components/fantasy/empty-shirt";
 import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { CaptainBadge } from "@/components/pick/captain-badge";
 import type { PickTeamPlayerRow } from "@/server/queries/pick-team-data";
@@ -52,7 +52,7 @@ export function PitchSlots({
               disabled={disabled}
               onClick={() => onSlotPress(index)}
               className={cn(
-                "relative flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/50 bg-background/60 px-2 py-3 text-center text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-70",
+                "group/slot relative flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/50 bg-background/60 px-2 py-3 text-center text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-70",
                 layoutClass,
                 !player &&
                   "border-dashed hover:border-primary/40 hover:bg-primary/5",
@@ -94,8 +94,8 @@ export function PitchSlots({
                 </>
               ) : (
                 <>
-                  <Plus className="size-6 text-muted-foreground" aria-hidden />
-                  <span className="text-xs text-muted-foreground">
+                  <EmptyShirt size="lg" />
+                  <span className="text-xs font-medium text-muted-foreground">
                     Add player
                   </span>
                 </>

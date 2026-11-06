@@ -1,6 +1,7 @@
 "use client";
 
 import { RotateCcw } from "lucide-react";
+import { EmptyShirt } from "@/components/fantasy/empty-shirt";
 import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { CaptainBadge } from "@/components/pick/captain-badge";
 import type { PickTeamPlayerRow } from "@/server/queries/pick-team-data";
@@ -72,7 +73,7 @@ export function TransferPitchSlots({
                 disabled={disabled}
                 onClick={() => onSlotPress(index)}
                 className={cn(
-                  "flex min-h-[4.5rem] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/50 bg-background/60 px-2 py-3 text-center text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] disabled:opacity-70",
+                  "group/slot flex min-h-[4.5rem] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/50 bg-background/60 px-2 py-3 text-center text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] disabled:opacity-70",
                   isPendingOut && "opacity-60 grayscale",
                   !player &&
                     "border-dashed hover:border-primary/40 hover:bg-primary/5",
@@ -124,7 +125,12 @@ export function TransferPitchSlots({
                     </span>
                   </>
                 ) : (
-                  <span className="text-xs text-muted-foreground">Empty</span>
+                  <>
+                    <EmptyShirt size="lg" />
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Add player
+                    </span>
+                  </>
                 )}
               </button>
               {isPendingOut && !disabled ? (
