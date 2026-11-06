@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { logoutAction } from "@/server/actions/auth";
-import { Button } from "@/components/ui/button";
+import { AdminHeaderUserMenu } from "@/components/admin/admin-header-user-menu";
 import { LEAGUE_NAME } from "@/lib/league";
 
 const NAV = [
@@ -14,41 +13,43 @@ const NAV = [
 
 export function AdminShell({
   email,
+  displayName,
   children,
 }: {
   email: string;
+  displayName: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="min-h-full bg-background">
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/70 backdrop-blur-xl backdrop-saturate-150">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <div>
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3">
+          <Link
+            href="/admin"
+            className="shrink-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
             <p className="text-[0.65rem] font-semibold tracking-[0.2em] text-primary uppercase">
               Admin
             </p>
             <p className="font-heading text-sm font-semibold">{LEAGUE_NAME}</p>
-          </div>
-          <nav className="flex flex-wrap gap-1" aria-label="Admin">
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-full px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="flex items-center gap-2">
-            <span className="hidden text-xs text-muted-foreground sm:inline">
-              {email}
-            </span>
-            <form action={logoutAction}>
-              <Button type="submit" variant="outline" size="sm">
-                Log out
-              </Button>
-            </form>
+          </Link>
+
+          <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2 sm:gap-3">
+            <nav
+              className="flex max-w-full flex-wrap justify-end gap-0.5 sm:gap-1"
+              aria-label="Admin"
+            >
+              {NAV.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            <AdminHeaderUserMenu displayName={displayName} email={email} />
           </div>
         </div>
       </header>

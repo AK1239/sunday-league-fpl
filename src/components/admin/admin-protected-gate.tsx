@@ -12,5 +12,9 @@ export async function AdminProtectedGate({
     redirect("/admin/login");
   }
 
-  return <AdminShell email={session.email}>{children}</AdminShell>;
+  return (
+    <AdminShell email={session.email} displayName={session.displayName}>
+      {children}
+    </AdminShell>
+  );
 }

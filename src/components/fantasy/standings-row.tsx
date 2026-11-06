@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { StandingRow } from "@/server/queries/standings";
-import { PlayerAvatar } from "./player-avatar";
+import { PlayerShirt } from "./player-shirt";
 import { RankDelta } from "./rank-delta";
 
 export function StandingsRow({ row }: { row: StandingRow }) {
@@ -17,11 +17,7 @@ export function StandingsRow({ row }: { row: StandingRow }) {
           href={`/players/${row.playerId}`}
           className="flex items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <PlayerAvatar
-            name={row.displayName}
-            avatarUrl={row.avatarUrl ?? undefined}
-            size="sm"
-          />
+          <PlayerShirt name={row.displayName} size="sm" />
           <span className="font-medium transition-colors group-hover:text-primary">
             {row.displayName}
           </span>

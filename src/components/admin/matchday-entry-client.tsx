@@ -34,6 +34,7 @@ import type {
   MatchDraftInput,
   MatchEntryMatch,
 } from "@/server/domain/match-entry-types";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -101,6 +102,11 @@ export function MatchdayEntryClient({
     "idle",
   );
   const [workflowBusy, setWorkflowBusy] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    matchId: string;
+    matchNo: number;
+  } | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
 
   const playerMap = useMemo(
     () => new Map(initial.players.map((p) => [p.id, p])),
@@ -218,12 +224,14 @@ export function MatchdayEntryClient({
     router.refresh();
   }
 
-  async function handleDeleteMatch(matchId: string, matchNo: number) {
-    if (!window.confirm(`Delete match ${matchNo}? This cannot be undone.`)) {
-      return;
-    }
+  async function confirmDeleteMatch() {
+    if (!deleteTarget) return;
+    setDeletePending(true);
+    const { matchId } = deleteTarget;
     const result = await deleteMatchAction(initial.matchdayId, matchId);
+    setDeletePending(false);
     if (!toastActionResult(result, "Match deleted")) return;
+    setDeleteTarget(null);
     setMatches((prev) => prev.filter((m) => m.id !== matchId));
     router.refresh();
   }
@@ -240,6 +248,23 @@ export function MatchdayEntryClient({
 
   return (
     <div className="space-y-8">
+      <ConfirmDialog
+        open={deleteTarget != null}
+        title={
+          deleteTarget
+            ? `Delete match ${deleteTarget.matchNo}?`
+            : "Delete match?"
+        }
+        description="This removes the match, lineups, and goals. This cannot be undone."
+        confirmLabel="Delete match"
+        cancelLabel="Keep match"
+        destructive
+        pending={deletePending}
+        onConfirm={() => void confirmDeleteMatch()}
+        onCancel={() => {
+          if (!deletePending) setDeleteTarget(null);
+        }}
+      />
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <Link
           href="/admin/matchdays"
@@ -389,7 +414,11 @@ export function MatchdayEntryClient({
               }
               onDelete={
                 !match.id.startsWith("temp-")
-                  ? () => handleDeleteMatch(match.id, match.matchNo)
+                  ? () =>
+                      setDeleteTarget({
+                        matchId: match.id,
+                        matchNo: match.matchNo,
+                      })
                   : undefined
               }
             />

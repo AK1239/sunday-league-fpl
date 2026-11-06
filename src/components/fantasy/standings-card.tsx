@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { StandingRow } from "@/server/queries/standings";
-import { PlayerAvatar } from "./player-avatar";
+import { PlayerShirt } from "./player-shirt";
 import { RankDelta } from "./rank-delta";
 
 export function StandingsCard({
@@ -33,11 +33,7 @@ export function StandingsCard({
         >
           {row.rank}
         </span>
-        <PlayerAvatar
-          name={row.displayName}
-          avatarUrl={row.avatarUrl ?? undefined}
-          size="md"
-        />
+        <PlayerShirt name={row.displayName} size="md" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{row.displayName}</p>
           <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
