@@ -39,6 +39,8 @@ export type EffectiveFantasyTeam = {
   viceCaptainPlayerId: string;
   playerIds: readonly string[];
   teamSource: Exclude<ManagerTeamSource, "none">;
+  squadKind: SquadKind;
+  reservePlayerId: string | null;
 };
 
 export function compareMatchdaysChronologically(
@@ -78,6 +80,8 @@ export function resolveEffectiveTeam(
       viceCaptainPlayerId: onMatchday.viceCaptainPlayerId,
       playerIds: onMatchday.playerIds,
       teamSource: onMatchday.source,
+      squadKind: submittedSquadKind(onMatchday),
+      reservePlayerId: onMatchday.reservePlayerId ?? null,
     };
   }
 
@@ -98,5 +102,7 @@ export function resolveEffectiveTeam(
     viceCaptainPlayerId: priorManual.viceCaptainPlayerId,
     playerIds: priorManual.playerIds,
     teamSource: "carry_over",
+    squadKind: "permanent",
+    reservePlayerId: null,
   };
 }

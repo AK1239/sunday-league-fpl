@@ -523,8 +523,8 @@ Transfers (migration `0008`, `submit-team`, balance chain, windows) are **alread
 ### To-do
 - [x] Approve D1–D12 (recommended defaults in §15)
 - [x] Phase 1: registry, chip legality, chip-effects, scoring extension, permanent-only lineage (+ tests)
-- [ ] Phase 2: `0009_chips.sql`, schema, constraints, reserve trigger
-- [ ] Phase 3: thread `kind`/`reservePlayerId` through loaders, carry-over, recompute, admin base resolution
+- [x] Phase 2: `0009_chips.sql`, schema, constraints, reserve trigger
+- [x] Phase 3: thread `kind`/`reservePlayerId` through loaders, carry-over, recompute, admin base resolution
 - [ ] Phase 4: recompute reads plays; `chip_code`/`chip_bonus`; reserve score lines
 - [ ] Phase 5: submit service chip paths; replay equality; concurrency tests
 - [ ] Phase 6: cancel refund; season/disabled handling; "Enable chips" admin action

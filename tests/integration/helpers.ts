@@ -68,6 +68,8 @@ export async function resetDatabase() {
       manager_rank_snapshots,
       manager_matchday_scores,
       manager_score_lines,
+      manager_chip_plays,
+      season_chips,
       fantasy_transfers,
       manager_free_transfer_adjustments,
       manager_transfer_windows,

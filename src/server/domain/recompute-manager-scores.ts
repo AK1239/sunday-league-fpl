@@ -100,6 +100,8 @@ export async function rebuildManagerScoresFromMatchday(
       source: fantasyTeams.source,
       captainPlayerId: fantasyTeams.captainPlayerId,
       viceCaptainPlayerId: fantasyTeams.viceCaptainPlayerId,
+      squadKind: fantasyTeams.squadKind,
+      reservePlayerId: fantasyTeams.reservePlayerId,
       playedOn: matchdays.playedOn,
       number: matchdays.number,
       seasonStartsOn: seasons.startsOn,
@@ -134,6 +136,8 @@ export async function rebuildManagerScoresFromMatchday(
     captainPlayerId: team.captainPlayerId,
     viceCaptainPlayerId: team.viceCaptainPlayerId,
     playerIds: playersByTeam.get(team.id) ?? [],
+    squadKind: team.squadKind,
+    reservePlayerId: team.reservePlayerId,
     matchday: {
       matchdayId: team.matchdayId,
       playedOn: team.playedOn,
@@ -216,6 +220,8 @@ export async function rebuildManagerScoresFromMatchday(
             captainPlayerId: effective.captainPlayerId,
             viceCaptainPlayerId: effective.viceCaptainPlayerId,
             source: "carry_over",
+            squadKind: "permanent",
+            reservePlayerId: null,
           })
           .returning({ id: fantasyTeams.id });
 
@@ -232,6 +238,8 @@ export async function rebuildManagerScoresFromMatchday(
           captainPlayerId: effective.captainPlayerId,
           viceCaptainPlayerId: effective.viceCaptainPlayerId,
           playerIds: [...effective.playerIds],
+          squadKind: "permanent",
+          reservePlayerId: null,
           matchday: target,
         });
       }
@@ -257,12 +265,7 @@ export async function rebuildManagerScoresFromMatchday(
     if (scored.some((s) => s.lines.length > 0)) {
       await tx.insert(managerScoreLines).values(
         scored.flatMap((entry) =>
-          entry.lines
-            .filter(
-              (line): line is typeof line & { role: "player" | "captain" | "vice_captain" } =>
-                line.role !== "reserve",
-            )
-            .map((line) => ({
+          entry.lines.map((line) => ({
             managerId: line.managerId,
             matchdayId: md.id,
             seasonId,
@@ -288,6 +291,8 @@ export async function rebuildManagerScoresFromMatchday(
         totalPoints: entry.totalPoints,
         multiplierPlayerId: entry.multiplierPlayerId,
         teamSource: entry.teamSource,
+        chipCode: entry.chipCode,
+        chipBonus: entry.chipBonus,
       })),
     );
   }

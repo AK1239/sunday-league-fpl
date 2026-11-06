@@ -12,6 +12,7 @@ import type { UserRole } from "@/server/auth/session";
 import {
   resolveEffectiveTeam,
   type MatchdayTimelineEntry,
+  type SquadKind,
   type SubmittedFantasyTeam,
 } from "@/server/fantasy/effective-team";
 import {
@@ -38,6 +39,8 @@ export type FantasyTeamView =
       captainPlayerId: string;
       viceCaptainPlayerId: string;
       playerIds: string[];
+      squadKind: SquadKind;
+      reservePlayerId: string | null;
       slots: FantasyTeamPlayerSlot[];
     };
 
@@ -60,6 +63,8 @@ export async function loadSubmittedTeamsForSeason(
       source: fantasyTeams.source,
       captainPlayerId: fantasyTeams.captainPlayerId,
       viceCaptainPlayerId: fantasyTeams.viceCaptainPlayerId,
+      squadKind: fantasyTeams.squadKind,
+      reservePlayerId: fantasyTeams.reservePlayerId,
       playedOn: matchdays.playedOn,
       number: matchdays.number,
       seasonStartsOn: seasons.startsOn,
@@ -106,6 +111,8 @@ export async function loadSubmittedTeamsForSeason(
       captainPlayerId: header.captainPlayerId,
       viceCaptainPlayerId: header.viceCaptainPlayerId,
       playerIds: playersByTeam.get(header.teamId) ?? [],
+      squadKind: header.squadKind,
+      reservePlayerId: header.reservePlayerId,
     };
   });
 }
@@ -187,6 +194,8 @@ export async function getManagerFantasyTeamForViewer(
       source: fantasyTeams.source,
       captainPlayerId: fantasyTeams.captainPlayerId,
       viceCaptainPlayerId: fantasyTeams.viceCaptainPlayerId,
+      squadKind: fantasyTeams.squadKind,
+      reservePlayerId: fantasyTeams.reservePlayerId,
     })
     .from(fantasyTeams)
     .where(
@@ -201,12 +210,16 @@ export async function getManagerFantasyTeamForViewer(
   let viceCaptainPlayerId: string;
   let playerIds: string[];
   let teamSource: "manual" | "admin" | "carry_over";
+  let squadKind: SquadKind = "permanent";
+  let reservePlayerId: string | null = null;
 
   const storedRow = stored[0];
   if (storedRow && (storedRow.source === "manual" || storedRow.source === "admin")) {
     teamSource = storedRow.source;
     captainPlayerId = storedRow.captainPlayerId;
     viceCaptainPlayerId = storedRow.viceCaptainPlayerId;
+    squadKind = storedRow.squadKind;
+    reservePlayerId = storedRow.reservePlayerId;
     const picks = await db
       .select({ playerId: fantasyTeamPlayers.playerId })
       .from(fantasyTeamPlayers)
@@ -235,6 +248,8 @@ export async function getManagerFantasyTeamForViewer(
         captainPlayerId: "",
         viceCaptainPlayerId: "",
         playerIds: [],
+        squadKind: "permanent",
+        reservePlayerId: null,
         slots: [],
       };
     }
@@ -242,6 +257,8 @@ export async function getManagerFantasyTeamForViewer(
     captainPlayerId = effective.captainPlayerId;
     viceCaptainPlayerId = effective.viceCaptainPlayerId;
     playerIds = [...effective.playerIds];
+    squadKind = effective.squadKind;
+    reservePlayerId = effective.reservePlayerId;
   }
 
   if (playerIds.length === 0) {
@@ -254,6 +271,8 @@ export async function getManagerFantasyTeamForViewer(
       captainPlayerId,
       viceCaptainPlayerId,
       playerIds: [],
+      squadKind,
+      reservePlayerId,
       slots: [],
     };
   }
@@ -279,6 +298,8 @@ export async function getManagerFantasyTeamForViewer(
     captainPlayerId,
     viceCaptainPlayerId,
     playerIds,
+    squadKind,
+    reservePlayerId,
     slots: buildSlots(
       playerIds,
       captainPlayerId,

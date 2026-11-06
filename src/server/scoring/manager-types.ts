@@ -4,10 +4,13 @@ export type ManagerScoringRules = ScoringRules & {
   captainMultiplier: number;
 };
 
-export type ManagerScoreLineRole = "player" | "captain" | "vice_captain";
+export type ManagerScoreLineRole =
+  | "player"
+  | "captain"
+  | "vice_captain"
+  | "reserve";
 
-/** In-memory scoring roles (DB enum gains `reserve` in migration 0009). */
-export type ScoredLineRole = ManagerScoreLineRole | "reserve";
+export type ScoredLineRole = ManagerScoreLineRole;
 
 export type ManagerTeamSource = "manual" | "carry_over" | "admin" | "none";
 

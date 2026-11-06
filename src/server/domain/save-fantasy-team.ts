@@ -131,6 +131,8 @@ export async function saveFantasyTeam(
         source: fantasyTeams.source,
         captainPlayerId: fantasyTeams.captainPlayerId,
         viceCaptainPlayerId: fantasyTeams.viceCaptainPlayerId,
+        squadKind: fantasyTeams.squadKind,
+        reservePlayerId: fantasyTeams.reservePlayerId,
       })
       .from(fantasyTeams)
       .where(
@@ -149,6 +151,15 @@ export async function saveFantasyTeam(
       await tx.delete(fantasyTeams).where(eq(fantasyTeams.id, beforeTeam.id));
     }
 
+    const preservedSquadKind =
+      options.mode === "admin_override" && beforeTeam
+        ? beforeTeam.squadKind
+        : "permanent";
+    const preservedReserve =
+      options.mode === "admin_override" && beforeTeam
+        ? beforeTeam.reservePlayerId
+        : null;
+
     const [created] = await tx
       .insert(fantasyTeams)
       .values({
@@ -157,6 +168,8 @@ export async function saveFantasyTeam(
         captainPlayerId: pick.captainPlayerId,
         viceCaptainPlayerId: pick.viceCaptainPlayerId,
         source,
+        squadKind: preservedSquadKind,
+        reservePlayerId: preservedReserve,
         version: nextVersion,
         submittedAt: dbNow,
         updatedAt: dbNow,

@@ -51,6 +51,22 @@ export const managerScoreLineRoleEnum = pgEnum("manager_score_line_role", [
   "player",
   "captain",
   "vice_captain",
+  "reserve",
+]);
+
+export const fantasySquadKindEnum = pgEnum("fantasy_squad_kind", [
+  "permanent",
+  "free_hit",
+]);
+
+export const managerChipPlayStatusEnum = pgEnum("manager_chip_play_status", [
+  "active",
+  "void",
+]);
+
+export const managerChipPlaySourceEnum = pgEnum("manager_chip_play_source", [
+  "manager",
+  "admin",
 ]);
 
 export const managerMatchdayTeamSourceEnum = pgEnum(
@@ -435,6 +451,8 @@ export const fantasyTeams = pgTable(
       .notNull()
       .defaultNow(),
     version: integer("version").notNull().default(1),
+    squadKind: fantasySquadKindEnum("squad_kind").notNull().default("permanent"),
+    reservePlayerId: uuid("reserve_player_id").references(() => players.id),
   },
   (table) => [
     uniqueIndex("fantasy_teams_manager_matchday_unique").on(
@@ -444,6 +462,10 @@ export const fantasyTeams = pgTable(
     check(
       "fantasy_teams_captain_vice_distinct",
       sql`${table.captainPlayerId} <> ${table.viceCaptainPlayerId}`,
+    ),
+    check(
+      "fantasy_teams_reserve_not_captain",
+      sql`${table.reservePlayerId} IS NULL OR (${table.reservePlayerId} <> ${table.captainPlayerId} AND ${table.reservePlayerId} <> ${table.viceCaptainPlayerId})`,
     ),
     index("fantasy_teams_matchday_idx").on(table.matchdayId),
   ],
@@ -544,6 +566,76 @@ export const managerTransferWindows = pgTable(
   ],
 );
 
+export const seasonChips = pgTable(
+  "season_chips",
+  {
+    seasonId: uuid("season_id")
+      .notNull()
+      .references(() => seasons.id, { onDelete: "cascade" }),
+    chipCode: text("chip_code").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    availableFromMatchday: integer("available_from_matchday")
+      .notNull()
+      .default(1),
+    params: jsonb("params").notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.seasonId, table.chipCode] }),
+  ],
+);
+
+export const managerChipPlays = pgTable(
+  "manager_chip_plays",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    seasonId: uuid("season_id")
+      .notNull()
+      .references(() => seasons.id, { onDelete: "cascade" }),
+    managerId: uuid("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    matchdayId: uuid("matchday_id")
+      .notNull()
+      .references(() => matchdays.id, { onDelete: "cascade" }),
+    chipCode: text("chip_code").notNull(),
+    status: managerChipPlayStatusEnum("status").notNull().default("active"),
+    source: managerChipPlaySourceEnum("source").notNull().default("manager"),
+    params: jsonb("params").notNull().default({}),
+    activatedAt: timestamp("activated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidReason: text("void_reason"),
+    voidedBy: uuid("voided_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+  },
+  (table) => [
+    check(
+      "manager_chip_plays_void_fields_check",
+      sql`(${table.status} = 'active' AND ${table.voidedAt} IS NULL) OR (${table.status} = 'void' AND ${table.voidedAt} IS NOT NULL AND ${table.voidReason} IS NOT NULL)`,
+    ),
+    uniqueIndex("manager_chip_plays_one_active_per_matchday")
+      .on(table.managerId, table.matchdayId)
+      .where(sql`${table.status} = 'active'`),
+    uniqueIndex("manager_chip_plays_one_active_per_chip_per_season")
+      .on(table.managerId, table.seasonId, table.chipCode)
+      .where(sql`${table.status} = 'active'`),
+    index("manager_chip_plays_matchday_idx").on(table.matchdayId),
+    index("manager_chip_plays_season_manager_idx").on(
+      table.seasonId,
+      table.managerId,
+    ),
+    foreignKey({
+      columns: [table.seasonId, table.chipCode],
+      foreignColumns: [seasonChips.seasonId, seasonChips.chipCode],
+    }),
+  ],
+);
+
 export const managerFreeTransferAdjustments = pgTable(
   "manager_free_transfer_adjustments",
   {
@@ -626,6 +718,8 @@ export const managerMatchdayScores = pgTable(
       () => players.id,
     ),
     teamSource: managerMatchdayTeamSourceEnum("team_source").notNull(),
+    chipCode: text("chip_code"),
+    chipBonus: integer("chip_bonus").notNull().default(0),
   },
   (table) => [
     primaryKey({ columns: [table.managerId, table.matchdayId] }),

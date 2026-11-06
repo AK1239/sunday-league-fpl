@@ -64,6 +64,13 @@
       "when": 1793884500000,
       "tag": "0008_transfers",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793884600000,
+      "tag": "0009_chips",
+      "breakpoints": true
     }
   ]
 }
