@@ -10,6 +10,7 @@ import {
   seasons,
   users,
 } from "@/server/db/schema";
+import { ensureAutoScheduledMatchday } from "@/server/domain/auto-schedule-matchdays";
 import { getActiveSeasonId } from "@/server/domain/matchdays-admin";
 import {
   getManagerFantasyTeamForViewer,
@@ -65,6 +66,7 @@ export type PublicHomeData = {
 };
 
 export async function getPublicHomeData(db: AppDb): Promise<PublicHomeData | null> {
+  await ensureAutoScheduledMatchday(db);
   const seasonId = await getActiveSeasonId(db);
   if (!seasonId) return null;
 

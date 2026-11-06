@@ -8,6 +8,7 @@ import { requireAdmin } from "@/server/auth/require-admin";
 import { getDb } from "@/server/db";
 import { matchdays } from "@/server/db/schema";
 import { formatDeadlineForDateTimeLocal } from "@/server/domain/deadline";
+import { ensureAutoScheduledMatchday } from "@/server/domain/auto-schedule-matchdays";
 import {
   getActiveSeasonId,
   listMatchdaysForSeasonAdmin,
@@ -20,6 +21,7 @@ export async function AdminMatchdaysPanel() {
   await requireAdmin();
 
   const db = getDb();
+  await ensureAutoScheduledMatchday(db);
   const [settings, activeSeasonId, seasons] = await Promise.all([
     getLeagueSettings(db),
     getActiveSeasonId(db),
@@ -70,7 +72,7 @@ export async function AdminMatchdaysPanel() {
         {matchdayList.length === 0 ? (
           <EmptyState
             title="No matchdays scheduled"
-            description="Create the next Sunday gameweek so managers can pick teams."
+            description="Open gameweeks are created automatically for each Sunday (see docs/AUTO_SCHEDULE_MATCHDAYS.md). Use Cancel on a gameweek if football is called off."
           />
         ) : (
           <ul className="space-y-4">

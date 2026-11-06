@@ -9,6 +9,7 @@ import {
 import { computeExpectedPoints } from "@/server/fantasy/expected-points";
 import { isLocked, isSelectionOpen } from "@/server/fantasy/lock";
 import type { FantasyTeamPick } from "@/server/fantasy/validate-team";
+import { ensureAutoScheduledMatchday } from "@/server/domain/auto-schedule-matchdays";
 import { getActiveSeasonId } from "@/server/domain/matchdays-admin";
 import {
   getManagerFantasyTeamForViewer,
@@ -155,6 +156,7 @@ export async function getPickTeamData(
   managerId: string,
   matchdayId?: string,
 ): Promise<PickTeamData | null> {
+  await ensureAutoScheduledMatchday(db);
   const seasonId =
     (await getActiveSeasonId(db)) ??
     null;

@@ -56,7 +56,7 @@ export async function seedDatabase() {
   console.log("Seed complete:", {
     seasonId: season!.id,
     players: insertedPlayers.length,
-    note: "No gameweeks or results — schedule the first matchday in admin.",
+    note: "Gameweeks auto-schedule on home/pick load (see docs/AUTO_SCHEDULE_MATCHDAYS.md).",
   });
 }
 
