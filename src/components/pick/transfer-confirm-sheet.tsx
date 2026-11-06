@@ -17,7 +17,6 @@ export function TransferConfirmSheet({
   basePlayerIds,
   plannedPlayerIds,
   summary,
-  freeAvailable,
   playerNameById,
   playerKitKeyById,
 }: {
@@ -28,7 +27,6 @@ export function TransferConfirmSheet({
   basePlayerIds: readonly string[];
   plannedPlayerIds: readonly string[];
   summary: TransferWindowSummary;
-  freeAvailable: number;
   playerNameById: Map<string, string>;
   playerKitKeyById: Map<string, string | null>;
 }) {
@@ -44,7 +42,7 @@ export function TransferConfirmSheet({
       description="Review changes before the deadline locks your team."
     >
       <div className="space-y-4 pt-1">
-        <TransferSummaryStrip summary={summary} freeAvailable={freeAvailable} />
+        <TransferSummaryStrip summary={summary} />
 
         {pairs.length === 0 ? (
           <p className="text-sm text-muted-foreground">

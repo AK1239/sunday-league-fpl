@@ -726,29 +726,23 @@ export function TransfersTeamClient({
         title={emptyBase ? "Build your squad" : "Transfers"}
         description={
           emptyBase
-            ? `${pick.matchday.playedOn} · Pick your first five (free, unlimited transfers). Wildcard and Free Hit unlock after this gameweek.`
-            : `${pick.matchday.playedOn} · Change players before the deadline.`
+            ? "Pick your first five (free, unlimited transfers). Wildcard and Free Hit unlock after this gameweek."
+            : undefined
         }
       />
 
       <div className="sticky top-0 z-20 space-y-3 rounded-2xl border border-border/50 bg-background/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              Deadline
-            </p>
-            <DeadlineCountdown
-              deadlineAtIso={pick.matchday.deadlineAt}
-              serverNowIso={pick.serverNow}
-            />
-          </div>
-          <span className="rounded-full bg-primary/15 px-3 py-1 text-sm font-semibold text-primary tabular-nums">
-            {initial.freeAvailable} free
-          </span>
+        <div>
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            Deadline
+          </p>
+          <DeadlineCountdown
+            deadlineAtIso={pick.matchday.deadlineAt}
+            serverNowIso={pick.serverNow}
+          />
         </div>
         <TransferSummaryStrip
           summary={summary}
-          freeAvailable={initial.freeAvailable}
           unlimitedLabel={
             chipCode === "wildcard"
               ? "Free (Wildcard)"
@@ -943,20 +937,13 @@ export function TransfersTeamClient({
                   <p className="truncate text-sm font-semibold">
                     {changeLabel}
                   </p>
-                  <p
-                    className={cn(
-                      "truncate text-xs",
-                      summary.transferPenalty < 0
-                        ? "font-medium text-amber-500"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {summary.transferPenalty < 0
-                      ? `${summary.extra} extra · ${summary.transferPenalty} pts`
-                      : summary.made > 0
-                        ? "Free — no points cost"
-                        : "No cost"}
-                  </p>
+                  {summary.extra > 0 ? (
+                    <p className="truncate text-xs font-medium text-amber-500">
+                      {summary.extra} extra transfer
+                      {summary.extra === 1 ? "" : "s"} ·{" "}
+                      {summary.transferPenalty} pts
+                    </p>
+                  ) : null}
                 </div>
                 <Button
                   type="button"
@@ -1096,7 +1083,6 @@ export function TransfersTeamClient({
         basePlayerIds={lineupBaseForValidation}
         plannedPlayerIds={plannedIds}
         summary={summary}
-        freeAvailable={initial.freeAvailable}
         playerNameById={playerNameById}
         playerKitKeyById={playerKitKeyById}
       />
