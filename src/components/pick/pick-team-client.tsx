@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FormError } from "@/components/auth/form-error";
+import { appToast } from "@/lib/app-toast";
 import { PageHeader } from "@/components/fantasy/page-header";
 import { DeadlineCountdown } from "@/components/pick/deadline-countdown";
 import { LockedBanner } from "@/components/pick/locked-banner";
@@ -91,7 +91,6 @@ export function PickTeamClient({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [actionOpen, setActionOpen] = useState(false);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const readOnly = initial.locked || !initial.selectionOpen;
@@ -197,16 +196,16 @@ export function PickTeamClient({
   async function handleSave() {
     if (!pickForValidation || !canSave) return;
     setSaving(true);
-    setSaveError(null);
     const result = await saveFantasyTeamAction(
       initial.matchday.id,
       pickForValidation,
     );
     setSaving(false);
     if (result.ok === false) {
-      setSaveError(result.message);
+      appToast.error(result.message);
       return;
     }
+    appToast.success("Team saved");
     clearLocalDraft(initial.matchday.id);
     router.refresh();
   }
@@ -260,8 +259,6 @@ export function PickTeamClient({
       ) : null}
 
       {readOnly ? <LockedBanner /> : null}
-
-      {saveError ? <FormError message={saveError} /> : null}
 
       <PitchSlots
         selection={slots}

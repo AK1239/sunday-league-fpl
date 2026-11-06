@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useActionResultToast } from "@/hooks/use-action-result-toast";
 import { createPlayerAction } from "@/server/actions/players";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ export function CreatePlayerForm() {
     ActionResult<{ id: string }> | null,
     FormData
   >(async (_prev, formData) => createPlayerAction(formData), null);
+  useActionResultToast(state, "Player added");
 
   return (
     <form
@@ -46,16 +48,6 @@ export function CreatePlayerForm() {
           disabled={pending}
         />
       </div>
-      {state?.ok === false ? (
-        <p className="text-sm text-destructive" role="alert">
-          {state.message}
-        </p>
-      ) : null}
-      {state?.ok === true ? (
-        <p className="text-sm text-primary" role="status">
-          Player added.
-        </p>
-      ) : null}
       <Button type="submit" disabled={pending}>
         {pending ? "Saving…" : "Add player"}
       </Button>

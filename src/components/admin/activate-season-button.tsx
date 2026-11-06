@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { toastActionResult } from "@/lib/app-toast";
 import { activateSeasonAction } from "@/server/actions/seasons";
 import { Button } from "@/components/ui/button";
 
@@ -20,7 +21,8 @@ export function ActivateSeasonButton({
       disabled={disabled || pending}
       onClick={() =>
         startTransition(async () => {
-          await activateSeasonAction(seasonId);
+          const result = await activateSeasonAction(seasonId);
+          toastActionResult(result, "Season activated");
         })
       }
     >

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useActionResultToast } from "@/hooks/use-action-result-toast";
 import { createSeasonAction } from "@/server/actions/seasons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ export function CreateSeasonForm() {
     ActionResult<{ id: string }> | null,
     FormData
   >(async (_prev, formData) => createSeasonAction(formData), null);
+  useActionResultToast(state, "Season created");
 
   return (
     <form
@@ -51,16 +53,6 @@ export function CreateSeasonForm() {
           />
         </div>
       </div>
-      {state?.ok === false ? (
-        <p className="text-sm text-destructive" role="alert">
-          {state.message}
-        </p>
-      ) : null}
-      {state?.ok === true ? (
-        <p className="text-sm text-primary" role="status">
-          Season created.
-        </p>
-      ) : null}
       <Button type="submit" disabled={pending}>
         {pending ? "Creating…" : "Create season"}
       </Button>

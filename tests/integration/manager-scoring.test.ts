@@ -13,6 +13,10 @@ import {
   users,
 } from "@/server/db/schema";
 import { getManagerStandings } from "@/server/queries/manager-standings";
+import {
+  getActiveSeasonId,
+  seedPublishedDemoMatchday,
+} from "./seed-fixture";
 import { resetDatabase } from "./helpers";
 
 const hasDatabase = !!process.env.DATABASE_URL;
@@ -21,6 +25,8 @@ describe.skipIf(!hasDatabase)("manager scoring integration", () => {
   beforeEach(async () => {
     await resetDatabase();
     await seedDatabase();
+    const db = getDb();
+    await seedPublishedDemoMatchday(db, await getActiveSeasonId(db));
   });
 
   it("scores a manager team with captain multiplier on recompute", async () => {

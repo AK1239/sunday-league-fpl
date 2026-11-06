@@ -3,8 +3,12 @@ import { describe, expect, it, beforeAll, beforeEach } from "vitest";
 import { recomputeMatchday } from "@/server/domain/recompute-matchday";
 import { getDb } from "@/server/db";
 import { seedDatabase } from "@/server/db/seed";
-import { matchdays, pointLedger, seasons } from "@/server/db/schema";
+import { matchdays, pointLedger } from "@/server/db/schema";
 import { getStandings } from "@/server/queries/standings";
+import {
+  getActiveSeasonId,
+  seedPublishedDemoMatchday,
+} from "./seed-fixture";
 import { requireDatabaseUrl, resetDatabase } from "./helpers";
 
 const hasDatabase = !!process.env.DATABASE_URL;
@@ -18,11 +22,7 @@ describe.skipIf(!hasDatabase)("recomputeMatchday integration", () => {
     await resetDatabase();
     await seedDatabase();
     const db = getDb();
-    const [matchday] = await db
-      .select({ id: matchdays.id })
-      .from(matchdays)
-      .limit(1);
-    await recomputeMatchday(matchday!.id);
+    await seedPublishedDemoMatchday(db, await getActiveSeasonId(db));
   });
 
   it("is idempotent when run ten times", async () => {
@@ -82,8 +82,7 @@ describe.skipIf(!hasDatabase)("recomputeMatchday integration", () => {
 
   it("returns standings ordered by points with stats", async () => {
     const db = getDb();
-    const [season] = await db.select({ id: seasons.id }).from(seasons).limit(1);
-    const seasonId = season!.id;
+    const seasonId = await getActiveSeasonId(db);
 
     const matchdayId = (
       await db.select({ id: matchdays.id }).from(matchdays).limit(1)

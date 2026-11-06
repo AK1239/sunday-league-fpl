@@ -9,6 +9,10 @@ import {
   updateMatchdayDeadlineAdmin,
 } from "@/server/domain/matchdays-admin";
 import { managerMatchdayScores, matchdays, seasons, users } from "@/server/db/schema";
+import {
+  getActiveSeasonId,
+  seedPublishedDemoMatchday,
+} from "./seed-fixture";
 import { resetDatabase } from "./helpers";
 
 const hasDatabase = !!process.env.DATABASE_URL;
@@ -81,19 +85,22 @@ describe.skipIf(!hasDatabase)("matchdays admin", () => {
 
   it("excludes cancelled matchdays from manager scoring rows", async () => {
     const db = getDb();
-    const [published] = await db.select().from(matchdays).limit(1);
-    await cancelMatchdayAdmin(db, adminId, published!.id);
+    const publishedId = await seedPublishedDemoMatchday(
+      db,
+      await getActiveSeasonId(db),
+    );
+    await cancelMatchdayAdmin(db, adminId, publishedId);
 
     const [md] = await db
       .select()
       .from(matchdays)
-      .where(eq(matchdays.id, published!.id));
+      .where(eq(matchdays.id, publishedId));
     expect(md!.status).toBe("cancelled");
 
     const scores = await db
       .select()
       .from(managerMatchdayScores)
-      .where(eq(managerMatchdayScores.matchdayId, published!.id));
+      .where(eq(managerMatchdayScores.matchdayId, publishedId));
     expect(scores).toHaveLength(0);
   });
 });

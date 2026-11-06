@@ -2,11 +2,11 @@
 
 import { useActionState } from "react";
 import { CalendarDays } from "lucide-react";
+import { useActionResultToast } from "@/hooks/use-action-result-toast";
 import { createMatchdayAction } from "@/server/actions/matchdays";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FormError } from "@/components/auth/form-error";
 import type { ActionResult } from "@/server/actions/action-result";
 
 async function createStateAction(
@@ -26,6 +26,7 @@ export function CreateMatchdayForm({
   nextNumber: number;
 }) {
   const [state, formAction, pending] = useActionState(createStateAction, null);
+  useActionResultToast(state, "Matchday scheduled");
 
   return (
     <form action={formAction} className="space-y-4 surface rounded-2xl p-5">
@@ -83,13 +84,6 @@ export function CreateMatchdayForm({
           {timezone}.
         </p>
       </div>
-
-      {state?.ok === false ? <FormError message={state.message} /> : null}
-      {state?.ok === true ? (
-        <p className="text-sm text-primary" role="status">
-          Matchday scheduled.
-        </p>
-      ) : null}
 
       <Button type="submit" disabled={pending}>
         {pending ? "Creating…" : "Create matchday"}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useActionResultToast } from "@/hooks/use-action-result-toast";
+import { toastActionResult } from "@/lib/app-toast";
 import {
   cancelMatchdayAction,
   postponeMatchdayAction,
@@ -9,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FormError } from "@/components/auth/form-error";
 import type { ActionResult } from "@/server/actions/action-result";
 
 type MatchdayRow = {
@@ -51,7 +52,8 @@ export function MatchdayRowActions({
   );
   const [showPostpone, setShowPostpone] = useState(false);
   const [cancelPending, setCancelPending] = useState(false);
-  const [cancelError, setCancelError] = useState<string | null>(null);
+  useActionResultToast(deadlineState, "Deadline updated");
+  useActionResultToast(postponeState, "Matchday postponed");
 
   const canEdit = matchday.status !== "cancelled";
   const canPostpone =
@@ -63,12 +65,9 @@ export function MatchdayRowActions({
       return;
     }
     setCancelPending(true);
-    setCancelError(null);
     const result = await cancelMatchdayAction(matchday.id);
     setCancelPending(false);
-    if (result.ok === false) {
-      setCancelError(result.message);
-    }
+    toastActionResult(result, "Matchday cancelled");
   }
 
   if (!canEdit) {
@@ -97,9 +96,6 @@ export function MatchdayRowActions({
             {deadlinePending ? "Saving…" : "Save deadline"}
           </Button>
         </div>
-        {deadlineState?.ok === false ? (
-          <FormError message={deadlineState.message} />
-        ) : null}
       </form>
 
       {canPostpone ? (
@@ -129,9 +125,6 @@ export function MatchdayRowActions({
               <Button type="submit" size="sm" disabled={postponePending}>
                 {postponePending ? "Updating…" : "Apply new date"}
               </Button>
-              {postponeState?.ok === false ? (
-                <FormError message={postponeState.message} />
-              ) : null}
             </form>
           ) : null}
         </div>
@@ -148,7 +141,6 @@ export function MatchdayRowActions({
           >
             {cancelPending ? "Cancelling…" : "Cancel gameweek"}
           </Button>
-          {cancelError ? <FormError message={cancelError} /> : null}
         </div>
       ) : null}
     </div>

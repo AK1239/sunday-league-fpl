@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SectionHeading } from "@/components/fantasy/section-heading";
-import { FormError } from "@/components/auth/form-error";
+import { toastActionResult } from "@/lib/app-toast";
 import { recalculateMatchdayAction } from "@/server/actions/matchday-publish";
 import type { ScoringInspectorData } from "@/server/domain/scoring-inspector";
 import { Button } from "@/components/ui/button";
@@ -14,18 +14,13 @@ export function MatchdayInspectorClient({
   initial: ScoringInspectorData;
 }) {
   const router = useRouter();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function handleRecalculate() {
     setBusy(true);
-    setErrorMessage(null);
     const result = await recalculateMatchdayAction(initial.matchdayId);
     setBusy(false);
-    if (result.ok === false) {
-      setErrorMessage(result.message);
-      return;
-    }
+    if (!toastActionResult(result, "Scores recalculated")) return;
     router.refresh();
   }
 
@@ -51,8 +46,6 @@ export function MatchdayInspectorClient({
           Publish this matchday to populate scoring tables.
         </p>
       )}
-
-      {errorMessage ? <FormError message={errorMessage} /> : null}
 
       <section>
         <SectionHeading title="Manager totals" />

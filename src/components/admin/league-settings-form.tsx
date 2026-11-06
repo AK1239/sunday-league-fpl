@@ -1,12 +1,12 @@
 "use client";
 
 import { useActionState } from "react";
+import { useActionResultToast } from "@/hooks/use-action-result-toast";
 import { Settings2 } from "lucide-react";
 import { updateLeagueSettingsAction } from "@/server/actions/league-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FormError } from "@/components/auth/form-error";
 import type { ActionResult } from "@/server/actions/action-result";
 
 function kickoffForInput(value: string): string {
@@ -30,6 +30,7 @@ export function LeagueSettingsForm({
   deadlineOffsetMinutes: number;
 }) {
   const [state, formAction, pending] = useActionState(saveAction, null);
+  useActionResultToast(state, "Settings saved");
 
   return (
     <form action={formAction} className="space-y-4 surface rounded-2xl p-5">
@@ -88,13 +89,6 @@ export function LeagueSettingsForm({
           </p>
         </div>
       </div>
-
-      {state?.ok === false ? <FormError message={state.message} /> : null}
-      {state?.ok === true ? (
-        <p className="text-sm text-primary" role="status">
-          Settings saved.
-        </p>
-      ) : null}
 
       <Button type="submit" disabled={pending}>
         {pending ? "Saving…" : "Save settings"}

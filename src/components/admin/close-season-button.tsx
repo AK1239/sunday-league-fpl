@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { toastActionResult } from "@/lib/app-toast";
 import { closeSeasonAction } from "@/server/actions/seasons";
 import { Button } from "@/components/ui/button";
 
@@ -22,7 +23,8 @@ export function CloseSeasonButton({ seasonId }: { seasonId: string }) {
           return;
         }
         startTransition(async () => {
-          await closeSeasonAction(seasonId);
+          const result = await closeSeasonAction(seasonId);
+          toastActionResult(result, "Season closed");
         });
       }}
     >

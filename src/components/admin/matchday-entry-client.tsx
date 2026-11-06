@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Copy, Plus, Trash2 } from "lucide-react";
 import { PlayerAvatar } from "@/components/fantasy/player-avatar";
 import { SectionHeading } from "@/components/fantasy/section-heading";
-import { FormError } from "@/components/auth/form-error";
+import { appToast, toastActionResult } from "@/lib/app-toast";
 import {
   addEmptyMatchAction,
   copyLineupAction,
@@ -83,10 +83,9 @@ export function MatchdayEntryClient({
   const [matches, setMatches] = useState<MatchEntryMatch[]>(
     initial.matches.length > 0 ? initial.matches : [],
   );
-  const [saveState, setSaveState] = useState<
-    "idle" | "saving" | "saved" | "error"
-  >("idle");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "error">(
+    "idle",
+  );
   const [workflowBusy, setWorkflowBusy] = useState(false);
 
   const playerMap = useMemo(
@@ -103,11 +102,11 @@ export function MatchdayEntryClient({
       );
       if (result.ok === false) {
         setSaveState("error");
-        setErrorMessage(result.message);
+        appToast.error(result.message);
         return;
       }
-      setSaveState("saved");
-      setErrorMessage(null);
+      setSaveState("idle");
+      appToast.autosaved("Attendance saved");
     },
     [initial.matchdayId],
   );
@@ -124,11 +123,13 @@ export function MatchdayEntryClient({
       );
       if (result.ok === false) {
         setSaveState("error");
-        setErrorMessage(result.message);
+        appToast.error(result.message);
         return;
       }
-      setSaveState("saved");
-      setErrorMessage(null);
+      setSaveState("idle");
+      appToast.autosaved(
+        initial.status === "published" ? "Match saved" : "Draft saved",
+      );
       if (result.data?.matchId && match.id.startsWith("temp-")) {
         setMatches((prev) =>
           prev.map((m) =>
@@ -139,7 +140,7 @@ export function MatchdayEntryClient({
         );
       }
     },
-    [initial.matchdayId],
+    [initial.matchdayId, initial.status],
   );
 
   const debouncedMatch = useDebounced(
@@ -166,10 +167,7 @@ export function MatchdayEntryClient({
 
   async function handleAddMatch() {
     const result = await addEmptyMatchAction(initial.matchdayId);
-    if (result.ok === false) {
-      setErrorMessage(result.message);
-      return;
-    }
+    if (!toastActionResult(result, "Match added")) return;
     setMatches((prev) => [
       ...prev,
       emptyMatch(result.data!.matchNo, result.data!.matchId),
@@ -178,24 +176,22 @@ export function MatchdayEntryClient({
 
   async function handleCopyLineup(matchId: string) {
     const result = await copyLineupAction(initial.matchdayId, matchId);
-    if (result.ok === false) {
-      setErrorMessage(result.message);
-      return;
-    }
+    if (!toastActionResult(result, "Lineup copied")) return;
     router.refresh();
   }
 
   async function runWorkflow(
     fn: () => Promise<{ ok: boolean; message?: string }>,
+    successMessage: string,
   ) {
     setWorkflowBusy(true);
-    setErrorMessage(null);
     const result = await fn();
     setWorkflowBusy(false);
     if (result.ok === false) {
-      setErrorMessage(result.message ?? "Action failed.");
+      appToast.error(result.message ?? "Action failed.");
       return;
     }
+    appToast.success(successMessage);
     router.refresh();
   }
 
@@ -204,19 +200,10 @@ export function MatchdayEntryClient({
       return;
     }
     const result = await deleteMatchAction(initial.matchdayId, matchId);
-    if (result.ok === false) {
-      setErrorMessage(result.message);
-      return;
-    }
+    if (!toastActionResult(result, "Match deleted")) return;
     setMatches((prev) => prev.filter((m) => m.id !== matchId));
     router.refresh();
   }
-
-  useEffect(() => {
-    if (saveState !== "saved") return;
-    const t = setTimeout(() => setSaveState("idle"), 2000);
-    return () => clearTimeout(t);
-  }, [saveState]);
 
   if (initial.status === "cancelled") {
     return (
@@ -252,7 +239,10 @@ export function MatchdayEntryClient({
                 size="sm"
                 disabled={workflowBusy}
                 onClick={() =>
-                  runWorkflow(() => recalculateMatchdayAction(initial.matchdayId))
+                  runWorkflow(
+                    () => recalculateMatchdayAction(initial.matchdayId),
+                    "Scores recalculated",
+                  )
                 }
               >
                 Recalculate
@@ -263,7 +253,10 @@ export function MatchdayEntryClient({
                 size="sm"
                 disabled={workflowBusy}
                 onClick={() =>
-                  runWorkflow(() => unpublishMatchdayAction(initial.matchdayId))
+                  runWorkflow(
+                    () => unpublishMatchdayAction(initial.matchdayId),
+                    "Gameweek unpublished",
+                  )
                 }
               >
                 Unpublish
@@ -275,7 +268,10 @@ export function MatchdayEntryClient({
               size="sm"
               disabled={workflowBusy}
               onClick={() =>
-                runWorkflow(() => publishMatchdayAction(initial.matchdayId))
+                runWorkflow(
+                  () => publishMatchdayAction(initial.matchdayId),
+                  "Gameweek published",
+                )
               }
             >
               Publish gameweek
@@ -295,8 +291,8 @@ export function MatchdayEntryClient({
           className={cn(
             "rounded-full px-3 py-1 text-xs font-medium capitalize",
             saveState === "saving" && "bg-muted text-muted-foreground",
-            saveState === "saved" && "bg-primary/10 text-primary",
             saveState === "error" && "bg-destructive/10 text-destructive",
+            saveState === "idle" && "bg-muted/50 text-muted-foreground",
           )}
           role="status"
         >
@@ -304,17 +300,11 @@ export function MatchdayEntryClient({
             ? isPublished
               ? "Saving…"
               : "Saving draft…"
-            : saveState === "saved"
-              ? isPublished
-                ? "Saved"
-                : "Draft saved"
-              : saveState === "error"
-                ? "Save failed"
-                : "Autosave on"}
+            : saveState === "error"
+              ? "Save failed"
+              : "Autosave on"}
         </span>
       </div>
-
-      {errorMessage ? <FormError message={errorMessage} /> : null}
 
       <section>
         <SectionHeading title="Who played today?" />

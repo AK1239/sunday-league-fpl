@@ -13,7 +13,7 @@ cp .env.example .env   # set DATABASE_URL, SESSION_SECRET, admin credentials
 docker compose up -d db
 pnpm install
 pnpm db:migrate
-pnpm db:seed           # demo season + players (skipped if rules already exist)
+pnpm db:seed           # season, scoring rules, squad players (no gameweeks/results)
 pnpm db:seed-admin     # admin user only when users table is empty
 pnpm dev
 ```

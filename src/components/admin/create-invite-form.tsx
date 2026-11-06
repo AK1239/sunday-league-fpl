@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useActionResultToast } from "@/hooks/use-action-result-toast";
 import { createManagerInviteAction } from "@/server/actions/invites";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ export function CreateInviteForm({
     createInviteStateAction,
     null,
   );
+  useActionResultToast(state, "Invite created");
 
   return (
     <form action={formAction} className="space-y-4 surface rounded-2xl p-5">
@@ -79,11 +81,6 @@ export function CreateInviteForm({
           ))}
         </select>
       </div>
-      {state?.ok === false ? (
-        <p className="text-sm text-destructive" role="alert">
-          {state.message}
-        </p>
-      ) : null}
       {state?.ok === true && state.data?.joinPath ? (
         <div
           className="animate-pop rounded-xl border border-primary/30 bg-primary/10 p-4 text-sm"

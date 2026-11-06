@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { toastActionResult } from "@/lib/app-toast";
 import {
   deactivatePlayerAction,
   reactivatePlayerAction,
@@ -28,7 +29,8 @@ export function PlayerRowActions({
         className="flex flex-1 flex-wrap gap-2"
         action={async (formData) => {
           startTransition(async () => {
-            await updatePlayerAction(player.id, formData);
+            const result = await updatePlayerAction(player.id, formData);
+            toastActionResult(result, "Player updated");
           });
         }}
       >
@@ -65,7 +67,8 @@ export function PlayerRowActions({
           disabled={pending}
           onClick={() =>
             startTransition(async () => {
-              await deactivatePlayerAction(player.id);
+              const result = await deactivatePlayerAction(player.id);
+              toastActionResult(result, "Player deactivated");
             })
           }
         >
@@ -79,7 +82,8 @@ export function PlayerRowActions({
           disabled={pending}
           onClick={() =>
             startTransition(async () => {
-              await reactivatePlayerAction(player.id);
+              const result = await reactivatePlayerAction(player.id);
+              toastActionResult(result, "Player reactivated");
             })
           }
         >
