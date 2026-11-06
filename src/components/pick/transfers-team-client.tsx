@@ -144,6 +144,7 @@ export function TransfersTeamClient({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [captaincyStep, setCaptaincyStep] = useState(false);
 
   const readOnly = pick.locked || !pick.selectionOpen;
   const savedTeam = pick.myTeam;
@@ -310,6 +311,24 @@ export function TransfersTeamClient({
     viceCaptainPlayerId,
   ]);
 
+  const lineupReady = useMemo(() => {
+    if (pendingOutSlot != null || plannedIds.length !== 5) return false;
+    return validateFantasyTeamTransferLineup(
+      plannedIds,
+      basePlayerIds,
+      eligible,
+    ).ok;
+  }, [pendingOutSlot, plannedIds, basePlayerIds, eligible]);
+
+  const captaincyReady = useMemo(() => {
+    if (!captainPlayerId || !viceCaptainPlayerId) return false;
+    if (captainPlayerId === viceCaptainPlayerId) return false;
+    return (
+      plannedIds.includes(captainPlayerId) &&
+      plannedIds.includes(viceCaptainPlayerId)
+    );
+  }, [captainPlayerId, viceCaptainPlayerId, plannedIds]);
+
   const canConfirm = useMemo(() => {
     if (readOnly || !pickForValidation || pendingOutSlot != null) return false;
     return validateFantasyTeamTransferPick(
@@ -318,6 +337,23 @@ export function TransfersTeamClient({
       eligible,
     ).ok;
   }, [readOnly, pickForValidation, pendingOutSlot, basePlayerIds, eligible]);
+
+  useEffect(() => {
+    if (!dirty) setCaptaincyStep(false);
+  }, [dirty]);
+
+  useEffect(() => {
+    if (!lineupReady) setCaptaincyStep(false);
+  }, [lineupReady]);
+
+  useEffect(() => {
+    if (captaincyReady && captaincyStep) {
+      setCaptaincyStep(false);
+    }
+  }, [captaincyReady, captaincyStep]);
+
+  const showCaptaincyNext =
+    dirty && lineupReady && !captaincyReady && !captaincyStep;
 
   const selectedIds = useMemo(() => new Set(plannedIds), [plannedIds]);
 
@@ -357,6 +393,7 @@ export function TransfersTeamClient({
 
   function resetToSavedTeam() {
     setPendingOutSlot(null);
+    setCaptaincyStep(false);
     if (savedTeam?.playerIds.length === 5) {
       setSlots(teamToSlots(savedTeam.playerIds));
       setCaptainPlayerId(savedTeam.captainPlayerId);
@@ -482,6 +519,26 @@ export function TransfersTeamClient({
             </p>
           ) : null}
 
+          {captaincyStep && !readOnly ? (
+            <div className="space-y-2 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3">
+              <p className="text-sm font-medium text-foreground">
+                Choose captain and vice-captain
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Tap each player below — required before you can confirm.
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 px-0 text-muted-foreground"
+                onClick={() => setCaptaincyStep(false)}
+              >
+                ← Back to transfers
+              </Button>
+            </div>
+          ) : null}
+
           <div className="space-y-3">
             <TransferPitchSlots
               selection={slots}
@@ -492,7 +549,7 @@ export function TransfersTeamClient({
               pendingOutSlot={pendingOutSlot}
               incomingIds={incomingIds}
               showRoleBadges
-              showIncomingBadges
+              showIncomingBadges={!captaincyStep}
               onSlotPress={handleSlotPress}
               onUndoPending={(index) => {
                 if (pendingOutSlot === index) setPendingOutSlot(null);
@@ -500,7 +557,9 @@ export function TransfersTeamClient({
             />
             {!readOnly ? (
               <p className="text-center text-xs text-muted-foreground">
-                Tap a player to set captain, vice-captain or make a transfer.
+                {captaincyStep
+                  ? "Tap a player to set captain or vice-captain."
+                  : "Tap a player to set captain, vice-captain or make a transfer."}
               </p>
             ) : null}
           </div>
@@ -539,11 +598,21 @@ export function TransfersTeamClient({
                 <Button
                   type="button"
                   size="lg"
-                  disabled={!canConfirm || confirming}
+                  disabled={
+                    showCaptaincyNext
+                      ? false
+                      : !canConfirm || confirming
+                  }
                   aria-busy={confirming}
-                  onClick={() => setConfirmOpen(true)}
+                  onClick={() => {
+                    if (showCaptaincyNext) {
+                      setCaptaincyStep(true);
+                      return;
+                    }
+                    setConfirmOpen(true);
+                  }}
                 >
-                  Review
+                  {showCaptaincyNext ? "Next" : "Review"}
                   <ArrowRight aria-hidden />
                 </Button>
               </div>
@@ -587,7 +656,7 @@ export function TransfersTeamClient({
           isVice={activePlayerId === viceCaptainPlayerId}
           transferMode
           showCaptainActions
-          showSquadEditActions
+          showSquadEditActions={!captaincyStep}
           onMakeCaptain={() => {
             if (activePlayerId) {
               setCaptainPlayerId(activePlayerId);
