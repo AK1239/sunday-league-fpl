@@ -23,6 +23,7 @@ export type PlayerPublicProfile = {
     id: string;
     displayName: string;
     nickname: string | null;
+    kitKey: string | null;
     avatarUrl: string | null;
     joinedOn: string | null;
   };
@@ -154,6 +155,7 @@ export async function getPlayerPublicProfile(
       id: player.id,
       displayName: player.displayName,
       nickname: player.nickname,
+      kitKey: player.kitKey,
       avatarUrl: player.avatarUrl,
       joinedOn: player.joinedOn,
     },

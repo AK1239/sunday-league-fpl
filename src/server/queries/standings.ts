@@ -19,6 +19,7 @@ export type StandingRow = {
   playerId: string;
   displayName: string;
   nickname: string | null;
+  kitKey: string | null;
   avatarUrl: string | null;
   rank: number;
   rankDelta: number;
@@ -129,6 +130,7 @@ export async function getStandings(
       playerId: players.id,
       displayName: players.displayName,
       nickname: players.nickname,
+      kitKey: players.kitKey,
       avatarUrl: players.avatarUrl,
       points: sql<number>`coalesce(${pointsTotals.points}, 0)`.mapWith(Number),
       goals: sql<number>`coalesce(${goalTotals.goals}, 0)`.mapWith(Number),
@@ -225,6 +227,7 @@ export async function getStandings(
       playerId: row.playerId,
       displayName: row.displayName,
       nickname: row.nickname,
+      kitKey: row.kitKey,
       avatarUrl: row.avatarUrl,
       rank,
       rankDelta,

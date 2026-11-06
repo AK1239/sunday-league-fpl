@@ -11,6 +11,7 @@ function player(
     playerId: id,
     displayName: id,
     nickname: null,
+    kitKey: null,
     avatarUrl: null,
     rank: 1,
     rankDelta: 0,

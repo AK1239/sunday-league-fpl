@@ -19,6 +19,7 @@ export function TransferConfirmSheet({
   summary,
   freeAvailable,
   playerNameById,
+  playerKitKeyById,
 }: {
   open: boolean;
   onClose: () => void;
@@ -29,6 +30,7 @@ export function TransferConfirmSheet({
   summary: TransferWindowSummary;
   freeAvailable: number;
   playerNameById: Map<string, string>;
+  playerKitKeyById: Map<string, string | null>;
 }) {
   const [acknowledged, setAcknowledged] = useState(false);
   const penaltyMagnitude = summary.extra > 0 ? -summary.transferPenalty : 0;
@@ -63,11 +65,13 @@ export function TransferConfirmSheet({
                 <div className="flex min-w-0 flex-1 items-center gap-2">
                   <PlayerShirt
                     name={playerNameById.get(pair.playerOutId) ?? "Out"}
+                    kitKey={playerKitKeyById.get(pair.playerOutId) ?? null}
                     size="sm"
                   />
                   <span className="text-muted-foreground">→</span>
                   <PlayerShirt
                     name={playerNameById.get(pair.playerInId) ?? "In"}
+                    kitKey={playerKitKeyById.get(pair.playerInId) ?? null}
                     size="sm"
                   />
                 </div>

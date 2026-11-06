@@ -24,6 +24,7 @@ export type FantasyTeamPlayerSlot = {
   playerId: string;
   displayName: string;
   nickname: string | null;
+  kitKey: string | null;
   avatarUrl: string | null;
   role: "player" | "captain" | "vice_captain";
 };
@@ -35,6 +36,8 @@ export type FantasyTeamView =
       managerId: string;
       managerDisplayName: string;
       matchdayId: string;
+      /** Row version for this matchday's `fantasy_teams` when source is manual/admin; 0 if carry_over or no row. */
+      teamVersion: number;
       teamSource: "manual" | "admin" | "carry_over";
       captainPlayerId: string;
       viceCaptainPlayerId: string;
@@ -123,7 +126,12 @@ function buildSlots(
   viceCaptainPlayerId: string,
   playerMeta: Map<
     string,
-    { displayName: string; nickname: string | null; avatarUrl: string | null }
+    {
+      displayName: string;
+      nickname: string | null;
+      kitKey: string | null;
+      avatarUrl: string | null;
+    }
   >,
 ): FantasyTeamPlayerSlot[] {
   return playerIds.map((playerId) => {
@@ -135,6 +143,7 @@ function buildSlots(
       playerId,
       displayName: meta?.displayName ?? "Unknown",
       nickname: meta?.nickname ?? null,
+      kitKey: meta?.kitKey ?? null,
       avatarUrl: meta?.avatarUrl ?? null,
       role,
     };
@@ -192,6 +201,7 @@ export async function getManagerFantasyTeamForViewer(
     .select({
       id: fantasyTeams.id,
       source: fantasyTeams.source,
+      version: fantasyTeams.version,
       captainPlayerId: fantasyTeams.captainPlayerId,
       viceCaptainPlayerId: fantasyTeams.viceCaptainPlayerId,
       squadKind: fantasyTeams.squadKind,
@@ -214,8 +224,10 @@ export async function getManagerFantasyTeamForViewer(
   let reservePlayerId: string | null = null;
 
   const storedRow = stored[0];
+  let teamVersionForRow = 0;
   if (storedRow && (storedRow.source === "manual" || storedRow.source === "admin")) {
     teamSource = storedRow.source;
+    teamVersionForRow = storedRow.version;
     captainPlayerId = storedRow.captainPlayerId;
     viceCaptainPlayerId = storedRow.viceCaptainPlayerId;
     squadKind = storedRow.squadKind;
@@ -244,6 +256,7 @@ export async function getManagerFantasyTeamForViewer(
         managerId: targetManagerId,
         managerDisplayName: manager.displayName,
         matchdayId,
+        teamVersion: 0,
         teamSource: "carry_over",
         captainPlayerId: "",
         viceCaptainPlayerId: "",
@@ -267,6 +280,10 @@ export async function getManagerFantasyTeamForViewer(
       managerId: targetManagerId,
       managerDisplayName: manager.displayName,
       matchdayId,
+      teamVersion:
+        storedRow && (storedRow.source === "manual" || storedRow.source === "admin")
+          ? storedRow.version
+          : 0,
       teamSource,
       captainPlayerId,
       viceCaptainPlayerId,
@@ -282,6 +299,7 @@ export async function getManagerFantasyTeamForViewer(
       id: players.id,
       displayName: players.displayName,
       nickname: players.nickname,
+      kitKey: players.kitKey,
       avatarUrl: players.avatarUrl,
     })
     .from(players)
@@ -294,6 +312,7 @@ export async function getManagerFantasyTeamForViewer(
     managerId: targetManagerId,
     managerDisplayName: manager.displayName,
     matchdayId,
+    teamVersion: teamVersionForRow,
     teamSource,
     captainPlayerId,
     viceCaptainPlayerId,

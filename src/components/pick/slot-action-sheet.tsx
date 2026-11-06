@@ -25,6 +25,7 @@ export function SlotActionSheet({
   open,
   onClose,
   playerName,
+  playerKitKey,
   isCaptain,
   isVice,
   onMakeCaptain,
@@ -39,6 +40,7 @@ export function SlotActionSheet({
   open: boolean;
   onClose: () => void;
   playerName: string;
+  playerKitKey?: string | null;
   isCaptain: boolean;
   isVice: boolean;
   onMakeCaptain: () => void;
@@ -124,7 +126,9 @@ export function SlotActionSheet({
       onClose={onClose}
       title={playerName}
       description={role}
-      leading={<PlayerShirt name={playerName} size="lg" />}
+      leading={
+        <PlayerShirt name={playerName} kitKey={playerKitKey} size="lg" />
+      }
     >
       <ul className="space-y-2 pt-1" role="menu">
         {actions

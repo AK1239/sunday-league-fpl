@@ -17,7 +17,11 @@ export function StandingsRow({ row }: { row: StandingRow }) {
           href={`/players/${row.playerId}`}
           className="flex items-center gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <PlayerShirt name={row.displayName} size="sm" />
+          <PlayerShirt
+            name={row.displayName}
+            kitKey={row.kitKey}
+            size="sm"
+          />
           <span className="font-medium transition-colors group-hover:text-primary">
             {row.displayName}
           </span>

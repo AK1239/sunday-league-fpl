@@ -12,11 +12,13 @@ import {
   reactivatePlayerAction,
   updatePlayerAction,
 } from "@/server/actions/players";
+import { KIT_SELECT_OPTIONS } from "@/lib/kits";
 
 export type AdminPlayer = {
   id: string;
   displayName: string;
   nickname: string | null;
+  kitKey: string | null;
   active: boolean;
 };
 
@@ -131,13 +133,17 @@ function PlayerCard({ player, index }: { player: AdminPlayer; index: number }) {
         )}
       >
         <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-b from-primary/10 to-transparent">
-          <PlayerShirt name={player.displayName} size="md" />
+          <PlayerShirt
+            name={player.displayName}
+            kitKey={player.kitKey}
+            size="md"
+          />
         </div>
 
         <div className="min-w-0 flex-1">
           {editing ? (
             <form
-              className="relative z-10 flex items-center gap-1.5"
+              className="relative z-10 flex flex-col gap-2"
               action={(formData) => {
                 startTransition(async () => {
                   const result = await updatePlayerAction(player.id, formData);
@@ -146,34 +152,51 @@ function PlayerCard({ player, index }: { player: AdminPlayer; index: number }) {
                 });
               }}
             >
-              <Input
-                name="displayName"
-                defaultValue={player.displayName}
-                aria-label={`Display name for ${player.displayName}`}
-                className="h-9 min-w-0 flex-1"
-                required
-                autoFocus
-                disabled={pending}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") setEditing(false);
-                }}
-              />
-              <button
-                type="submit"
-                aria-label="Save name"
-                disabled={pending}
-                className={cn(iconBtn, "bg-primary/15 text-primary")}
-              >
-                <Check className="size-4" aria-hidden />
-              </button>
-              <button
-                type="button"
-                aria-label="Cancel"
-                onClick={() => setEditing(false)}
-                className={iconBtn}
-              >
-                <X className="size-4" aria-hidden />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <Input
+                  name="displayName"
+                  defaultValue={player.displayName}
+                  aria-label={`Display name for ${player.displayName}`}
+                  className="h-9 min-w-0 flex-1"
+                  required
+                  autoFocus
+                  disabled={pending}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setEditing(false);
+                  }}
+                />
+                <button
+                  type="submit"
+                  aria-label="Save name"
+                  disabled={pending}
+                  className={cn(iconBtn, "bg-primary/15 text-primary")}
+                >
+                  <Check className="size-4" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Cancel"
+                  onClick={() => setEditing(false)}
+                  className={iconBtn}
+                >
+                  <X className="size-4" aria-hidden />
+                </button>
+              </div>
+              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Shirt</span>
+                <select
+                  name="kitKey"
+                  defaultValue={player.kitKey ?? "neutral"}
+                  className="h-9 rounded-lg border border-border bg-background px-2 text-sm text-foreground"
+                  disabled={pending}
+                >
+                  {KIT_SELECT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </form>
           ) : (
             <>

@@ -55,6 +55,7 @@ export function FantasyTeamCard({
     return (
       <MyTeamEditablePitch
         matchdayId={matchdayId}
+        teamVersion={team.teamVersion}
         slots={team.slots}
         teamSourceLabel={sourceLabel(team.teamSource)}
       />

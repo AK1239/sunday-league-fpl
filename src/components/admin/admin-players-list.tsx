@@ -11,6 +11,7 @@ export async function AdminPlayersList() {
         id: p.id,
         displayName: p.displayName,
         nickname: p.nickname,
+        kitKey: p.kitKey,
         active: p.active,
       }))}
     />

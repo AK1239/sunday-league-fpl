@@ -33,7 +33,7 @@ export function StandingsCard({
         >
           {row.rank}
         </span>
-        <PlayerShirt name={row.displayName} size="md" />
+        <PlayerShirt name={row.displayName} kitKey={row.kitKey} size="md" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{row.displayName}</p>
           <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">

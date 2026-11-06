@@ -11,6 +11,7 @@ import {
 } from "@/server/domain/players-admin";
 import { savePlayerAvatar } from "@/server/lib/avatar";
 import { requireAdmin } from "@/server/auth/require-admin";
+import { isKitKey } from "@/lib/kits";
 import { actionFail, actionOk, type ActionResult } from "./action-result";
 
 const playerSchema = z.object({
@@ -21,6 +22,12 @@ const playerSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional()
     .or(z.literal("")),
+  kitKey: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .transform((s) => (s == null || s === "" ? null : s))
+    .refine((s) => s == null || isKitKey(s), "Invalid shirt kit."),
 });
 
 export async function createPlayerAction(
@@ -32,6 +39,7 @@ export async function createPlayerAction(
     displayName: formData.get("displayName"),
     nickname: formData.get("nickname") || undefined,
     joinedOn: formData.get("joinedOn") || undefined,
+    kitKey: formData.get("kitKey") || undefined,
   });
 
   if (!parsed.success) {
@@ -45,6 +53,7 @@ export async function createPlayerAction(
       displayName: parsed.data.displayName,
       nickname: parsed.data.nickname,
       joinedOn: parsed.data.joinedOn || null,
+      kitKey: parsed.data.kitKey,
     });
 
     const avatar = formData.get("avatar");
@@ -59,6 +68,7 @@ export async function createPlayerAction(
     }
 
     revalidatePath("/admin/players");
+    revalidatePath("/players");
     return actionOk({ id: player.id });
   } catch (error) {
     if (error instanceof Error && error.message === "DUPLICATE_NAME") {
@@ -82,6 +92,7 @@ export async function updatePlayerAction(
 
   const parsed = playerSchema.safeParse({
     displayName: formData.get("displayName"),
+    kitKey: formData.get("kitKey") || undefined,
   });
 
   if (!parsed.success) {
@@ -91,6 +102,7 @@ export async function updatePlayerAction(
   try {
     await updatePlayerAdmin(getDb(), playerId, {
       displayName: parsed.data.displayName,
+      kitKey: parsed.data.kitKey,
     });
 
     const avatar = formData.get("avatar");
@@ -100,6 +112,7 @@ export async function updatePlayerAction(
     }
 
     revalidatePath("/admin/players");
+    revalidatePath("/players");
     return actionOk();
   } catch (error) {
     if (error instanceof Error && error.message === "DUPLICATE_NAME") {
@@ -122,6 +135,7 @@ export async function deactivatePlayerAction(
   try {
     await setPlayerActiveAdmin(getDb(), playerId, false);
     revalidatePath("/admin/players");
+    revalidatePath("/players");
     return actionOk();
   } catch (error) {
     if (error instanceof Error && error.message === "NOT_FOUND") {
@@ -138,6 +152,7 @@ export async function reactivatePlayerAction(
   try {
     await setPlayerActiveAdmin(getDb(), playerId, true);
     revalidatePath("/admin/players");
+    revalidatePath("/players");
     return actionOk();
   } catch (error) {
     if (error instanceof Error && error.message === "NOT_FOUND") {

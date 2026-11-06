@@ -105,6 +105,8 @@ export const players = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     displayName: text("display_name").notNull(),
     nickname: text("nickname"),
+    /** Shirt design key (`KITS` in `lib/kits.ts`); null = derive from display name (legacy). */
+    kitKey: text("kit_key"),
     avatarUrl: text("avatar_url"),
     active: boolean("active").notNull().default(true),
     joinedOn: date("joined_on"),

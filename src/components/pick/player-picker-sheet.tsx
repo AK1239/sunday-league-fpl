@@ -28,6 +28,7 @@ export function PlayerPickerSheet({
   onSelect,
   costBanner,
   replacingName,
+  replacingKitKey,
 }: {
   open: boolean;
   onClose: () => void;
@@ -38,6 +39,7 @@ export function PlayerPickerSheet({
   costBanner?: string | null;
   /** Name of the player being transferred out, shown as context. */
   replacingName?: string | null;
+  replacingKitKey?: string | null;
 }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<PickerSort>("expected");
@@ -112,6 +114,7 @@ export function PlayerPickerSheet({
         replacing ? (
           <PlayerShirt
             name={replacing}
+            kitKey={replacingKitKey}
             size="md"
             className="opacity-60 grayscale"
           />
@@ -210,7 +213,11 @@ export function PlayerPickerSheet({
                   close();
                 }}
               >
-                <PlayerShirt name={player.displayName} size="md" />
+                <PlayerShirt
+                  name={player.displayName}
+                  kitKey={player.kitKey}
+                  size="md"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">
                     {player.displayName}

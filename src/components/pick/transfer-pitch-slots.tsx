@@ -87,7 +87,11 @@ export function TransferPitchSlots({
                 {player ? (
                   <>
                     <div className="relative">
-                      <PlayerShirt name={player.displayName} size="lg" />
+                      <PlayerShirt
+                        name={player.displayName}
+                        kitKey={player.kitKey}
+                        size="lg"
+                      />
                       {showRoleBadges && isCaptain ? (
                         <CaptainBadge
                           role="captain"

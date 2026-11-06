@@ -15,6 +15,7 @@ export async function createPlayerAdmin(
     displayName: string;
     nickname?: string | null;
     joinedOn?: string | null;
+    kitKey?: string | null;
   },
 ) {
   const displayName = input.displayName.trim();
@@ -34,6 +35,7 @@ export async function createPlayerAdmin(
       displayName,
       nickname: input.nickname?.trim() || null,
       joinedOn: input.joinedOn ?? null,
+      kitKey: input.kitKey ?? null,
       active: true,
     })
     .returning();
@@ -48,6 +50,7 @@ export async function updatePlayerAdmin(
     displayName: string;
     nickname?: string | null;
     joinedOn?: string | null;
+    kitKey?: string | null;
   },
 ) {
   const displayName = input.displayName.trim();
@@ -70,12 +73,16 @@ export async function updatePlayerAdmin(
     displayName: string;
     nickname?: string | null;
     joinedOn?: string | null;
+    kitKey?: string | null;
   } = { displayName };
   if (input.nickname !== undefined) {
     patch.nickname = input.nickname?.trim() || null;
   }
   if (input.joinedOn !== undefined) {
     patch.joinedOn = input.joinedOn ?? null;
+  }
+  if (input.kitKey !== undefined) {
+    patch.kitKey = input.kitKey;
   }
 
   const [row] = await db

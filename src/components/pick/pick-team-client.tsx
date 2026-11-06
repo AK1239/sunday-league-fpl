@@ -16,6 +16,7 @@ import {
 } from "@/components/pick/pick-team-types";
 import { saveFantasyTeamAction } from "@/server/actions/fantasy-team";
 import { validateFantasyTeam } from "@/server/fantasy/validate-team";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const EMPTY_SLOTS: (string | null)[] = [null, null, null, null, null];
@@ -105,6 +106,8 @@ export function PickTeamClient({
       null,
   );
 
+  const [teamVersion, setTeamVersion] = useState(initial.myTeamVersion);
+
   const [pickerOpen, setPickerOpen] = useState(false);
   const [actionOpen, setActionOpen] = useState(false);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
@@ -123,8 +126,9 @@ export function PickTeamClient({
       setSlots(teamToSlots(initial.myTeam.playerIds));
       setCaptainPlayerId(initial.myTeam.captainPlayerId);
       setViceCaptainPlayerId(initial.myTeam.viceCaptainPlayerId);
+      setTeamVersion(initial.myTeamVersion);
     }
-  }, [initial.myTeam]);
+  }, [initial.myTeam, initial.myTeamVersion]);
 
   useEffect(() => {
     if (readOnly) return;
@@ -160,6 +164,21 @@ export function PickTeamClient({
     );
     return validateFantasyTeam(pickForValidation, eligible).ok;
   }, [readOnly, pickForValidation, initial.players]);
+
+  // Saved = matches the stored manual/admin team exactly (a carried-over team
+  // still needs an explicit save for this gameweek).
+  const isSaved = useMemo(() => {
+    const saved = initial.myTeam;
+    if (!saved || saved.playerIds.length !== 5) return false;
+    if (initial.myTeamSource === "carry_over") return false;
+    if (!pickForValidation) return false;
+    const savedSet = new Set(saved.playerIds);
+    return (
+      pickForValidation.playerIds.every((id) => savedSet.has(id)) &&
+      pickForValidation.captainPlayerId === saved.captainPlayerId &&
+      pickForValidation.viceCaptainPlayerId === saved.viceCaptainPlayerId
+    );
+  }, [initial.myTeam, initial.myTeamSource, pickForValidation]);
 
   const liveMessage = `${selectedCount} of 5 players selected`;
 
@@ -215,15 +234,24 @@ export function PickTeamClient({
     setSaving(true);
     const result = await saveFantasyTeamAction(
       initial.matchday.id,
-      pickForValidation,
+      {
+        ...pickForValidation,
+        expectedVersion: teamVersion,
+      },
     );
     setSaving(false);
     if (result.ok === false) {
+      if (result.code === "CONFLICT") {
+        appToast.error(`${result.message} Reloading…`);
+        router.refresh();
+        return;
+      }
       appToast.error(result.message);
       return;
     }
     appToast.success("Team saved");
     clearLocalDraft(initial.matchday.id);
+    setTeamVersion(result.data.version);
     router.refresh();
   }
 
@@ -292,11 +320,20 @@ export function PickTeamClient({
             type="button"
             size="lg"
             className="w-full"
-            disabled={!canSave || saving}
+            disabled={!canSave || saving || isSaved}
             aria-busy={saving}
             onClick={handleSave}
           >
-            {saving ? "Saving…" : "Save team"}
+            {saving ? (
+              "Saving…"
+            ) : isSaved ? (
+              <>
+                <Check aria-hidden />
+                Team saved
+              </>
+            ) : (
+              "Save team"
+            )}
           </Button>
           {!canSave && selectedCount > 0 ? (
             <p className="mt-2 text-center text-xs text-muted-foreground">
@@ -319,6 +356,7 @@ export function PickTeamClient({
           open={actionOpen}
           onClose={() => setActionOpen(false)}
           playerName={activePlayer.displayName}
+          playerKitKey={activePlayer.kitKey}
           isCaptain={activePlayerId === captainPlayerId}
           isVice={activePlayerId === viceCaptainPlayerId}
           onMakeCaptain={() => {

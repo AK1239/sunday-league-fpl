@@ -22,6 +22,8 @@ export type PickTeamPlayerRow = {
   id: string;
   displayName: string;
   nickname: string | null;
+  /** Shirt kit (`lib/kits`); null = derive from name for legacy rows. */
+  kitKey: string | null;
   avatarUrl: string | null;
   form: number[];
   lastGameweekPoints: number | null;
@@ -44,6 +46,8 @@ export type PickTeamData = {
   locked: boolean;
   players: PickTeamPlayerRow[];
   myTeam: FantasyTeamPick | null;
+  /** Fantasy team row version for manual/admin saves; 0 when no row or carry-over only. */
+  myTeamVersion: number;
   myTeamSource: "manual" | "admin" | "carry_over" | null;
 };
 
@@ -190,6 +194,7 @@ export async function getPickTeamData(
       id: players.id,
       displayName: players.displayName,
       nickname: players.nickname,
+      kitKey: players.kitKey,
       avatarUrl: players.avatarUrl,
     })
     .from(players)
@@ -204,6 +209,7 @@ export async function getPickTeamData(
       id: player.id,
       displayName: player.displayName,
       nickname: player.nickname,
+      kitKey: player.kitKey,
       avatarUrl: player.avatarUrl,
       form,
       lastGameweekPoints: stats.lastGwByPlayer.get(player.id) ?? null,
@@ -225,6 +231,7 @@ export async function getPickTeamData(
   );
 
   let myTeam: FantasyTeamPick | null = null;
+  let myTeamVersion = 0;
   let myTeamSource: PickTeamData["myTeamSource"] = null;
 
   if (teamView.visibility === "visible" && teamView.playerIds.length === 5) {
@@ -234,6 +241,9 @@ export async function getPickTeamData(
       viceCaptainPlayerId: teamView.viceCaptainPlayerId,
     };
     myTeamSource = teamView.teamSource;
+    if (teamView.teamSource === "manual" || teamView.teamSource === "admin") {
+      myTeamVersion = teamView.teamVersion;
+    }
   }
 
   return {
@@ -250,6 +260,7 @@ export async function getPickTeamData(
     locked: isLocked(lockState, serverNow),
     players: playersOut,
     myTeam,
+    myTeamVersion,
     myTeamSource,
   };
 }

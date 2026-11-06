@@ -567,6 +567,11 @@ export function TransfersTeamClient({
     [pick.players],
   );
 
+  const playerKitKeyById = useMemo(
+    () => new Map(pick.players.map((p) => [p.id, p.kitKey])),
+    [pick.players],
+  );
+
   return (
     <div className="space-y-6 pb-44 md:pb-10">
       <PageHeader
@@ -837,6 +842,11 @@ export function TransfersTeamClient({
             ? (playerById.get(slots[pendingOutSlot]!)?.displayName ?? null)
             : null
         }
+        replacingKitKey={
+          pendingOutSlot != null && slots[pendingOutSlot]
+            ? (playerById.get(slots[pendingOutSlot]!)?.kitKey ?? null)
+            : null
+        }
         costBanner={
           unlimitedTransfers
             ? null
@@ -864,6 +874,7 @@ export function TransfersTeamClient({
           open={actionOpen}
           onClose={() => setActionOpen(false)}
           playerName={activePlayer.displayName}
+          playerKitKey={activePlayer.kitKey}
           isCaptain={activePlayerId === captainPlayerId}
           isVice={activePlayerId === viceCaptainPlayerId}
           transferMode
@@ -903,6 +914,7 @@ export function TransfersTeamClient({
         summary={summary}
         freeAvailable={initial.freeAvailable}
         playerNameById={playerNameById}
+        playerKitKeyById={playerKitKeyById}
       />
 
       <ChipDetailDrawer

@@ -67,7 +67,11 @@ export function PitchSlots({
               {player ? (
                 <>
                   <div className="relative">
-                    <PlayerShirt name={player.displayName} size="lg" />
+                    <PlayerShirt
+                      name={player.displayName}
+                      kitKey={player.kitKey}
+                      size="lg"
+                    />
                     {isCaptain ? (
                       <CaptainBadge
                         role="captain"

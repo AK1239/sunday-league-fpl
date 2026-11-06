@@ -35,7 +35,13 @@ export type TransferHistoryEntry = {
   playedOn: string;
   freeAvailable: number;
   made: number;
-  pairs: { playerOutName: string; playerInName: string; penalised: boolean }[];
+  pairs: {
+    playerOutName: string;
+    playerInName: string;
+    playerOutKitKey: string | null;
+    playerInKitKey: string | null;
+    penalised: boolean;
+  }[];
 };
 
 export type TransferPageData =
@@ -101,10 +107,17 @@ async function loadTransferHistory(
     ),
   ];
   const nameRows = await db
-    .select({ id: players.id, displayName: players.displayName })
+    .select({
+      id: players.id,
+      displayName: players.displayName,
+      kitKey: players.kitKey,
+    })
     .from(players)
     .where(inArray(players.id, playerIds));
   const names = new Map(nameRows.map((p) => [p.id, p.displayName]));
+  const kitKeys = new Map(
+    nameRows.map((p) => [p.id, p.kitKey]),
+  );
 
   const byMatchday = new Map<string, TransferHistoryEntry>();
 
@@ -125,6 +138,8 @@ async function loadTransferHistory(
     entry.pairs.push({
       playerOutName: names.get(row.playerOutId) ?? "Out",
       playerInName: names.get(row.playerInId) ?? "In",
+      playerOutKitKey: kitKeys.get(row.playerOutId) ?? null,
+      playerInKitKey: kitKeys.get(row.playerInId) ?? null,
       penalised: row.seq > (row.freeAvailable ?? 0),
     });
   }

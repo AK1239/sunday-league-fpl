@@ -36,34 +36,41 @@ function mapFantasyTeamError(error: unknown): ActionFailure | null {
   return null;
 }
 
+const savePickSchema = pickSchema.extend({
+  /** 0 when no row yet; must match `fantasy_teams.version` when updating. */
+  expectedVersion: z.coerce.number().int().min(0).optional().default(0),
+});
+
 export async function saveFantasyTeamAction(
   matchdayId: string,
-  pick: FantasyTeamPick,
-): Promise<ActionResult<{ teamId: string }>> {
+  pick: FantasyTeamPick & { expectedVersion?: number },
+): Promise<ActionResult<{ teamId: string; version: number }>> {
   const session = await requireUser();
   if (!z.string().uuid().safeParse(matchdayId).success) {
     return actionFail("VALIDATION", "Invalid gameweek.");
   }
 
-  const parsed = pickSchema.safeParse(pick);
+  const parsed = savePickSchema.safeParse(pick);
   if (!parsed.success) {
     return actionFail("VALIDATION", "Pick exactly 5 players with captain and vice.");
   }
+
+  const { expectedVersion, ...pickRest } = parsed.data;
 
   try {
     const result = await submitTeam(
       getDb(),
       matchdayId,
       {
-        ...parsed.data,
-        expectedVersion: 0,
+        ...pickRest,
+        expectedVersion,
         acknowledgedPenalty: 0,
       },
       session.userId,
     );
     revalidatePath("/pick");
     revalidatePath("/my");
-    return actionOk({ teamId: result.teamId });
+    return actionOk({ teamId: result.teamId, version: result.version });
   } catch (error) {
     return (
       mapFantasyTeamError(error) ?? actionFail("ERROR", "Could not save team.")

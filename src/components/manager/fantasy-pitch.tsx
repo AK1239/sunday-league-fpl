@@ -112,6 +112,7 @@ function PitchPlayer({
       >
         <PlayerShirt
           name={slot.displayName}
+          kitKey={slot.kitKey}
           size="lg"
           className="w-14 sm:w-16"
         />

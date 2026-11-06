@@ -71,6 +71,10 @@ export const KITS = {
 
 export type KitKey = keyof typeof KITS;
 
+export function isKitKey(value: string): value is KitKey {
+  return value in KITS;
+}
+
 const PLAYER_KIT: Record<string, KitKey> = {
   akil: "chelsea",
   yusuf: "liverpool",
@@ -94,3 +98,22 @@ export function kitKeyForPlayer(displayName: string): KitKey {
 export function kitForPlayer(displayName: string): Kit {
   return KITS[kitKeyForPlayer(displayName)];
 }
+
+/** Prefer stored `kit_key` from DB; otherwise derive from display name. */
+export function kitForPlayerRow(
+  displayName: string,
+  kitKeyFromDb: string | null | undefined,
+): Kit {
+  if (kitKeyFromDb != null && kitKeyFromDb in KITS) {
+    return KITS[kitKeyFromDb as KitKey];
+  }
+  return kitForPlayer(displayName);
+}
+
+/** Admin dropdown: kit id → label */
+export const KIT_SELECT_OPTIONS: { value: KitKey; label: string }[] = (
+  Object.keys(KITS) as KitKey[]
+).map((value) => ({
+  value,
+  label: KITS[value].label,
+}));

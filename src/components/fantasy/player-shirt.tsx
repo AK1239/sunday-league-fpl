@@ -1,5 +1,6 @@
 import { useId } from "react";
-import { kitForPlayer } from "@/lib/kits";
+import type { Kit } from "@/lib/kits";
+import { kitForPlayer, kitForPlayerRow } from "@/lib/kits";
 import { cn } from "@/lib/utils";
 
 const sizeClasses = {
@@ -18,14 +19,20 @@ const COLLAR = "M34 8 Q50 22 66 8 L62 6 Q50 16 38 6 Z";
 
 export function PlayerShirt({
   name,
+  kitKey,
+  kit: kitOverride,
   size = "md",
   className,
 }: {
   name: string;
+  /** When set (from DB), drives shirt colours. Omit to use legacy name-based map. */
+  kitKey?: string | null;
+  /** Optional pre-resolved kit (avoids recomputing when parent already has row data). */
+  kit?: Kit;
   size?: keyof typeof sizeClasses;
   className?: string;
 }) {
-  const kit = kitForPlayer(name);
+  const kit = kitOverride ?? (kitKey != null ? kitForPlayerRow(name, kitKey) : kitForPlayer(name));
   const uid = useId().replace(/:/g, "");
   const clip = `shirt-${uid}`;
 

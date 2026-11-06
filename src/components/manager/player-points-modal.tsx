@@ -89,7 +89,13 @@ export function PlayerPointsModal({
       onClose={onClose}
       title={slot.displayName}
       description={`${roleLabel(slot.role)} · Gameweek ${gameweek}`}
-      leading={<PlayerShirt name={slot.displayName} size="lg" />}
+      leading={
+        <PlayerShirt
+          name={slot.displayName}
+          kitKey={slot.kitKey}
+          size="lg"
+        />
+      }
     >
       <div className="space-y-4 pt-1">
         <div className="flex items-end justify-between rounded-2xl border border-primary/25 bg-primary/10 px-4 py-3">

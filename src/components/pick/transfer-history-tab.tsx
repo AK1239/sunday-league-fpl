@@ -40,9 +40,17 @@ export function TransferHistoryTab({
                 className="flex items-center justify-between gap-2 text-sm"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-2">
-                  <PlayerShirt name={pair.playerOutName} size="sm" />
+                  <PlayerShirt
+                    name={pair.playerOutName}
+                    kitKey={pair.playerOutKitKey}
+                    size="sm"
+                  />
                   <span className="text-muted-foreground">→</span>
-                  <PlayerShirt name={pair.playerInName} size="sm" />
+                  <PlayerShirt
+                    name={pair.playerInName}
+                    kitKey={pair.playerInKitKey}
+                    size="sm"
+                  />
                 </div>
                 <span
                   className={cn(
