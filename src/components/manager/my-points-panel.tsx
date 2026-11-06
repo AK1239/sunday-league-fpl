@@ -1,18 +1,33 @@
-import Link from "next/link";
+import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import { PageHeader } from "@/components/fantasy/page-header";
 import { EmptyState } from "@/components/fantasy/empty-state";
+import { PageHeader } from "@/components/fantasy/page-header";
+import { GameweekNavigator } from "@/components/manager/gameweek-navigator";
+import { GameweekTeam } from "@/components/manager/gameweek-team";
 import { requireUser } from "@/server/auth/require-user";
 import { getDb } from "@/server/db";
+import { getManagerFantasyTeamForViewer } from "@/server/queries/fantasy-team-view";
 import {
   getManagerMySeasonId,
   getMyPointsGameweeks,
 } from "@/server/queries/manager-my-pages";
+import { getGameweekDetails } from "@/server/queries/manager-score-lines";
 
-export async function MyPointsPanel() {
+/** Pitch + points for one gameweek. Defaults to the latest published one. */
+export async function MyPointsPanel({ matchdayId }: { matchdayId?: string }) {
   await connection();
   const user = await requireUser();
-  const seasonId = await getManagerMySeasonId(getDb());
+  const db = getDb();
+  const seasonId = await getManagerMySeasonId(db);
+
+  const header = (
+    <PageHeader
+      eyebrow="Season history"
+      title="My Points"
+      description="Your team and points, gameweek by gameweek."
+    />
+  );
+
   if (!seasonId) {
     return (
       <EmptyState
@@ -22,52 +37,57 @@ export async function MyPointsPanel() {
     );
   }
 
-  const rows = await getMyPointsGameweeks(getDb(), user.userId, seasonId);
-
-  return (
-    <div className="space-y-8">
-      <PageHeader
-        eyebrow="Season history"
-        title="My Points"
-        description="Tap a gameweek for the full player breakdown."
-      />
-
-      {rows.length === 0 ? (
+  // Newest first from the query; the navigator wants oldest → newest.
+  const rows = await getMyPointsGameweeks(db, user.userId, seasonId);
+  if (rows.length === 0) {
+    return (
+      <div className="space-y-8">
+        {header}
         <EmptyState
           title="No published gameweeks yet"
-          description="Your scores will list here once the admin publishes Sunday results."
+          description="Your points will show here once the admin publishes Sunday results."
         />
-      ) : (
-        <ul className="space-y-2">
-          {rows.map((row) => (
-            <li key={row.matchdayId}>
-              <Link
-                href={`/my/points/${row.matchdayId}`}
-                className="surface flex items-center justify-between gap-4 rounded-2xl px-4 py-3 transition-colors hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <div>
-                  <p className="font-heading font-semibold tabular-nums">
-                    GW{row.number}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {row.playedOn}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold tabular-nums text-primary">
-                    {row.totalPoints}
-                  </p>
-                  {row.rankAfter != null ? (
-                    <p className="text-xs text-muted-foreground">
-                      Rank #{row.rankAfter}
-                    </p>
-                  ) : null}
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      </div>
+    );
+  }
+
+  const current = matchdayId
+    ? rows.find((r) => r.matchdayId === matchdayId)
+    : rows[0];
+  if (!current) notFound();
+
+  const [team, details] = await Promise.all([
+    getManagerFantasyTeamForViewer(db, current.matchdayId, user.userId, {
+      viewerUserId: user.userId,
+      viewerRole: "manager",
+      targetManagerId: user.userId,
+    }),
+    getGameweekDetails(db, user.userId, [current.matchdayId]),
+  ]);
+
+  const items = [...rows].reverse().map((r) => ({
+    matchdayId: r.matchdayId,
+    number: r.number,
+    totalPoints: r.totalPoints,
+  }));
+
+  return (
+    <div className="space-y-6">
+      {header}
+      <GameweekNavigator items={items} currentId={current.matchdayId}>
+        <GameweekTeam
+          number={current.number}
+          playedOn={current.playedOn}
+          totalPoints={current.totalPoints}
+          rankAfter={current.rankAfter}
+          team={team}
+          lines={details.lines[current.matchdayId]}
+          events={details.events[current.matchdayId]}
+          scoreBreakdown={details.scores[current.matchdayId] ?? null}
+          emptyTitle="You sat this one out"
+          emptyMessage={`You didn't have a team for GW${current.number}, so no points were scored.`}
+        />
+      </GameweekNavigator>
     </div>
   );
 }

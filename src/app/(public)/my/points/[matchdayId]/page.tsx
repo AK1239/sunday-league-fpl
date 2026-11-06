@@ -1,23 +1,23 @@
 import { MyPagesShell } from "@/components/manager/my-pages-shell";
-import { MyPointsDetailPanel } from "@/components/manager/my-points-detail-panel";
+import { MyPointsPanel } from "@/components/manager/my-points-panel";
 
-export default function MyPointsDetailPage({
+export default function MyPointsGameweekPage({
   params,
 }: {
   params: Promise<{ matchdayId: string }>;
 }) {
   return (
     <MyPagesShell>
-      <MyPointsDetailPanelRoute params={params} />
+      <MyPointsGameweek params={params} />
     </MyPagesShell>
   );
 }
 
-async function MyPointsDetailPanelRoute({
+async function MyPointsGameweek({
   params,
 }: {
   params: Promise<{ matchdayId: string }>;
 }) {
   const { matchdayId } = await params;
-  return <MyPointsDetailPanel matchdayId={matchdayId} />;
+  return <MyPointsPanel matchdayId={matchdayId} />;
 }
