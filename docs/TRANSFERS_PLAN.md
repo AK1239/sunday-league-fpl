@@ -589,8 +589,8 @@ Chips (separate future project) plug into the documented hook points in §5.
 - [x] Phase 3: concurrency and atomicity integration tests
 - [x] Phase 4: recompute reads windows; `squad_points` / `transfer_penalty`; fix rank filter
 - [x] Phase 5: cancel/postpone hooks; disabled-manager handling; mid-season join
-- [ ] Phase 6: transfers UI (pitch, picker banner, summary, confirm, history, locked)
-- [ ] Phase 6: breakdown modal + gameweek card show transfers/penalty
+- [x] Phase 6: transfers UI (pitch, picker banner, summary, confirm, history, locked)
+- [x] Phase 6: breakdown modal + gameweek card show transfers/penalty
 - [ ] Phase 7: admin activity, manager history, adjustments, corrections + preview + cascade
 - [ ] Phase 7: transfer rules in the season/rule-set form
 - [ ] Phase 8: Playwright + a11y; docs; enable from chosen matchday

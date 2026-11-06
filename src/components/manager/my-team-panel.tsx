@@ -48,10 +48,13 @@ export async function MyTeamPanel() {
               </h2>
               <p className="text-sm text-muted-foreground tabular-nums">
                 {data.upcoming.playedOn}
+                {data.upcomingFreeTransfers != null
+                  ? ` · Free transfers: ${data.upcomingFreeTransfers}`
+                  : null}
               </p>
             </div>
             <Link href="/pick" className={cn(buttonVariants({ size: "sm" }))}>
-              Pick Team
+              {data.upcomingFreeTransfers != null ? "Transfers" : "Pick Team"}
             </Link>
           </div>
           <FantasyTeamCard
@@ -81,6 +84,9 @@ export async function MyTeamPanel() {
             team={data.latestPublished.team}
             lines={latestId ? details?.lines[latestId] : undefined}
             events={latestId ? details?.events[latestId] : undefined}
+            scoreBreakdown={
+              latestId ? details?.scores[latestId] : undefined
+            }
             emptyTitle="You sat this one out"
             emptyMessage={`You didn't have a team for GW${data.latestPublished.number}, so no points were scored. Set yours early next time.`}
           />

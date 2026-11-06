@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import type { FantasyTeamPlayerSlot } from "@/server/queries/fantasy-team-view";
 import type {
   ManagerLine,
+  MatchdayScoreBreakdown,
   PlayerPointEvent,
 } from "@/server/queries/manager-score-lines";
 
@@ -17,11 +18,13 @@ export function GameweekTeamBody({
   slots,
   lines,
   events,
+  scoreBreakdown,
 }: {
   gameweek: number;
   slots: FantasyTeamPlayerSlot[];
   lines?: Record<string, ManagerLine>;
   events?: Record<string, PlayerPointEvent[]>;
+  scoreBreakdown?: MatchdayScoreBreakdown | null;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -47,6 +50,22 @@ export function GameweekTeamBody({
         <FantasyPitch slots={slots} lines={lines} onSelectPlayer={select} />
 
         <div className="space-y-4">
+          {scoreBreakdown && scoreBreakdown.transferPenalty < 0 ? (
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm">
+              <span className="font-medium">Transfers</span>
+              <span className="text-muted-foreground">
+                {" "}
+                · squad {scoreBreakdown.squadPoints} pts · hit{" "}
+              </span>
+              <span className="font-semibold tabular-nums text-destructive">
+                {scoreBreakdown.transferPenalty}
+              </span>
+              <span className="text-muted-foreground">
+                {" "}
+                · total {scoreBreakdown.totalPoints}
+              </span>
+            </div>
+          ) : null}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h4 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
               Points breakdown

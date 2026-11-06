@@ -31,6 +31,16 @@ export async function MyPointsDetailPanel({
         description={`${detail.matchday.playedOn} · ${detail.teamSource.replaceAll("_", " ")}`}
       />
 
+      {detail.transferPenalty < 0 ? (
+        <p className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
+          Squad points {detail.squadPoints} · transfer hit{" "}
+          <span className="font-semibold tabular-nums text-destructive">
+            {detail.transferPenalty}
+          </span>{" "}
+          · total {detail.totalPoints}
+        </p>
+      ) : null}
+
       {detail.lines.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No score lines — you may not have had a team this gameweek.

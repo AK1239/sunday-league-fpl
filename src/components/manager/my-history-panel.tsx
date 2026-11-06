@@ -55,6 +55,7 @@ export async function MyHistoryPanel() {
                 team={entry.team}
                 lines={details.lines[entry.matchdayId]}
                 events={details.events[entry.matchdayId]}
+                scoreBreakdown={details.scores[entry.matchdayId]}
               />
             </li>
           ))}

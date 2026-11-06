@@ -121,6 +121,7 @@ export async function ManagerProfilePanel({
             team={entry.team}
             lines={details.lines[entry.matchdayId]}
             events={details.events[entry.matchdayId]}
+            scoreBreakdown={details.scores[entry.matchdayId]}
             emptyMessage={
               entry.team.visibility === "hidden"
                 ? "Team hidden until deadline."

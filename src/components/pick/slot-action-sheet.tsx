@@ -33,6 +33,7 @@ export function SlotActionSheet({
   onReplace,
   onViewPlayer,
   showSquadEditActions = true,
+  transferMode = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -46,12 +47,16 @@ export function SlotActionSheet({
   onViewPlayer?: () => void;
   /** Replace / remove — hidden on read-only views like My Team. */
   showSquadEditActions?: boolean;
+  /** Transfers screen: transfer out + free captain labels. */
+  transferMode?: boolean;
 }) {
   const actions: Action[] = [
     {
       key: "captain",
       label: "Make captain",
-      hint: "Your points are multiplied",
+      hint: transferMode
+        ? "Free — your points are multiplied"
+        : "Your points are multiplied",
       icon: <Crown />,
       onSelect: onMakeCaptain,
       hidden: isCaptain,
@@ -59,7 +64,9 @@ export function SlotActionSheet({
     {
       key: "vice",
       label: "Make vice-captain",
-      hint: "Steps in if your captain doesn't play",
+      hint: transferMode
+        ? "Free — steps in if your captain doesn't play"
+        : "Steps in if your captain doesn't play",
       icon: <ShieldCheck />,
       onSelect: onMakeVice,
       hidden: isVice,
@@ -68,8 +75,10 @@ export function SlotActionSheet({
       ? [
           {
             key: "replace",
-            label: "Replace player",
-            hint: "Swap for someone else",
+            label: transferMode ? "Transfer out" : "Replace player",
+            hint: transferMode
+              ? "Pick a replacement player"
+              : "Swap for someone else",
             icon: <ArrowLeftRight />,
             onSelect: onReplace,
           } satisfies Action,

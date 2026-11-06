@@ -18,12 +18,15 @@ export function PlayerPickerSheet({
   players,
   selectedIds,
   onSelect,
+  costBanner,
 }: {
   open: boolean;
   onClose: () => void;
   players: PickTeamPlayerRow[];
   selectedIds: Set<string>;
   onSelect: (playerId: string) => void;
+  /** Shown when the next pick would be an extra transfer. */
+  costBanner?: string | null;
 }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<PickerSort>("expected");
@@ -78,8 +81,20 @@ export function PlayerPickerSheet({
   }, [players, query, selectedIds, sort]);
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Add player">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title={costBanner ? "Choose replacement" : "Add player"}
+    >
       <div className="space-y-3 pb-4">
+        {costBanner ? (
+          <p
+            className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"
+            role="status"
+          >
+            {costBanner}
+          </p>
+        ) : null}
         <Input
           type="search"
           placeholder="Search players…"

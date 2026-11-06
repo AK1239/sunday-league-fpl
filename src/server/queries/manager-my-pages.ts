@@ -6,9 +6,21 @@ import {
   managerScoreLines,
   matchdays,
   players,
+  scoringRuleSets,
   seasons,
 } from "@/server/db/schema";
 import { getActiveSeasonId } from "@/server/domain/matchdays-admin";
+import { computeFreeAvailableForMatchday } from "@/server/domain/transfer-balance";
+import {
+  hasPriorSubmittedSquadInSeason,
+  resolveBaseSquadPlayerIds,
+} from "@/server/fantasy/transfer-base-squad";
+import {
+  isTransferModeEnabled,
+  seasonTransferRulesFromRow,
+  transferRulesApplyToMatchday,
+} from "@/server/fantasy/transfer-rules";
+import { loadSubmittedTeamsForSeason } from "@/server/queries/fantasy-team-view";
 import {
   getManagerFantasyTeamForViewer,
   getNextScheduledMatchday,
@@ -61,6 +73,8 @@ export type MyTeamPageData = {
     totalPoints: number | null;
     team: FantasyTeamView;
   } | null;
+  /** When transfer rules apply to the upcoming GW and the manager has a base squad. */
+  upcomingFreeTransfers: number | null;
 };
 
 export async function getMyTeamPageData(
@@ -159,12 +173,78 @@ export async function getMyTeamPageData(
     };
   }
 
+  let upcomingFreeTransfers: number | null = null;
+  if (upcomingMd) {
+    const [ruleRow] = await db
+      .select({
+        transfersStartMatchday: scoringRuleSets.transfersStartMatchday,
+        freeTransfersPerMatchday: scoringRuleSets.freeTransfersPerMatchday,
+        maxBankedFreeTransfers: scoringRuleSets.maxBankedFreeTransfers,
+        extraTransferPenalty: scoringRuleSets.extraTransferPenalty,
+      })
+      .from(seasons)
+      .innerJoin(scoringRuleSets, eq(seasons.ruleSetId, scoringRuleSets.id))
+      .where(eq(seasons.id, seasonId))
+      .limit(1);
+
+    if (ruleRow) {
+      const transferRules = seasonTransferRulesFromRow(ruleRow);
+      const transferMode =
+        isTransferModeEnabled(transferRules.transfersStartMatchday) &&
+        transferRulesApplyToMatchday(transferRules, upcomingMd.number);
+
+      if (transferMode) {
+        const submitted = await loadSubmittedTeamsForSeason(db, seasonId);
+        const [seasonRow] = await db
+          .select({ startsOn: seasons.startsOn })
+          .from(seasons)
+          .where(eq(seasons.id, seasonId))
+          .limit(1);
+        const timeline = {
+          matchdayId: upcomingMd.id,
+          playedOn: upcomingMd.playedOn,
+          number: upcomingMd.number,
+          seasonStartsOn: seasonRow?.startsOn ?? "1970-01-01",
+        };
+        const basePlayerIds = resolveBaseSquadPlayerIds(
+          managerId,
+          timeline,
+          submitted,
+        );
+        const initialBuild = !hasPriorSubmittedSquadInSeason(
+          managerId,
+          timeline,
+          submitted,
+        );
+        if (
+          !initialBuild &&
+          basePlayerIds &&
+          basePlayerIds.length === 5
+        ) {
+          upcomingFreeTransfers = await computeFreeAvailableForMatchday(db, {
+            managerId,
+            seasonId,
+            matchdayId: upcomingMd.id,
+            matchdayNumber: upcomingMd.number,
+            transfersStartMatchday: transferRules.transfersStartMatchday!,
+            rules: {
+              grant: transferRules.grant,
+              cap: transferRules.cap,
+              penaltyPerExtra: transferRules.penaltyPerExtra,
+            },
+          });
+        }
+      }
+    }
+  }
+
   return {
     seasonId,
     seasonName: season?.name ?? "Season",
     seasonTotalPoints: total ?? 0,
     upcoming,
     latestPublished,
+    upcomingFreeTransfers,
   };
 }
 
@@ -219,6 +299,8 @@ export async function getMyGameweekDetail(
 ): Promise<{
   matchday: { id: string; number: number; playedOn: string };
   totalPoints: number;
+  squadPoints: number;
+  transferPenalty: number;
   teamSource: string;
   lines: MyScoreLineRow[];
 } | null> {
@@ -238,6 +320,8 @@ export async function getMyGameweekDetail(
   const [score] = await db
     .select({
       totalPoints: managerMatchdayScores.totalPoints,
+      squadPoints: managerMatchdayScores.squadPoints,
+      transferPenalty: managerMatchdayScores.transferPenalty,
       teamSource: managerMatchdayScores.teamSource,
     })
     .from(managerMatchdayScores)
@@ -272,6 +356,8 @@ export async function getMyGameweekDetail(
   return {
     matchday: { id: md.id, number: md.number, playedOn: md.playedOn },
     totalPoints: score?.totalPoints ?? 0,
+    squadPoints: score?.squadPoints ?? 0,
+    transferPenalty: score?.transferPenalty ?? 0,
     teamSource: score?.teamSource ?? "none",
     lines: lineRows,
   };

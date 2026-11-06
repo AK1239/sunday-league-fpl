@@ -3,6 +3,7 @@ import { FantasyTeamCard } from "@/components/manager/fantasy-team-card";
 import type { FantasyTeamView } from "@/server/queries/fantasy-team-view";
 import type {
   ManagerLine,
+  MatchdayScoreBreakdown,
   PlayerPointEvent,
 } from "@/server/queries/manager-score-lines";
 
@@ -24,6 +25,7 @@ export function GameweekTeam({
   team,
   lines,
   events,
+  scoreBreakdown,
   emptyTitle,
   emptyMessage,
 }: {
@@ -34,6 +36,7 @@ export function GameweekTeam({
   team: FantasyTeamView;
   lines?: Record<string, ManagerLine>;
   events?: Record<string, PlayerPointEvent[]>;
+  scoreBreakdown?: MatchdayScoreBreakdown | null;
   emptyTitle?: string;
   emptyMessage?: string;
 }) {
@@ -94,6 +97,7 @@ export function GameweekTeam({
           slots={team.slots}
           lines={lines}
           events={events}
+          scoreBreakdown={scoreBreakdown}
         />
       )}
     </article>

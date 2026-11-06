@@ -1,6 +1,10 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { AppDb } from "@/server/db";
-import { managerScoreLines, pointLedger } from "@/server/db/schema";
+import {
+  managerMatchdayScores,
+  managerScoreLines,
+  pointLedger,
+} from "@/server/db/schema";
 
 export type ManagerLine = {
   points: number;
@@ -64,10 +68,48 @@ export type PlayerEventsByMatchday = Record<
   Record<string, PlayerPointEvent[]>
 >;
 
+export type MatchdayScoreBreakdown = {
+  squadPoints: number;
+  transferPenalty: number;
+  totalPoints: number;
+};
+
 export type GameweekDetails = {
   lines: ManagerLinesByMatchday;
   events: PlayerEventsByMatchday;
+  scores: Record<string, MatchdayScoreBreakdown>;
 };
+
+async function loadMatchdayScoreBreakdowns(
+  db: AppDb,
+  managerId: string,
+  matchdayIds: string[],
+): Promise<Record<string, MatchdayScoreBreakdown>> {
+  if (matchdayIds.length === 0) return {};
+  const rows = await db
+    .select({
+      matchdayId: managerMatchdayScores.matchdayId,
+      squadPoints: managerMatchdayScores.squadPoints,
+      transferPenalty: managerMatchdayScores.transferPenalty,
+      totalPoints: managerMatchdayScores.totalPoints,
+    })
+    .from(managerMatchdayScores)
+    .where(
+      and(
+        eq(managerMatchdayScores.managerId, managerId),
+        inArray(managerMatchdayScores.matchdayId, matchdayIds),
+      ),
+    );
+  const out: Record<string, MatchdayScoreBreakdown> = {};
+  for (const r of rows) {
+    out[r.matchdayId] = {
+      squadPoints: r.squadPoints,
+      transferPenalty: r.transferPenalty,
+      totalPoints: r.totalPoints,
+    };
+  }
+  return out;
+}
 
 /** Per-player scored lines plus the ledger events that explain them. */
 export async function getGameweekDetails(
@@ -75,17 +117,16 @@ export async function getGameweekDetails(
   managerId: string,
   matchdayIds: string[],
 ): Promise<GameweekDetails> {
-  const lines = await getManagerScoreLinesByMatchday(
-    db,
-    managerId,
-    matchdayIds,
-  );
+  const [lines, scores] = await Promise.all([
+    getManagerScoreLinesByMatchday(db, managerId, matchdayIds),
+    loadMatchdayScoreBreakdowns(db, managerId, matchdayIds),
+  ]);
   const playerIds = [
     ...new Set(
       Object.values(lines).flatMap((byPlayer) => Object.keys(byPlayer)),
     ),
   ];
-  if (playerIds.length === 0) return { lines, events: {} };
+  if (playerIds.length === 0) return { lines, events: {}, scores };
 
   const rows = await db
     .select({
@@ -112,5 +153,5 @@ export async function getGameweekDetails(
       points: r.points,
     });
   }
-  return { lines, events };
+  return { lines, events, scores };
 }
