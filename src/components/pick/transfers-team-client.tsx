@@ -124,7 +124,12 @@ export function TransfersTeamClient({
     if (pick.myTeam?.playerIds.length === 5) return pick.myTeam.playerIds;
     return [] as string[];
   }, [basePlayerIds, pick.myTeam]);
-  const emptyBase = isFirstSeasonGw && permanentBasePlayerIds.length === 0;
+  /**
+   * The whole first gameweek (no earlier squad) is a free build, like the
+   * server treats it: no transfers, no penalty, edits stay free until the
+   * deadline, even after a team has been saved.
+   */
+  const freeBuild = isFirstSeasonGw;
 
   const [teamVersion, setTeamVersion] = useState(initial.teamVersion);
   const [draftStaleNotice, setDraftStaleNotice] = useState(false);
@@ -148,7 +153,7 @@ export function TransfersTeamClient({
     }
     return pick.myTeam?.playerIds.length === 5
       ? teamToSlots(pick.myTeam.playerIds)
-      : emptyBase
+      : freeBuild
         ? [...EMPTY_FIVE_SLOTS]
         : teamToSlots(permanentBasePlayerIds);
   });
@@ -220,8 +225,13 @@ export function TransfersTeamClient({
   );
 
   const lineupBaseForValidation = useMemo(
-    () => (chipCode === "free_hit" ? basePlayerIds : permanentBasePlayerIds),
-    [chipCode, basePlayerIds, permanentBasePlayerIds],
+    () =>
+      freeBuild
+        ? ([] as string[])
+        : chipCode === "free_hit"
+          ? basePlayerIds
+          : permanentBasePlayerIds,
+    [freeBuild, chipCode, basePlayerIds, permanentBasePlayerIds],
   );
 
   const diff = useMemo(
@@ -239,7 +249,7 @@ export function TransfersTeamClient({
         nextSquad: plannedIds,
         freeAvailable: initial.freeAvailable,
         penaltyPerExtra: initial.penaltyPerExtra,
-        unlimited: unlimitedTransfers,
+        unlimited: unlimitedTransfers || freeBuild,
       }),
     [
       lineupBaseForValidation,
@@ -247,14 +257,21 @@ export function TransfersTeamClient({
       initial.freeAvailable,
       initial.penaltyPerExtra,
       unlimitedTransfers,
+      freeBuild,
     ],
   );
 
   const pickerWouldBeExtra = useMemo(() => {
-    if (unlimitedTransfers || pendingOutSlot == null) return false;
+    if (unlimitedTransfers || freeBuild || pendingOutSlot == null) return false;
     const hypotheticalMade = summary.made + 1;
     return hypotheticalMade > initial.freeAvailable;
-  }, [unlimitedTransfers, pendingOutSlot, summary.made, initial.freeAvailable]);
+  }, [
+    unlimitedTransfers,
+    freeBuild,
+    pendingOutSlot,
+    summary.made,
+    initial.freeAvailable,
+  ]);
 
   const matchesSavedTeam = useMemo(
     () =>
@@ -424,7 +441,7 @@ export function TransfersTeamClient({
     if (chipCode === "free_hit") {
       return validateInitialFantasyTeamBuild(pickForValidation, eligible).ok;
     }
-    if (emptyBase) {
+    if (freeBuild) {
       return validateEmptyBaseTransferPick(pickForValidation, eligible).ok;
     }
     return validateFantasyTeamTransferPick(
@@ -436,7 +453,7 @@ export function TransfersTeamClient({
     readOnly,
     pickForValidation,
     pendingOutSlot,
-    emptyBase,
+    freeBuild,
     permanentBasePlayerIds,
     eligible,
     chipCode,
@@ -465,8 +482,11 @@ export function TransfersTeamClient({
 
   const selectedIds = useMemo(() => new Set(plannedIds), [plannedIds]);
 
-  const changeLabel =
-    summary.made > 0
+  const changeLabel = freeBuild
+    ? captaincyChanged
+      ? "Captaincy updated"
+      : "Confirm your squad"
+    : summary.made > 0
       ? `${summary.made} transfer${summary.made === 1 ? "" : "s"}${captaincyChanged ? " + captaincy" : ""}`
       : captaincyChanged
         ? "Captaincy updated"
@@ -481,18 +501,18 @@ export function TransfersTeamClient({
         setActionOpen(true);
         return;
       }
-      if (emptyBase) {
+      if (freeBuild) {
         setPendingOutSlot(null);
         setPickerOpen(true);
       }
     },
-    [readOnly, slots, emptyBase],
+    [readOnly, slots, freeBuild],
   );
 
   const assignPlayerToSlot = useCallback(
     (playerId: string) => {
       if (activeSlot == null) return;
-      if (emptyBase) {
+      if (freeBuild) {
         setSlots((prev) => {
           const next = [...prev];
           const existingIndex = next.findIndex((id) => id === playerId);
@@ -518,7 +538,7 @@ export function TransfersTeamClient({
         return next;
       });
     },
-    [activeSlot, emptyBase, captainPlayerId, viceCaptainPlayerId],
+    [activeSlot, freeBuild, captainPlayerId, viceCaptainPlayerId],
   );
 
   function resetToSavedTeam() {
@@ -530,7 +550,7 @@ export function TransfersTeamClient({
       setViceCaptainPlayerId(savedTeam.viceCaptainPlayerId);
       return;
     }
-    if (emptyBase) {
+    if (freeBuild) {
       setSlots([...EMPTY_FIVE_SLOTS]);
       setCaptainPlayerId(null);
       setViceCaptainPlayerId(null);
@@ -569,11 +589,13 @@ export function TransfersTeamClient({
     appToast.success(
       chipCode
         ? `Team and ${chipCode.replace(/_/g, " ")} saved`
-        : extra > 0
-          ? `Team confirmed — ${made} transfers (${extra} extra)`
-          : made > 0
-            ? `Team confirmed — ${made} transfer${made === 1 ? "" : "s"} (free)`
-            : "Team confirmed",
+        : freeBuild
+          ? "Squad saved"
+          : extra > 0
+            ? `Team confirmed — ${made} transfers (${extra} extra)`
+            : made > 0
+              ? `Team confirmed — ${made} transfer${made === 1 ? "" : "s"} (free)`
+              : "Team confirmed",
     );
     clearLocalDraft(pick.matchday.id);
     setTeamVersion(result.data.version);
@@ -673,12 +695,12 @@ export function TransfersTeamClient({
   );
 
   return (
-    <div className="space-y-6 pb-44 md:pb-10">
+    <div className="space-y-6 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-10">
       <PageHeader
         eyebrow={`Gameweek ${pick.matchday.number}`}
-        title={emptyBase ? "Build your squad" : "Transfers"}
+        title={freeBuild ? "Build your squad" : "Transfers"}
         description={
-          emptyBase
+          freeBuild
             ? "Pick your first five (free, unlimited transfers). Wildcard and Free Hit unlock after this gameweek."
             : undefined
         }
@@ -694,16 +716,19 @@ export function TransfersTeamClient({
             serverNowIso={pick.serverNow}
           />
         </div>
-        <TransferSummaryStrip
-          summary={summary}
-          unlimitedLabel={
-            chipCode === "wildcard"
-              ? "Free (Wildcard)"
-              : chipCode === "free_hit"
-                ? "Free (Free Hit)"
-                : null
-          }
-        />
+        {/* The first squad is free, so there is nothing to summarise. */}
+        {freeBuild ? null : (
+          <TransferSummaryStrip
+            summary={summary}
+            unlimitedLabel={
+              chipCode === "wildcard"
+                ? "Free (Wildcard)"
+                : chipCode === "free_hit"
+                  ? "Free (Free Hit)"
+                  : null
+            }
+          />
+        )}
       </div>
 
       {draftStaleNotice ? (
@@ -796,7 +821,9 @@ export function TransfersTeamClient({
               pendingOutSlot={pendingOutSlot}
               incomingIds={incomingIds}
               showRoleBadges
-              showIncomingBadges={!captaincyStep && chipCode !== "free_hit"}
+              showIncomingBadges={
+                !captaincyStep && chipCode !== "free_hit" && !freeBuild
+              }
               captainMultiplier={chipCode === "triple_captain" ? 3 : undefined}
               pitchClassName={
                 chipCode === "free_hit"
@@ -860,7 +887,7 @@ export function TransfersTeamClient({
               <p className="text-center text-xs text-muted-foreground">
                 {captaincyStep
                   ? "Tap a player to set captain or vice-captain."
-                  : emptyBase
+                  : freeBuild
                     ? "Tap empty slots to add players, then set captain and vice-captain."
                     : "Tap a player to set captain, vice-captain or make a transfer."}
               </p>
@@ -868,7 +895,7 @@ export function TransfersTeamClient({
           </div>
 
           {!readOnly && dirty ? (
-            <div className="glass animate-rise fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 rounded-2xl p-3 md:sticky md:inset-x-0 md:bottom-4">
+            <div className="glass animate-rise fixed inset-x-3 bottom-[calc(0.75rem+3.5rem+env(safe-area-inset-bottom))] z-30 rounded-t-2xl rounded-b-none border border-b-0 border-border/50 p-3 md:sticky md:inset-x-0 md:bottom-4 md:rounded-2xl md:border-b">
               <div className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">
@@ -940,7 +967,7 @@ export function TransfersTeamClient({
             : null
         }
         costBanner={
-          unlimitedTransfers
+          unlimitedTransfers || freeBuild
             ? null
             : pickerWouldBeExtra
               ? `This transfer costs −${initial.penaltyPerExtra}`
@@ -986,7 +1013,7 @@ export function TransfersTeamClient({
           }}
           onReplace={() => {
             setActionOpen(false);
-            if (emptyBase) {
+            if (freeBuild) {
               setPickerOpen(true);
               return;
             }
@@ -994,7 +1021,7 @@ export function TransfersTeamClient({
             setPickerOpen(true);
           }}
           onRemove={
-            emptyBase && activeSlot != null
+            freeBuild && activeSlot != null
               ? () => {
                   const removed = slots[activeSlot];
                   setSlots((prev) => {

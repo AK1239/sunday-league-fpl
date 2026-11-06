@@ -259,7 +259,7 @@ export function PickTeamClient({
     : undefined;
 
   return (
-    <div className="space-y-6 pb-44 md:pb-10">
+    <div className="space-y-6 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-10">
       <PageHeader
         eyebrow={`Gameweek ${initial.matchday.number}`}
         title={header.title}
@@ -313,7 +313,7 @@ export function PickTeamClient({
       />
 
       {!readOnly ? (
-        <div className="glass fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 rounded-2xl border border-border/60 p-3 md:sticky md:inset-x-0 md:bottom-4">
+        <div className="glass fixed inset-x-3 bottom-[calc(0.75rem+3.5rem+env(safe-area-inset-bottom))] z-30 rounded-t-2xl rounded-b-none border border-b-0 border-border/60 p-3 md:sticky md:inset-x-0 md:bottom-4 md:rounded-2xl md:border-b">
           <Button
             type="button"
             size="lg"
