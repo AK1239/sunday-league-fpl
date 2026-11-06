@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Copy, Plus, Trash2 } from "lucide-react";
@@ -69,7 +69,7 @@ function toDraft(match: MatchEntryMatch): MatchDraftInput {
     sideAGoalkeeperId: match.sideAGoalkeeperId,
     sideBGoalkeeperId: match.sideBGoalkeeperId,
     goals: match.goals,
-    mvpPlayerId: match.mvpPlayerId,
+    mvpPlayerId: null,
   };
 }
 
@@ -79,7 +79,13 @@ export function MatchdayEntryClient({
   initial: MatchdayEntryData;
 }) {
   const router = useRouter();
-  const [attendeeIds, setAttendeeIds] = useState<string[]>(initial.attendeeIds);
+  const defaultAttendeeIds = useMemo(
+    () => initial.players.map((p) => p.id),
+    [initial.players],
+  );
+  const [attendeeIds, setAttendeeIds] = useState<string[]>(() =>
+    initial.attendeeIds.length > 0 ? initial.attendeeIds : defaultAttendeeIds,
+  );
   const [matches, setMatches] = useState<MatchEntryMatch[]>(
     initial.matches.length > 0 ? initial.matches : [],
   );
@@ -94,8 +100,8 @@ export function MatchdayEntryClient({
   );
 
   const persistAttendance = useCallback(
-    async (ids: string[]) => {
-      setSaveState("saving");
+    async (ids: string[], options?: { silent?: boolean }) => {
+      if (!options?.silent) setSaveState("saving");
       const result = await saveMatchdayAttendanceAction(
         initial.matchdayId,
         ids,
@@ -105,13 +111,22 @@ export function MatchdayEntryClient({
         appToast.error(result.message);
         return;
       }
-      setSaveState("idle");
-      appToast.autosaved("Attendance saved");
+      if (!options?.silent) {
+        setSaveState("idle");
+        appToast.autosaved("Attendance saved");
+      }
     },
     [initial.matchdayId],
   );
 
   const debouncedAttendance = useDebounced(persistAttendance, 600);
+
+  const seededAttendance = useRef(initial.attendeeIds.length === 0);
+  useEffect(() => {
+    if (!seededAttendance.current || defaultAttendeeIds.length === 0) return;
+    seededAttendance.current = false;
+    void persistAttendance(defaultAttendeeIds, { silent: true });
+  }, [defaultAttendeeIds, persistAttendance]);
 
   const persistMatch = useCallback(
     async (match: MatchEntryMatch, ids: string[]) => {
@@ -396,11 +411,30 @@ function MatchCardEditor({
 }) {
   function toggleSide(side: "A" | "B", playerId: string) {
     const key = side === "A" ? "sideAPlayerIds" : "sideBPlayerIds";
+    const otherKey = side === "A" ? "sideBPlayerIds" : "sideAPlayerIds";
     const current = match[key];
-    const next = current.includes(playerId)
-      ? current.filter((id) => id !== playerId)
-      : [...current, playerId];
-    onChange({ ...match, [key]: next });
+    const adding = !current.includes(playerId);
+    const next = adding
+      ? [...current, playerId]
+      : current.filter((id) => id !== playerId);
+    const patch: Partial<MatchEntryMatch> = { [key]: next };
+    if (adding) {
+      patch[otherKey] = match[otherKey].filter((id) => id !== playerId);
+      if (side === "A" && match.sideBGoalkeeperId === playerId) {
+        patch.sideBGoalkeeperId = null;
+      }
+      if (side === "B" && match.sideAGoalkeeperId === playerId) {
+        patch.sideAGoalkeeperId = null;
+      }
+    } else {
+      if (side === "A" && match.sideAGoalkeeperId === playerId) {
+        patch.sideAGoalkeeperId = null;
+      }
+      if (side === "B" && match.sideBGoalkeeperId === playerId) {
+        patch.sideBGoalkeeperId = null;
+      }
+    }
+    onChange({ ...match, ...patch });
   }
 
   function setScore(side: "A" | "B", value: number) {
@@ -494,15 +528,20 @@ function MatchCardEditor({
       <div className="grid gap-4 lg:grid-cols-2">
         {(["A", "B"] as const).map((side) => {
           const ids = side === "A" ? match.sideAPlayerIds : match.sideBPlayerIds;
+          const oppositeIds =
+            side === "A" ? match.sideBPlayerIds : match.sideAPlayerIds;
           const gkId =
             side === "A" ? match.sideAGoalkeeperId : match.sideBGoalkeeperId;
+          const sidePlayerOptions = attendingPlayers.filter(
+            (p) => !oppositeIds.includes(p.id),
+          );
           return (
             <div key={side} className="space-y-2">
               <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 Side {side}
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {attendingPlayers.map((player) => {
+                {sidePlayerOptions.map((player) => {
                   const onSide = ids.includes(player.id);
                   return (
                     <button
@@ -571,26 +610,6 @@ function MatchCardEditor({
             value={match.scoreB}
             onChange={(e) => handleScoreChange("B", e.target.value)}
           />
-        </div>
-        <div className="space-y-1 min-w-[10rem] flex-1">
-          <Label>MVP</Label>
-          <select
-            className="flex h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-            value={match.mvpPlayerId ?? ""}
-            onChange={(e) =>
-              onChange({
-                ...match,
-                mvpPlayerId: e.target.value || null,
-              })
-            }
-          >
-            <option value="">None</option>
-            {[...match.sideAPlayerIds, ...match.sideBPlayerIds].map((id) => (
-              <option key={id} value={id}>
-                {playerMap.get(id)?.displayName ?? id}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 

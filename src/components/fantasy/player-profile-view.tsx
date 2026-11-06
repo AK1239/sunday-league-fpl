@@ -70,7 +70,6 @@ export async function PlayerProfileView({
           ["Wins", profile.wins],
           ["Win rate", `${profile.winRate}%`],
           ["Avg pts", profile.averagePoints.toFixed(1)],
-          ["MVPs", profile.mvpCount],
         ].map(([label, value], i) => (
           <StatTile
             key={label}

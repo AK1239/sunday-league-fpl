@@ -23,7 +23,7 @@ export async function MatchDetailPanel({ matchId }: { matchId: string }) {
       <PageHeader
         eyebrow={detail.match.playedOn}
         title={`Match ${detail.match.matchNo}`}
-        description="Lineups, goals and MVP from published results."
+        description="Lineups and goals from published results."
       />
 
       <ScoreCard
@@ -67,11 +67,6 @@ export async function MatchDetailPanel({ matchId }: { matchId: string }) {
         )}
       </section>
 
-      {detail.mvpPlayerName ? (
-        <p className="text-sm">
-          MVP: <span className="font-semibold">{detail.mvpPlayerName}</span>
-        </p>
-      ) : null}
     </div>
   );
 }

@@ -101,6 +101,8 @@ export async function loadMatchdayEntry(
     .from(matchdayAttendance)
     .where(eq(matchdayAttendance.matchdayId, matchdayId));
 
+  const savedAttendeeIds = attendanceRows.map((r) => r.playerId);
+
   const matchRows = await db
     .select({
       id: matches.id,
@@ -179,7 +181,10 @@ export async function loadMatchdayEntry(
     number: md.number,
     playedOn: md.playedOn,
     status: md.status,
-    attendeeIds: attendanceRows.map((r) => r.playerId),
+    attendeeIds:
+      savedAttendeeIds.length > 0
+        ? savedAttendeeIds
+        : playerRows.map((p) => p.id),
     players: playerRows,
     matches: entryMatches,
   };

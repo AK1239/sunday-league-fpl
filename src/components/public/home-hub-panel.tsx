@@ -2,7 +2,6 @@ import {
   ArrowRight,
   CalendarClock,
   Footprints,
-  Medal,
   Target,
   Trophy,
 } from "lucide-react";
@@ -11,7 +10,6 @@ import { connection } from "next/server";
 import { CountUp } from "@/components/fantasy/count-up";
 import { EmptyState } from "@/components/fantasy/empty-state";
 import { ManagerPodiumHero } from "@/components/fantasy/manager-podium-hero";
-import { PlayerAvatar } from "@/components/fantasy/player-avatar";
 import { ScoreCard } from "@/components/fantasy/score-card";
 import { SectionHeading } from "@/components/fantasy/section-heading";
 import { LEAGUE_NAME } from "@/lib/league";
@@ -114,36 +112,7 @@ export async function HomeHubPanel() {
         </section>
       ) : null}
 
-      <div className="animate-rise grid gap-4 sm:grid-cols-2">
-        <section className="surface rounded-2xl p-5">
-          <h2 className="flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-            <Medal className="size-4 text-podium-gold" aria-hidden />
-            Player of the week
-          </h2>
-          {data.latestPublished?.mvpPlayer ? (
-            <Link
-              href={`/players/${data.latestPublished.mvpPlayer.id}`}
-              className="group mt-3 flex items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <PlayerAvatar
-                name={data.latestPublished.mvpPlayer.displayName}
-                size="lg"
-              />
-              <div>
-                <p className="font-semibold">
-                  {data.latestPublished.mvpPlayer.displayName}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  GW{data.latestPublished.number} MVP
-                </p>
-              </div>
-            </Link>
-          ) : (
-            <p className="mt-3 text-sm text-muted-foreground">
-              MVP from the latest published gameweek.
-            </p>
-          )}
-        </section>
+      <div className="animate-rise">
         <section className="surface relative overflow-hidden rounded-2xl p-5">
           <h2 className="relative flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
             <CalendarClock className="size-4 text-primary" aria-hidden />

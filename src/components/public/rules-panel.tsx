@@ -35,7 +35,6 @@ export async function RulesPanel() {
           <RuleRow label="Draw" value={rules.drawPts} />
           <RuleRow label="Goal" value={rules.goalPts} />
           <RuleRow label="Assist" value={rules.assistPts} />
-          <RuleRow label="MVP" value={rules.mvpPts} />
           <RuleRow label="Clean sheet (GK)" value={rules.cleanSheetPts} />
         </ul>
       </section>

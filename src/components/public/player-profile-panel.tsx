@@ -66,7 +66,6 @@ export async function PlayerProfilePanel({ playerId }: { playerId: string }) {
           ["Wins", profile.wins],
           ["Win rate", `${profile.winRate}%`],
           ["Avg pts", profile.averagePoints.toFixed(1)],
-          ["MVPs", profile.mvpCount],
         ].map(([label, value]) => (
           <StatTile key={String(label)} label={String(label)} value={value} />
         ))}

@@ -3,7 +3,6 @@ import { recomputeMatchday } from "@/server/domain/recompute-matchday";
 import type { AppDb } from "@/server/db";
 import {
   goals,
-  matchMvps,
   matchParticipants,
   matchSides,
   matchdayAttendance,
@@ -54,7 +53,6 @@ export async function seedPublishedDemoMatchday(db: AppDb, seasonId: string) {
       { side: "B" as const, scorer: "Lolo", assist: null },
       { side: "B" as const, scorer: "Ajam", assist: null },
     ],
-    mvp: "Akil",
     byName,
   });
 
@@ -77,7 +75,6 @@ async function seedPublishedMatch(options: {
     scorer: string;
     assist: string | null;
   }[];
-  mvp: string;
   byName: Map<string, { id: string }>;
 }) {
   const {
@@ -91,7 +88,6 @@ async function seedPublishedMatch(options: {
     sideAGk,
     sideBGk = null,
     goalEvents,
-    mvp,
     byName,
   } = options;
 
@@ -148,10 +144,6 @@ async function seedPublishedMatch(options: {
     });
   }
 
-  await db.insert(matchMvps).values({
-    matchId: match!.id,
-    playerId: byName.get(mvp)!.id,
-  });
 }
 
 export async function getActiveSeasonId(db: AppDb): Promise<string> {
