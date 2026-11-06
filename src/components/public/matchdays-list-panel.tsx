@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { CalendarPlus } from "lucide-react";
 import { connection } from "next/server";
 import { PageHeader } from "@/components/fantasy/page-header";
 import { EmptyState } from "@/components/fantasy/empty-state";
+import { AdminActionLink } from "@/components/admin/admin-action-link";
+import { getUserSession } from "@/server/auth/session";
 import { getDb } from "@/server/db";
 import {
   getActiveSeasonId,
@@ -34,19 +37,32 @@ export async function MatchdaysListPanel() {
     .limit(1);
 
   const list = await listPublicMatchdays(db, seasonId);
+  const session = await getUserSession();
+  const isAdmin = session?.role === "admin";
+
+  const addMatchdayLink = (
+    <AdminActionLink href="/admin/matchdays">
+      <CalendarPlus className="size-4" aria-hidden />
+      Add matchday
+    </AdminActionLink>
+  );
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow={season?.name ?? "Season"}
-        title="Gameweeks"
-        description="Results and manager rankings after publish."
-      />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <PageHeader
+          eyebrow={season?.name ?? "Season"}
+          title="Gameweeks"
+          description="Results and manager rankings after publish."
+        />
+        {isAdmin ? addMatchdayLink : null}
+      </div>
 
       {list.length === 0 ? (
         <EmptyState
           title="No gameweeks yet"
           description="The admin schedules each Sunday as a gameweek."
+          action={isAdmin ? addMatchdayLink : undefined}
         />
       ) : (
         <ul className="space-y-2">

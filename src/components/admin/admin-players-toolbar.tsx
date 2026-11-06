@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
 import { AddPlayerModal } from "@/components/admin/add-player-modal";
-import { Button } from "@/components/ui/button";
+import { adminActionButtonClassName } from "@/components/admin/admin-action-link";
+import { cn } from "@/lib/utils";
 
 export function AdminPlayersToolbar() {
   const [addOpen, setAddOpen] = useState(false);
@@ -19,10 +20,14 @@ export function AdminPlayersToolbar() {
             Manage the squad and upload avatars.
           </p>
         </div>
-        <Button type="button" onClick={() => setAddOpen(true)}>
+        <button
+          type="button"
+          onClick={() => setAddOpen(true)}
+          className={cn(adminActionButtonClassName)}
+        >
           <UserPlus className="size-4" aria-hidden />
           Add player
-        </Button>
+        </button>
       </header>
       <AddPlayerModal open={addOpen} onClose={() => setAddOpen(false)} />
     </>
