@@ -35,6 +35,7 @@ export function JoinForm({
         type="email"
         autoComplete="username"
         icon={<Mail />}
+        placeholder="you@example.com"
         required
         readOnly={isReset && Boolean(preview.resetEmail)}
         defaultValue={preview.resetEmail ?? ""}
@@ -46,6 +47,7 @@ export function JoinForm({
           name="displayName"
           autoComplete="nickname"
           icon={<User />}
+          placeholder="e.g. Captain Mkate"
           required
           defaultValue={preview.label ?? ""}
           hint={
