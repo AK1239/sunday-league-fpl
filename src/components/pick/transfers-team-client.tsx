@@ -566,6 +566,11 @@ export function TransfersTeamClient({
         players={pick.players}
         selectedIds={selectedIds}
         onSelect={assignPlayerToSlot}
+        replacingName={
+          pendingOutSlot != null && slots[pendingOutSlot]
+            ? (playerById.get(slots[pendingOutSlot]!)?.displayName ?? null)
+            : null
+        }
         costBanner={
           pickerWouldBeExtra
             ? `This transfer costs −${initial.penaltyPerExtra}`

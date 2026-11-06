@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Home, LayoutDashboard, LogOut } from "lucide-react";
+import { ChevronDown, Home, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { PlayerAvatar } from "@/components/fantasy/player-avatar";
@@ -77,18 +77,6 @@ export function AdminHeaderUserMenu({
           >
             <Home className="size-4 text-muted-foreground" aria-hidden />
             Home
-          </Link>
-          <Link
-            href="/my"
-            role="menuitem"
-            className={item}
-            onClick={() => setOpen(false)}
-          >
-            <LayoutDashboard
-              className="size-4 text-muted-foreground"
-              aria-hidden
-            />
-            My dashboard
           </Link>
           <form action={logoutAction}>
             <button

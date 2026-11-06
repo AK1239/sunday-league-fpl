@@ -21,7 +21,6 @@ export async function SiteHeaderUser() {
   return (
     <HeaderUserMenu
       displayName={session.displayName}
-      dashboardHref="/my"
       isAdmin={session.role === "admin"}
     />
   );

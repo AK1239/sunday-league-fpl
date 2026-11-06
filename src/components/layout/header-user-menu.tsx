@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, LayoutDashboard, LogOut, Shield } from "lucide-react";
+import { ChevronDown, LogOut, Shield } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { PlayerAvatar } from "@/components/fantasy/player-avatar";
@@ -9,11 +9,9 @@ import { cn } from "@/lib/utils";
 
 export function HeaderUserMenu({
   displayName,
-  dashboardHref,
   isAdmin = false,
 }: {
   displayName: string;
-  dashboardHref: string;
   isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -81,18 +79,6 @@ export function HeaderUserMenu({
               Admin
             </Link>
           ) : null}
-          <Link
-            href={dashboardHref}
-            role="menuitem"
-            className={item}
-            onClick={() => setOpen(false)}
-          >
-            <LayoutDashboard
-              className="size-4 text-muted-foreground"
-              aria-hidden
-            />
-            Dashboard
-          </Link>
           <form action={managerLogoutAction}>
             <button
               type="submit"
