@@ -5,6 +5,7 @@ import { LEAGUE_NAME } from "@/lib/league";
 const NAV = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/matchdays", label: "Matchdays" },
+  { href: "/admin/transfers", label: "Transfers" },
   { href: "/admin/players", label: "Players" },
   { href: "/admin/seasons", label: "Seasons" },
   { href: "/admin/settings", label: "Settings" },
