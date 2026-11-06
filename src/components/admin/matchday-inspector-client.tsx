@@ -50,7 +50,9 @@ export function MatchdayInspectorClient({
       <section>
         <SectionHeading title="Manager totals" />
         {initial.managerTotals.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No manager scores yet.</p>
+          <p className="text-sm text-muted-foreground">
+            No manager scores yet.
+          </p>
         ) : (
           <div className="surface overflow-x-auto rounded-2xl">
             <table className="w-full min-w-[28rem] text-sm">
@@ -133,10 +135,14 @@ export function MatchdayInspectorClient({
                           : "")
                       }
                     >
-                      {line.role}
+                      {line.role === "reserve" ? "extra" : line.role}
                     </td>
-                    <td className="px-4 py-2 tabular-nums">{line.basePoints}</td>
-                    <td className="px-4 py-2 tabular-nums">{line.multiplier}</td>
+                    <td className="px-4 py-2 tabular-nums">
+                      {line.basePoints}
+                    </td>
+                    <td className="px-4 py-2 tabular-nums">
+                      {line.multiplier}
+                    </td>
                     <td className="px-4 py-2 tabular-nums font-medium">
                       {line.points}
                     </td>
@@ -154,7 +160,9 @@ export function MatchdayInspectorClient({
       <section>
         <SectionHeading title="Player point ledger" />
         {initial.playerLedger.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No ledger entries yet.</p>
+          <p className="text-sm text-muted-foreground">
+            No ledger entries yet.
+          </p>
         ) : (
           <div className="surface overflow-x-auto rounded-2xl">
             <table className="w-full min-w-[24rem] text-sm">

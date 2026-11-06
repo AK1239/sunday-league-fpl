@@ -238,7 +238,11 @@ async function clearChipMirrorAndSquadArtifacts(
   if (input.chipCode === "bench_boost") {
     await tx
       .update(fantasyTeams)
-      .set({ reservePlayerId: null, updatedAt: input.dbNow })
+      .set({
+        reservePlayerId: null,
+        reservePlayerId2: null,
+        updatedAt: input.dbNow,
+      })
       .where(
         and(
           eq(fantasyTeams.managerId, input.managerId),

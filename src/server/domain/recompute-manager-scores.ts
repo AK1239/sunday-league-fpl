@@ -1,3 +1,4 @@
+import { extrasFromColumns } from "@/server/chips/bench-boost-extras";
 import { and, asc, eq, gte, inArray, sql } from "drizzle-orm";
 import type { DbExecutor } from "@/server/db";
 import {
@@ -107,6 +108,7 @@ export async function rebuildManagerScoresFromMatchday(
       viceCaptainPlayerId: fantasyTeams.viceCaptainPlayerId,
       squadKind: fantasyTeams.squadKind,
       reservePlayerId: fantasyTeams.reservePlayerId,
+      reservePlayerId2: fantasyTeams.reservePlayerId2,
       playedOn: matchdays.playedOn,
       number: matchdays.number,
       seasonStartsOn: seasons.startsOn,
@@ -142,7 +144,10 @@ export async function rebuildManagerScoresFromMatchday(
     viceCaptainPlayerId: team.viceCaptainPlayerId,
     playerIds: playersByTeam.get(team.id) ?? [],
     squadKind: team.squadKind,
-    reservePlayerId: team.reservePlayerId,
+    reservePlayerIds: extrasFromColumns(
+      team.reservePlayerId,
+      team.reservePlayerId2,
+    ),
     matchday: {
       matchdayId: team.matchdayId,
       playedOn: team.playedOn,
@@ -233,6 +238,7 @@ export async function rebuildManagerScoresFromMatchday(
             source: "carry_over",
             squadKind: "permanent",
             reservePlayerId: null,
+            reservePlayerId2: null,
           })
           .returning({ id: fantasyTeams.id });
 
@@ -250,7 +256,7 @@ export async function rebuildManagerScoresFromMatchday(
           viceCaptainPlayerId: effective.viceCaptainPlayerId,
           playerIds: [...effective.playerIds],
           squadKind: "permanent",
-          reservePlayerId: null,
+          reservePlayerIds: [],
           matchday: target,
         });
       }
@@ -260,7 +266,7 @@ export async function rebuildManagerScoresFromMatchday(
       if (play) {
         const chipInput = toChipScoringInput(
           play,
-          effective.reservePlayerId,
+          effective.reservePlayerIds,
         );
         if (chipInput) {
           chipsByManager.set(manager.id, chipInput);

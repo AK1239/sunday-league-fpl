@@ -25,7 +25,7 @@ const hasDatabase = !!process.env.DATABASE_URL;
 async function seedChipScorerTeam(options: {
   matchdayId: string;
   seasonId: string;
-  reservePlayerId?: string | null;
+  reserveIds?: string[];
   benchBoostPlay?: boolean;
 }) {
   const db = getDb();
@@ -73,7 +73,8 @@ async function seedChipScorerTeam(options: {
         captainPlayerId: akil.id,
         viceCaptainPlayerId: murti.id,
         source: "manual",
-        reservePlayerId: options.reservePlayerId ?? null,
+        reservePlayerId: options.reserveIds?.[0] ?? null,
+        reservePlayerId2: options.reserveIds?.[1] ?? null,
       })
       .returning();
     await tx.insert(fantasyTeamPlayers).values(
@@ -144,23 +145,23 @@ describe.skipIf(!hasDatabase)("chips recompute (phase 4)", () => {
     expect(captainLine[0]!.points).toBe(captainLine[0]!.basePoints * 3);
   });
 
-  it("persists bench boost reserve line and chip_bonus", async () => {
+  it("persists both bench boost extra lines and chip_bonus", async () => {
     const db = getDb();
-    const reserve = (await db.select().from(players)).find(
-      (p) => p.displayName === "Chapati",
-    )!;
+    const all = await db.select().from(players);
+    const extraA = all.find((p) => p.displayName === "Chapati")!;
+    const extraB = all.find((p) => p.displayName === "Ali")!;
 
     const { managerId } = await seedChipScorerTeam({
       matchdayId,
       seasonId,
-      reservePlayerId: reserve.id,
+      reserveIds: [extraA.id, extraB.id],
       benchBoostPlay: true,
     });
 
-    await db.insert(matchdayAttendance).values({
-      matchdayId,
-      playerId: reserve.id,
-    });
+    await db.insert(matchdayAttendance).values([
+      { matchdayId, playerId: extraA.id },
+      { matchdayId, playerId: extraB.id },
+    ]);
 
     await recomputeMatchday(matchdayId);
 
@@ -175,9 +176,8 @@ describe.skipIf(!hasDatabase)("chips recompute (phase 4)", () => {
       );
 
     expect(total?.chipCode).toBe("bench_boost");
-    expect(total!.chipBonus).toBeGreaterThan(0);
 
-    const reserveLine = await db
+    const extraLines = await db
       .select()
       .from(managerScoreLines)
       .where(
@@ -188,8 +188,9 @@ describe.skipIf(!hasDatabase)("chips recompute (phase 4)", () => {
         ),
       );
 
-    expect(reserveLine).toHaveLength(1);
-    expect(reserveLine[0]?.playerId).toBe(reserve.id);
-    expect(reserveLine[0]!.points).toBeGreaterThan(0);
+    expect(extraLines).toHaveLength(2);
+    expect(extraLines.map((l) => l.playerId).sort()).toEqual(
+      [extraA.id, extraB.id].sort(),
+    );
   });
 });

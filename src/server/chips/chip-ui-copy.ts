@@ -48,14 +48,14 @@ export const CHIP_UI_COPY: Record<ChipCode, ChipUiCopy> = {
     risks: "Pending permanent changes for this week are discarded when you activate.",
   },
   bench_boost: {
-    effectLine: "Your reserve scores ×1 this gameweek.",
+    effectLine: "Two extra players score for you this gameweek.",
     permanencePill: "Score only",
     bullets: [
-      "Choose one active player outside your five.",
-      "Reserve cannot be captain or vice.",
-      "Reserve is not carried to future gameweeks.",
+      "Choose 2 active players outside your five.",
+      "Their points count on top of your five (×1).",
+      "Extra players can't be captain or vice, and don't carry over.",
     ],
-    transferNote: "Normal transfer rules apply; pick a reserve on the Team tab.",
-    risks: "If your reserve doesn't attend, the chip is wasted.",
+    transferNote: "Normal transfer rules apply; pick your extras on the Team tab.",
+    risks: "Extras only score if they attend — one who misses adds nothing.",
   },
 };

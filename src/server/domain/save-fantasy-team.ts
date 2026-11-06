@@ -133,6 +133,7 @@ export async function saveFantasyTeam(
         viceCaptainPlayerId: fantasyTeams.viceCaptainPlayerId,
         squadKind: fantasyTeams.squadKind,
         reservePlayerId: fantasyTeams.reservePlayerId,
+        reservePlayerId2: fantasyTeams.reservePlayerId2,
       })
       .from(fantasyTeams)
       .where(
@@ -155,10 +156,10 @@ export async function saveFantasyTeam(
       options.mode === "admin_override" && beforeTeam
         ? beforeTeam.squadKind
         : "permanent";
-    const preservedReserve =
-      options.mode === "admin_override" && beforeTeam
-        ? beforeTeam.reservePlayerId
-        : null;
+    // Extras don't depend on captaincy, so keep them on any re-save
+    // (otherwise changing captain would silently wipe an active Bench Boost).
+    const preservedReserve = beforeTeam?.reservePlayerId ?? null;
+    const preservedReserve2 = beforeTeam?.reservePlayerId2 ?? null;
 
     const [created] = await tx
       .insert(fantasyTeams)
@@ -170,6 +171,7 @@ export async function saveFantasyTeam(
         source,
         squadKind: preservedSquadKind,
         reservePlayerId: preservedReserve,
+        reservePlayerId2: preservedReserve2,
         version: nextVersion,
         submittedAt: dbNow,
         updatedAt: dbNow,

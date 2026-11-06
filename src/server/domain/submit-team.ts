@@ -1,3 +1,7 @@
+import {
+  extrasFromColumns,
+  extrasToColumns,
+} from "@/server/chips/bench-boost-extras";
 import { createHash } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import type { AppDb, DbExecutor } from "@/server/db";
@@ -54,7 +58,8 @@ export type SubmitTeamRequest = FantasyTeamPick & {
   /** Omit to leave unchanged; null to clear the chip for this gameweek. */
   chipCode?: string | null;
   /** Omit to leave unchanged; null to clear (Bench Boost only). */
-  reservePlayerId?: string | null;
+  /** Bench Boost extra players; omit to keep the saved ones. */
+  reservePlayerIds?: string[];
 };
 
 export type SubmitTeamResult = {
@@ -113,14 +118,14 @@ function resolveDesiredSquadKind(chipCode: string | null): SquadKind {
 
 function resolveDesiredReserve(
   request: SubmitTeamRequest,
-  beforeReserve: string | null,
+  beforeReserves: readonly string[],
   chipCode: string | null,
-): string | null {
+): string[] {
   const raw =
-    request.reservePlayerId === undefined
-      ? beforeReserve
-      : request.reservePlayerId;
-  return chipCode === "bench_boost" ? raw : null;
+    request.reservePlayerIds === undefined
+      ? [...beforeReserves]
+      : request.reservePlayerIds;
+  return chipCode === "bench_boost" ? raw : [];
 }
 
 function submissionStateEquals(
@@ -128,18 +133,19 @@ function submissionStateEquals(
   current: {
     pick: FantasyTeamPick;
     squadKind: SquadKind;
-    reservePlayerId: string | null;
+    reservePlayerIds: readonly string[];
     chipCode: string | null;
   },
   desired: {
     squadKind: SquadKind;
-    reservePlayerId: string | null;
+    reservePlayerIds: readonly string[];
     chipCode: string | null;
   },
 ): boolean {
   if (!pickEquals(current.pick, request)) return false;
   if (current.squadKind !== desired.squadKind) return false;
-  if (current.reservePlayerId !== desired.reservePlayerId) return false;
+  if (current.reservePlayerIds.join(",") !== desired.reservePlayerIds.join(","))
+    return false;
   const normalizedCurrent = current.chipCode ?? null;
   const normalizedDesired = desired.chipCode ?? null;
   return normalizedCurrent === normalizedDesired;
@@ -173,7 +179,7 @@ async function persistSquadInPlace(
     dbNow: Date;
     source: "manual" | "admin";
     squadKind: SquadKind;
-    reservePlayerId: string | null;
+    reservePlayerIds: readonly string[];
   },
 ) {
   await tx
@@ -182,7 +188,7 @@ async function persistSquadInPlace(
       captainPlayerId: options.pick.captainPlayerId,
       viceCaptainPlayerId: options.pick.viceCaptainPlayerId,
       squadKind: options.squadKind,
-      reservePlayerId: options.reservePlayerId,
+      ...extrasToColumns(options.reservePlayerIds),
       version: options.nextVersion,
       updatedAt: options.dbNow,
       source: options.source,
@@ -347,6 +353,7 @@ export async function submitTeam(
         viceCaptainPlayerId: fantasyTeams.viceCaptainPlayerId,
         squadKind: fantasyTeams.squadKind,
         reservePlayerId: fantasyTeams.reservePlayerId,
+        reservePlayerId2: fantasyTeams.reservePlayerId2,
       })
       .from(fantasyTeams)
       .where(
@@ -366,7 +373,10 @@ export async function submitTeam(
     const desiredSquadKind = resolveDesiredSquadKind(desiredChipRaw);
     const desiredReserve = resolveDesiredReserve(
       request,
-      beforeTeam?.reservePlayerId ?? null,
+      extrasFromColumns(
+        beforeTeam?.reservePlayerId,
+        beforeTeam?.reservePlayerId2,
+      ),
       desiredChipRaw,
     );
 
@@ -387,7 +397,7 @@ export async function submitTeam(
     assertChipValidation(
       validateChipSubmission({
         chipCode: desiredChipRaw,
-        reservePlayerId: desiredReserve,
+        reservePlayerIds: desiredReserve,
         squadKind: desiredSquadKind,
         playerIds: request.playerIds,
         captainPlayerId: request.captainPlayerId,
@@ -419,12 +429,15 @@ export async function submitTeam(
           {
             pick: currentPick,
             squadKind: beforeTeam.squadKind,
-            reservePlayerId: beforeTeam.reservePlayerId,
+            reservePlayerIds: extrasFromColumns(
+              beforeTeam.reservePlayerId,
+              beforeTeam.reservePlayerId2,
+            ),
             chipCode: activeChipOnMatchday,
           },
           {
             squadKind: desiredSquadKind,
-            reservePlayerId: desiredReserve,
+            reservePlayerIds: desiredReserve,
             chipCode: desiredChipRaw,
           },
         )
@@ -472,7 +485,7 @@ export async function submitTeam(
           dbNow,
           source: "manual",
           squadKind: desiredSquadKind,
-          reservePlayerId: desiredReserve,
+          reservePlayerIds: desiredReserve,
         });
         teamId = beforeTeam.id;
       } else {
@@ -485,7 +498,7 @@ export async function submitTeam(
             viceCaptainPlayerId: request.viceCaptainPlayerId,
             source: "manual",
             squadKind: desiredSquadKind,
-            reservePlayerId: desiredReserve,
+            ...extrasToColumns(desiredReserve),
             version: nextVersion,
             submittedAt: dbNow,
             updatedAt: dbNow,
@@ -581,7 +594,7 @@ export async function submitTeam(
         dbNow,
         source: "manual",
         squadKind: desiredSquadKind,
-        reservePlayerId: desiredReserve,
+        reservePlayerIds: desiredReserve,
       });
       teamId = beforeTeam.id;
     } else {
@@ -594,7 +607,7 @@ export async function submitTeam(
           viceCaptainPlayerId: request.viceCaptainPlayerId,
           source: "manual",
           squadKind: desiredSquadKind,
-          reservePlayerId: desiredReserve,
+          ...extrasToColumns(desiredReserve),
           version: nextVersion,
           submittedAt: dbNow,
           updatedAt: dbNow,

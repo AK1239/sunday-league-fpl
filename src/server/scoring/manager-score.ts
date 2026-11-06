@@ -66,10 +66,9 @@ function buildSquadLines(
     };
   });
 
-  const reserveId = chip?.reservePlayerId ?? null;
-  if (reserveId) {
+  const counts = shouldScoreBenchBoostReserve(chip);
+  for (const reserveId of chip?.reservePlayerIds ?? []) {
     const basePoints = playerPoints.get(reserveId) ?? 0;
-    const counts = shouldScoreBenchBoostReserve(chip);
     lines.push({
       managerId: team.managerId,
       playerId: reserveId,

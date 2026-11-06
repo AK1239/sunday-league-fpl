@@ -19,7 +19,7 @@ const submitSchema = z.object({
   expectedVersion: z.number().int().min(0),
   acknowledgedPenalty: z.number().int().min(0),
   chipCode: z.string().nullable().optional(),
-  reservePlayerId: z.string().uuid().nullable().optional(),
+  reservePlayerIds: z.array(z.string().uuid()).max(2).optional(),
 });
 
 function mapSubmitError(error: unknown): ActionFailure | null {

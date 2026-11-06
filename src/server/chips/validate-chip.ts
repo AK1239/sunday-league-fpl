@@ -1,3 +1,4 @@
+import { BENCH_BOOST_EXTRA_COUNT } from "@/server/chips/bench-boost-extras";
 import type { ChipCode } from "./registry";
 import { CHIP_REGISTRY, isChipCode } from "./registry";
 import type { SquadKind } from "@/server/fantasy/effective-team";
@@ -30,7 +31,8 @@ export type ChipValidationResult =
 
 export type ValidateChipInput = {
   chipCode: string | null;
-  reservePlayerId: string | null;
+  /** Bench Boost extra players (exactly 2 when the chip is played). */
+  reservePlayerIds: readonly string[];
   squadKind: SquadKind;
   playerIds: readonly string[];
   captainPlayerId: string;
@@ -51,11 +53,11 @@ export function validateChipSubmission(
   const desiredChip = input.chipCode;
 
   if (desiredChip == null || desiredChip === "") {
-    if (input.reservePlayerId != null) {
+    if (input.reservePlayerIds.length > 0) {
       return {
         ok: false,
         code: "CHIP_RESERVE_INVALID",
-        message: "Reserve player requires Bench Boost.",
+        message: "Extra players require Bench Boost.",
       };
     }
     if (input.squadKind === "free_hit") {
@@ -157,43 +159,52 @@ export function validateChipSubmission(
   }
 
   if (entry.requiresReserve) {
-    if (!input.reservePlayerId) {
+    const extras = input.reservePlayerIds;
+    if (extras.length !== BENCH_BOOST_EXTRA_COUNT) {
       return {
         ok: false,
         code: "CHIP_RESERVE_REQUIRED",
-        message: "Bench Boost requires a reserve player.",
+        message: `Bench Boost needs ${BENCH_BOOST_EXTRA_COUNT} extra players.`,
       };
     }
-    const reserve = input.reservePlayerId;
-    if (input.playerIds.includes(reserve)) {
+    if (new Set(extras).size !== extras.length) {
       return {
         ok: false,
         code: "CHIP_RESERVE_INVALID",
-        message: "Reserve must not be one of your five starters.",
+        message: "Pick two different extra players.",
       };
     }
-    if (
-      reserve === input.captainPlayerId ||
-      reserve === input.viceCaptainPlayerId
-    ) {
-      return {
-        ok: false,
-        code: "CHIP_RESERVE_INVALID",
-        message: "Reserve cannot be captain or vice-captain.",
-      };
+    for (const extra of extras) {
+      if (input.playerIds.includes(extra)) {
+        return {
+          ok: false,
+          code: "CHIP_RESERVE_INVALID",
+          message: "Extra players must not be in your five.",
+        };
+      }
+      if (
+        extra === input.captainPlayerId ||
+        extra === input.viceCaptainPlayerId
+      ) {
+        return {
+          ok: false,
+          code: "CHIP_RESERVE_INVALID",
+          message: "Extra players cannot be captain or vice-captain.",
+        };
+      }
+      if (!input.reserveEligible(extra)) {
+        return {
+          ok: false,
+          code: "CHIP_RESERVE_INVALID",
+          message: "Extra players must be active players.",
+        };
+      }
     }
-    if (!input.reserveEligible(reserve)) {
-      return {
-        ok: false,
-        code: "CHIP_RESERVE_INVALID",
-        message: "Reserve must be an active player.",
-      };
-    }
-  } else if (input.reservePlayerId != null) {
+  } else if (input.reservePlayerIds.length > 0) {
     return {
       ok: false,
       code: "CHIP_RESERVE_INVALID",
-      message: "Only Bench Boost may set a reserve player.",
+      message: "Only Bench Boost may add extra players.",
     };
   }
 

@@ -56,5 +56,5 @@ export type LocalTransferDraft = {
   captainPlayerId: string;
   viceCaptainPlayerId: string;
   pendingChipCode?: string | null;
-  reservePlayerId?: string | null;
+  reservePlayerIds?: string[];
 };

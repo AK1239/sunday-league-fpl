@@ -37,7 +37,7 @@ export async function loadActiveChipPlaysForMatchday(
 
 export function toChipScoringInput(
   play: ActiveChipPlayRow,
-  reservePlayerId: string | null,
+  reservePlayerIds: readonly string[],
 ): ChipScoringInput | null {
   if (!isChipCode(play.chipCode)) return null;
 
@@ -51,7 +51,7 @@ export function toChipScoringInput(
   return {
     code: play.chipCode,
     params,
-    reservePlayerId:
-      play.chipCode === "bench_boost" ? reservePlayerId : null,
+    reservePlayerIds:
+      play.chipCode === "bench_boost" ? reservePlayerIds : [],
   };
 }

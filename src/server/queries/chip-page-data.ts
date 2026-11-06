@@ -1,3 +1,4 @@
+import { extrasFromColumns } from "@/server/chips/bench-boost-extras";
 import { and, eq, inArray } from "drizzle-orm";
 import type { AppDb } from "@/server/db";
 import {
@@ -38,7 +39,7 @@ export type ChipPageData = {
   chips: ChipCardView[];
   activeChipCode: ChipCode | null;
   savedSquadKind: SquadKind;
-  savedReservePlayerId: string | null;
+  savedReservePlayerIds: string[];
   windowChipCode: string | null;
   windowUnlimited: boolean;
 };
@@ -91,6 +92,7 @@ export async function getChipPageData(
     .select({
       squadKind: fantasyTeams.squadKind,
       reservePlayerId: fantasyTeams.reservePlayerId,
+      reservePlayerId2: fantasyTeams.reservePlayerId2,
     })
     .from(fantasyTeams)
     .where(
@@ -183,7 +185,10 @@ export async function getChipPageData(
     chips,
     activeChipCode,
     savedSquadKind: teamRow?.squadKind ?? "permanent",
-    savedReservePlayerId: teamRow?.reservePlayerId ?? null,
+    savedReservePlayerIds: extrasFromColumns(
+      teamRow?.reservePlayerId,
+      teamRow?.reservePlayerId2,
+    ),
     windowChipCode: windowRow?.chipCode ?? null,
     windowUnlimited: windowRow?.unlimited ?? false,
   };

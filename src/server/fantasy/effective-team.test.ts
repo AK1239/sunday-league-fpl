@@ -67,13 +67,13 @@ describe("resolveEffectiveTeam", () => {
       playerIds: ["f", "g", "h", "i", "j"],
       captainPlayerId: "f",
       viceCaptainPlayerId: "g",
-      reservePlayerId: "r1",
+      reservePlayerIds: ["r1", "r2"],
     });
     const resolved = resolveEffectiveTeam("mgr", md2, [permanent, freeHit]);
     expect(resolved).toMatchObject({
       teamSource: "manual",
       squadKind: "free_hit",
-      reservePlayerId: "r1",
+      reservePlayerIds: ["r1", "r2"],
       playerIds: ["f", "g", "h", "i", "j"],
     });
   });
@@ -104,7 +104,7 @@ describe("resolveEffectiveTeam", () => {
     expect(resolved).toMatchObject({
       teamSource: "carry_over",
       squadKind: "permanent",
-      reservePlayerId: null,
+      reservePlayerIds: [],
       playerIds: ["a", "b", "c", "d", "e"],
     });
   });

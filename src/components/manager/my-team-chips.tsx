@@ -52,7 +52,7 @@ export function MyTeamChips({
       expectedVersion: team.teamVersion,
       acknowledgedPenalty: 0,
       chipCode: on ? "triple_captain" : null,
-      reservePlayerId: null,
+      reservePlayerIds: [],
     });
     setBusy(false);
     setOpen(false);
@@ -76,6 +76,11 @@ export function MyTeamChips({
       <ChipRail
         chips={chips.chips}
         onSelectChip={(c) => {
+          if (c.code === "bench_boost") {
+            // Instant flow: jump to the squad editor, which asks for the extras.
+            goToSquadEditor("bench_boost");
+            return;
+          }
           setCard(c);
           setOpen(true);
         }}

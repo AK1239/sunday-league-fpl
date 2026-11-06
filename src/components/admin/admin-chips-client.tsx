@@ -23,7 +23,7 @@ import { CHIP_REGISTRY } from "@/server/chips/registry";
 import type { ChipCode } from "@/server/chips/registry";
 
 const CHIP_META: Record<string, { icon: LucideIcon; blurb: string }> = {
-  bench_boost: { icon: Armchair, blurb: "A 6th reserve player scores too." },
+  bench_boost: { icon: Armchair, blurb: "2 extra players score too." },
   free_hit: {
     icon: Zap,
     blurb: "Unlimited transfers for one week, then revert.",
@@ -331,7 +331,7 @@ export function AdminChipsClient({ data }: { data: AdminChipsPageData }) {
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">
             Records an admin chip play and updates the transfer window. Squad
-            and reserve must still match via Transfers or manager submit.
+            and extra players must still match via Transfers or manager submit.
           </p>
           <div className="mt-3 space-y-2 text-sm">
             <label className="block">

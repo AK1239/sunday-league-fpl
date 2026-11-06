@@ -455,6 +455,8 @@ export const fantasyTeams = pgTable(
     version: integer("version").notNull().default(1),
     squadKind: fantasySquadKindEnum("squad_kind").notNull().default("permanent"),
     reservePlayerId: uuid("reserve_player_id").references(() => players.id),
+    /** Bench Boost second extra player (first is `reservePlayerId`). */
+    reservePlayerId2: uuid("reserve_player_id_2").references(() => players.id),
   },
   (table) => [
     uniqueIndex("fantasy_teams_manager_matchday_unique").on(
@@ -468,6 +470,10 @@ export const fantasyTeams = pgTable(
     check(
       "fantasy_teams_reserve_not_captain",
       sql`${table.reservePlayerId} IS NULL OR (${table.reservePlayerId} <> ${table.captainPlayerId} AND ${table.reservePlayerId} <> ${table.viceCaptainPlayerId})`,
+    ),
+    check(
+      "fantasy_teams_reserve2_valid",
+      sql`${table.reservePlayerId2} IS NULL OR (${table.reservePlayerId} IS NOT NULL AND ${table.reservePlayerId2} <> ${table.reservePlayerId} AND ${table.reservePlayerId2} <> ${table.captainPlayerId} AND ${table.reservePlayerId2} <> ${table.viceCaptainPlayerId})`,
     ),
     index("fantasy_teams_matchday_idx").on(table.matchdayId),
   ],

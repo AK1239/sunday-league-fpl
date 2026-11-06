@@ -18,7 +18,8 @@ export type SubmittedFantasyTeam = {
   playerIds: readonly string[];
   /** Defaults to permanent when omitted (pre-chips rows). */
   squadKind?: SquadKind;
-  reservePlayerId?: string | null;
+  /** Bench Boost extras (pre-chips rows: omit). */
+  reservePlayerIds?: readonly string[];
 };
 
 export function submittedSquadKind(team: SubmittedFantasyTeam): SquadKind {
@@ -40,7 +41,7 @@ export type EffectiveFantasyTeam = {
   playerIds: readonly string[];
   teamSource: Exclude<ManagerTeamSource, "none">;
   squadKind: SquadKind;
-  reservePlayerId: string | null;
+  reservePlayerIds: readonly string[];
 };
 
 export function compareMatchdaysChronologically(
@@ -81,7 +82,7 @@ export function resolveEffectiveTeam(
       playerIds: onMatchday.playerIds,
       teamSource: onMatchday.source,
       squadKind: submittedSquadKind(onMatchday),
-      reservePlayerId: onMatchday.reservePlayerId ?? null,
+      reservePlayerIds: onMatchday.reservePlayerIds ?? [],
     };
   }
 
@@ -103,6 +104,6 @@ export function resolveEffectiveTeam(
     playerIds: priorManual.playerIds,
     teamSource: "carry_over",
     squadKind: "permanent",
-    reservePlayerId: null,
+    reservePlayerIds: [],
   };
 }

@@ -5,7 +5,8 @@ export type ChipScoringInput = {
   code: ChipCode;
   /** Snapshotted params (e.g. `{ multiplier: 3 }` for Triple Captain). */
   params: Record<string, unknown>;
-  reservePlayerId: string | null;
+  /** Bench Boost extra players (scored ×1 if they attend). */
+  reservePlayerIds: readonly string[];
 };
 
 export type SquadPointsOnlyFn = (
@@ -43,7 +44,7 @@ export function multiplierForScoredPlayer(input: {
 export function shouldScoreBenchBoostReserve(
   chip: ChipScoringInput | null,
 ): boolean {
-  return chip?.code === "bench_boost" && chip.reservePlayerId != null;
+  return chip?.code === "bench_boost" && chip.reservePlayerIds.length > 0;
 }
 
 /** Informational bonus: squad points with chip minus without (TC / BB only). */

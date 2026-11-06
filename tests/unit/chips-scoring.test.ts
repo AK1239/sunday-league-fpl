@@ -38,7 +38,7 @@ describe("chip scoring", () => {
     const chip: ChipScoringInput = {
       code: "triple_captain",
       params: { multiplier: 3 },
-      reservePlayerId: null,
+      reservePlayerIds: [],
     };
     const chips = new Map([["m1", chip]]);
 
@@ -67,7 +67,7 @@ describe("chip scoring", () => {
     const chip: ChipScoringInput = {
       code: "triple_captain",
       params: { multiplier: 3 },
-      reservePlayerId: null,
+      reservePlayerIds: [],
     };
 
     const [result] = scoreManagers(
@@ -82,7 +82,7 @@ describe("chip scoring", () => {
     expect(result.chipBonus).toBe(0);
   });
 
-  it("bench boost adds reserve at ×1", () => {
+  it("bench boost adds both extra players at ×1", () => {
     const playerPoints = new Map([
       ["p1", 10],
       ["p2", 0],
@@ -90,12 +90,13 @@ describe("chip scoring", () => {
       ["p4", 0],
       ["p5", 0],
       ["p6", 6],
+      ["p7", 4],
     ]);
-    const attended = new Set(["p1", "p6"]);
+    const attended = new Set(["p1", "p6", "p7"]);
     const chip: ChipScoringInput = {
       code: "bench_boost",
       params: {},
-      reservePlayerId: "p6",
+      reservePlayerIds: ["p6", "p7"],
     };
 
     const [result] = scoreManagers(
@@ -106,9 +107,37 @@ describe("chip scoring", () => {
       new Map(),
       new Map([["m1", chip]]),
     );
+    expect(result.squadPoints).toBe(10 * 2 + 6 + 4);
+    expect(result.chipBonus).toBe(10);
+    const extraLines = result.lines.filter((l) => l.role === "reserve");
+    expect(extraLines).toHaveLength(2);
+    expect(extraLines).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ playerId: "p6", points: 6 }),
+        expect.objectContaining({ playerId: "p7", points: 4 }),
+      ]),
+    );
+  });
+
+  it("an extra player who did not attend scores nothing", () => {
+    const playerPoints = new Map([
+      ["p1", 10],
+      ["p6", 6],
+      ["p7", 4],
+    ]);
+    const chip: ChipScoringInput = {
+      code: "bench_boost",
+      params: {},
+      reservePlayerIds: ["p6", "p7"],
+    };
+    const [result] = scoreManagers(
+      rules,
+      playerPoints,
+      new Set(["p1", "p6"]),
+      [team],
+      new Map(),
+      new Map([["m1", chip]]),
+    );
     expect(result.squadPoints).toBe(10 * 2 + 6);
-    expect(result.chipBonus).toBe(6);
-    const reserveLine = result.lines.find((l) => l.role === "reserve");
-    expect(reserveLine).toMatchObject({ playerId: "p6", points: 6 });
   });
 });

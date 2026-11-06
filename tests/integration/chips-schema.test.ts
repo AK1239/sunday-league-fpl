@@ -66,6 +66,7 @@ async function seedFixtures() {
       { displayName: "D" },
       { displayName: "E" },
       { displayName: "F" },
+      { displayName: "G" },
     ])
     .returning();
   const [manager] = await db
@@ -89,7 +90,7 @@ async function seedFixtures() {
 
 async function insertTeamWithFive(
   fx: Awaited<ReturnType<typeof seedFixtures>>,
-  reservePlayerId?: string | null,
+  reserveIds: string[] = [],
 ) {
   const [p1, p2, p3, p4, p5] = fx.playerIds;
   return getDb().transaction(async (tx) => {
@@ -101,7 +102,8 @@ async function insertTeamWithFive(
         captainPlayerId: p1!,
         viceCaptainPlayerId: p2!,
         squadKind: "permanent",
-        reservePlayerId: reservePlayerId ?? null,
+        reservePlayerId: reserveIds[0] ?? null,
+        reservePlayerId2: reserveIds[1] ?? null,
       })
       .returning();
     await tx.insert(fantasyTeamPlayers).values(
@@ -163,7 +165,7 @@ describe.skipIf(!hasDatabase)("chips schema (0009)", () => {
     const fx = await seedFixtures();
     const reserveId = fx.playerIds[5]!;
     await expectDbReject(
-      () => insertTeamWithFive(fx, reserveId),
+      () => insertTeamWithFive(fx, [reserveId]),
       /bench_boost/i,
     );
   });
@@ -201,9 +203,9 @@ describe.skipIf(!hasDatabase)("chips schema (0009)", () => {
     );
   });
 
-  it("commits reserve when bench_boost is active and reserve is outside the five", async () => {
+  it("commits two extra players when bench_boost is active", async () => {
     const fx = await seedFixtures();
-    const reserveId = fx.playerIds[5]!;
+    const [extra1, extra2] = [fx.playerIds[5]!, fx.playerIds[6]!];
     await getDb().transaction(async (tx) => {
       await tx.insert(managerChipPlays).values({
         seasonId: fx.seasonId,
@@ -218,7 +220,8 @@ describe.skipIf(!hasDatabase)("chips schema (0009)", () => {
           matchdayId: fx.matchdayId,
           captainPlayerId: fx.playerIds[0]!,
           viceCaptainPlayerId: fx.playerIds[1]!,
-          reservePlayerId: reserveId,
+          reservePlayerId: extra1,
+          reservePlayerId2: extra2,
         })
         .returning();
       await tx.insert(fantasyTeamPlayers).values(
@@ -229,9 +232,37 @@ describe.skipIf(!hasDatabase)("chips schema (0009)", () => {
       );
     });
     const row = await getDb()
-      .select({ reserve: fantasyTeams.reservePlayerId })
+      .select({
+        first: fantasyTeams.reservePlayerId,
+        second: fantasyTeams.reservePlayerId2,
+      })
       .from(fantasyTeams)
       .where(eq(fantasyTeams.managerId, fx.managerId));
-    expect(row[0]?.reserve).toBe(reserveId);
+    expect(row[0]).toEqual({ first: extra1, second: extra2 });
+  });
+
+  it("rejects a second extra that duplicates the first", async () => {
+    const fx = await seedFixtures();
+    const extra = fx.playerIds[5]!;
+    await expectDbReject(
+      () =>
+        getDb().transaction(async (tx) => {
+          await tx.insert(managerChipPlays).values({
+            seasonId: fx.seasonId,
+            managerId: fx.managerId,
+            matchdayId: fx.matchdayId,
+            chipCode: "bench_boost",
+          });
+          await tx.insert(fantasyTeams).values({
+            managerId: fx.managerId,
+            matchdayId: fx.matchdayId,
+            captainPlayerId: fx.playerIds[0]!,
+            viceCaptainPlayerId: fx.playerIds[1]!,
+            reservePlayerId: extra,
+            reservePlayerId2: extra,
+          });
+        }),
+      /reserve2_valid/i,
+    );
   });
 });

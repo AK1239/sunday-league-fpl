@@ -8,7 +8,7 @@ const BANNER_COPY: Partial<Record<ChipCode, string>> = {
   wildcard:
     "Wildcard active — changes are free and permanent for next gameweek.",
   free_hit: "Free Hit — your original team returns after this gameweek.",
-  bench_boost: "Bench Boost — pick a reserve below the pitch.",
+  bench_boost: "Bench Boost — your 2 extra players score too.",
   triple_captain: "Triple Captain — captain scores ×3 if they attend.",
 };
 

@@ -1,3 +1,4 @@
+import { extrasFromColumns } from "@/server/chips/bench-boost-extras";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type { AppDb } from "@/server/db";
 import {
@@ -43,7 +44,7 @@ export type FantasyTeamView =
       viceCaptainPlayerId: string;
       playerIds: string[];
       squadKind: SquadKind;
-      reservePlayerId: string | null;
+      reservePlayerIds: string[];
       slots: FantasyTeamPlayerSlot[];
     };
 
@@ -68,6 +69,7 @@ export async function loadSubmittedTeamsForSeason(
       viceCaptainPlayerId: fantasyTeams.viceCaptainPlayerId,
       squadKind: fantasyTeams.squadKind,
       reservePlayerId: fantasyTeams.reservePlayerId,
+      reservePlayerId2: fantasyTeams.reservePlayerId2,
       playedOn: matchdays.playedOn,
       number: matchdays.number,
       seasonStartsOn: seasons.startsOn,
@@ -115,7 +117,10 @@ export async function loadSubmittedTeamsForSeason(
       viceCaptainPlayerId: header.viceCaptainPlayerId,
       playerIds: playersByTeam.get(header.teamId) ?? [],
       squadKind: header.squadKind,
-      reservePlayerId: header.reservePlayerId,
+      reservePlayerIds: extrasFromColumns(
+        header.reservePlayerId,
+        header.reservePlayerId2,
+      ),
     };
   });
 }
@@ -206,6 +211,7 @@ export async function getManagerFantasyTeamForViewer(
       viceCaptainPlayerId: fantasyTeams.viceCaptainPlayerId,
       squadKind: fantasyTeams.squadKind,
       reservePlayerId: fantasyTeams.reservePlayerId,
+      reservePlayerId2: fantasyTeams.reservePlayerId2,
     })
     .from(fantasyTeams)
     .where(
@@ -221,7 +227,7 @@ export async function getManagerFantasyTeamForViewer(
   let playerIds: string[];
   let teamSource: "manual" | "admin" | "carry_over";
   let squadKind: SquadKind = "permanent";
-  let reservePlayerId: string | null = null;
+  let reservePlayerIds: string[] = [];
 
   const storedRow = stored[0];
   let teamVersionForRow = 0;
@@ -231,7 +237,10 @@ export async function getManagerFantasyTeamForViewer(
     captainPlayerId = storedRow.captainPlayerId;
     viceCaptainPlayerId = storedRow.viceCaptainPlayerId;
     squadKind = storedRow.squadKind;
-    reservePlayerId = storedRow.reservePlayerId;
+    reservePlayerIds = extrasFromColumns(
+      storedRow.reservePlayerId,
+      storedRow.reservePlayerId2,
+    );
     const picks = await db
       .select({ playerId: fantasyTeamPlayers.playerId })
       .from(fantasyTeamPlayers)
@@ -262,7 +271,7 @@ export async function getManagerFantasyTeamForViewer(
         viceCaptainPlayerId: "",
         playerIds: [],
         squadKind: "permanent",
-        reservePlayerId: null,
+        reservePlayerIds: [],
         slots: [],
       };
     }
@@ -271,7 +280,7 @@ export async function getManagerFantasyTeamForViewer(
     viceCaptainPlayerId = effective.viceCaptainPlayerId;
     playerIds = [...effective.playerIds];
     squadKind = effective.squadKind;
-    reservePlayerId = effective.reservePlayerId;
+    reservePlayerIds = [...effective.reservePlayerIds];
   }
 
   if (playerIds.length === 0) {
@@ -289,7 +298,7 @@ export async function getManagerFantasyTeamForViewer(
       viceCaptainPlayerId,
       playerIds: [],
       squadKind,
-      reservePlayerId,
+      reservePlayerIds,
       slots: [],
     };
   }
@@ -318,7 +327,7 @@ export async function getManagerFantasyTeamForViewer(
     viceCaptainPlayerId,
     playerIds,
     squadKind,
-    reservePlayerId,
+    reservePlayerIds,
     slots: buildSlots(
       playerIds,
       captainPlayerId,
