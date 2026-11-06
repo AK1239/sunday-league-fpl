@@ -114,32 +114,36 @@ export async function HomeHubPanel() {
       ) : null}
 
       <div className="animate-rise">
-        <section className="surface relative overflow-hidden rounded-2xl p-5">
-          <h2 className="relative flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-            <CalendarClock className="size-4 text-primary" aria-hidden />
-            Next gameweek
-          </h2>
-          {data.nextMatchday ? (
-            <>
-              <p className="relative mt-3 font-heading text-3xl font-bold tabular-nums">
-                GW{data.nextMatchday.number}
-              </p>
-              <p className="relative text-sm text-muted-foreground tabular-nums">
-                {data.nextMatchday.playedOn}
-              </p>
-              <Link
-                href="/pick"
-                className="relative mt-3 inline-block text-sm font-medium text-primary hover:underline"
-              >
-                Pick your team →
-              </Link>
-            </>
-          ) : (
+        {data.nextMatchday ? (
+          <Link
+            href="/pick"
+            className="surface surface-hover group relative block overflow-hidden rounded-2xl p-5 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <h2 className="relative flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+              <CalendarClock className="size-4 text-primary" aria-hidden />
+              Next gameweek
+            </h2>
+            <p className="relative mt-3 font-heading text-3xl font-bold tabular-nums">
+              GW{data.nextMatchday.number}
+            </p>
+            <p className="relative text-sm text-muted-foreground tabular-nums">
+              {data.nextMatchday.playedOn}
+            </p>
+            <p className="relative mt-3 text-sm font-medium text-primary group-hover:underline">
+              Pick your team →
+            </p>
+          </Link>
+        ) : (
+          <section className="surface relative overflow-hidden rounded-2xl p-5">
+            <h2 className="relative flex items-center gap-2 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+              <CalendarClock className="size-4 text-primary" aria-hidden />
+              Next gameweek
+            </h2>
             <p className="relative mt-3 text-sm text-muted-foreground">
               No upcoming gameweek scheduled.
             </p>
-          )}
-        </section>
+          </section>
+        )}
       </div>
 
       <div className="animate-rise grid gap-4 sm:grid-cols-2">
