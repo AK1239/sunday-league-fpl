@@ -14,6 +14,7 @@ export type SerializedTransferPageData =
   | {
       mode: "transfers";
       pick: ReturnType<typeof serializePickTeamData>;
+      isInitialBuild: boolean;
       teamVersion: number;
       basePlayerIds: string[];
       freeAvailable: number;
@@ -35,6 +36,7 @@ export function serializeTransferPageData(
   return {
     mode: "transfers",
     pick: serializePickTeamData(data.pick),
+    isInitialBuild: data.isInitialBuild,
     teamVersion: data.teamVersion,
     basePlayerIds: [...data.basePlayerIds],
     freeAvailable: data.freeAvailable,

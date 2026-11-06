@@ -137,6 +137,50 @@ export function validateFantasyTeamTransferPick(
   return { ok: true };
 }
 
+/**
+ * First gameweek with transfer UI but no prior squad (empty base).
+ * Same transfer rules as `validateFantasyTeamTransferPick` with `basePlayerIds = []`.
+ */
+export function validateEmptyBaseTransferPick(
+  pick: FantasyTeamPick,
+  eligibleById: ReadonlyMap<string, EligiblePlayer>,
+): ValidateFantasyTeamResult {
+  const lineup = validateFantasyTeamTransferLineup(
+    pick.playerIds,
+    [],
+    eligibleById,
+  );
+  if (!lineup.ok) return lineup;
+
+  const unique = new Set(pick.playerIds);
+
+  if (pick.captainPlayerId === pick.viceCaptainPlayerId) {
+    return {
+      ok: false,
+      code: "CAPTAIN_VICE_SAME",
+      message: "Captain and vice-captain must be different players.",
+    };
+  }
+
+  if (!unique.has(pick.captainPlayerId)) {
+    return {
+      ok: false,
+      code: "CAPTAIN_NOT_IN_SQUAD",
+      message: "Captain must be one of the five picked players.",
+    };
+  }
+
+  if (!unique.has(pick.viceCaptainPlayerId)) {
+    return {
+      ok: false,
+      code: "VICE_NOT_IN_SQUAD",
+      message: "Vice-captain must be one of the five picked players.",
+    };
+  }
+
+  return { ok: true };
+}
+
 /** Initial unrestricted build — no base squad yet. */
 export function validateInitialFantasyTeamBuild(
   pick: FantasyTeamPick,

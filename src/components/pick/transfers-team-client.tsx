@@ -26,6 +26,7 @@ import { summariseTransferWindow } from "@/server/fantasy/transfer-summary";
 import type { ChipCode } from "@/server/chips/registry";
 import type { ChipCardView } from "@/server/queries/chip-page-data";
 import {
+  validateEmptyBaseTransferPick,
   validateFantasyTeamTransferLineup,
   validateFantasyTeamTransferPick,
   validateInitialFantasyTeamBuild,
@@ -34,8 +35,20 @@ import { ArrowRight, Check, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+const EMPTY_FIVE_SLOTS: (string | null)[] = [
+  null,
+  null,
+  null,
+  null,
+  null,
+];
+
 function teamToSlots(playerIds: readonly string[]): (string | null)[] {
-  return playerIds.slice(0, 5).map((id) => id);
+  const slots: (string | null)[] = [...EMPTY_FIVE_SLOTS];
+  playerIds.slice(0, 5).forEach((id, index) => {
+    slots[index] = id;
+  });
+  return slots;
 }
 
 function readLocalDraft(
@@ -105,11 +118,20 @@ export function TransfersTeamClient({
 }) {
   const router = useRouter();
   const pick = initial.pick;
+  const isFirstSeasonGw = initial.isInitialBuild;
   const playerById = useMemo(
     () => new Map(pick.players.map((p) => [p.id, p])),
     [pick.players],
   );
   const basePlayerIds = initial.basePlayerIds;
+  /** Prior GW squad from server, or this GW saved team when GW1 has no "before" row. */
+  const permanentBasePlayerIds = useMemo(() => {
+    if (basePlayerIds.length === 5) return basePlayerIds;
+    if (pick.myTeam?.playerIds.length === 5) return pick.myTeam.playerIds;
+    return [] as string[];
+  }, [basePlayerIds, pick.myTeam]);
+  const emptyBase =
+    isFirstSeasonGw && permanentBasePlayerIds.length === 0;
 
   const [teamVersion, setTeamVersion] = useState(initial.teamVersion);
   const [draftStaleNotice, setDraftStaleNotice] = useState(false);
@@ -138,22 +160,28 @@ export function TransfersTeamClient({
     }
     return pick.myTeam?.playerIds.length === 5
       ? teamToSlots(pick.myTeam.playerIds)
-      : teamToSlots(basePlayerIds);
+      : emptyBase
+        ? [...EMPTY_FIVE_SLOTS]
+        : teamToSlots(permanentBasePlayerIds);
   });
 
   const [captainPlayerId, setCaptainPlayerId] = useState<string | null>(
     () =>
       initialDraft?.captainPlayerId ??
       pick.myTeam?.captainPlayerId ??
-      basePlayerIds[0] ??
-      null,
+      (permanentBasePlayerIds.length === 5
+        ? permanentBasePlayerIds[0]!
+        : null),
   );
   const [viceCaptainPlayerId, setViceCaptainPlayerId] = useState<string | null>(
     () =>
       initialDraft?.viceCaptainPlayerId ??
       pick.myTeam?.viceCaptainPlayerId ??
-      basePlayerIds[1] ??
-      null,
+      (permanentBasePlayerIds.length === 5
+        ? permanentBasePlayerIds.find(
+            (id) => id !== permanentBasePlayerIds[0],
+          ) ?? null
+        : null),
   );
 
   const [pendingOutSlot, setPendingOutSlot] = useState<number | null>(null);
@@ -203,9 +231,15 @@ export function TransfersTeamClient({
     [slots],
   );
 
+  const lineupBaseForValidation = useMemo(
+    () =>
+      chipCode === "free_hit" ? basePlayerIds : permanentBasePlayerIds,
+    [chipCode, basePlayerIds, permanentBasePlayerIds],
+  );
+
   const diff = useMemo(
-    () => diffSquads(basePlayerIds, plannedIds),
-    [basePlayerIds, plannedIds],
+    () => diffSquads(lineupBaseForValidation, plannedIds),
+    [lineupBaseForValidation, plannedIds],
   );
   const incomingIds = useMemo(() => new Set(diff.in), [diff.in]);
 
@@ -215,14 +249,14 @@ export function TransfersTeamClient({
   const summary = useMemo(
     () =>
       summariseTransferWindow({
-        baseSquad: basePlayerIds,
+        baseSquad: lineupBaseForValidation,
         nextSquad: plannedIds,
         freeAvailable: initial.freeAvailable,
         penaltyPerExtra: initial.penaltyPerExtra,
         unlimited: unlimitedTransfers,
       }),
     [
-      basePlayerIds,
+      lineupBaseForValidation,
       plannedIds,
       initial.freeAvailable,
       initial.penaltyPerExtra,
@@ -325,7 +359,7 @@ export function TransfersTeamClient({
     if (plannedIds.length !== 5) return "Your squad must have 5 players.";
     const lineup = validateFantasyTeamTransferLineup(
       plannedIds,
-      basePlayerIds,
+      lineupBaseForValidation,
       eligible,
     );
     if (!lineup.ok) return lineup.message;
@@ -338,7 +372,7 @@ export function TransfersTeamClient({
     dirty,
     pendingOutSlot,
     plannedIds,
-    basePlayerIds,
+    lineupBaseForValidation,
     eligible,
     captainPlayerId,
     viceCaptainPlayerId,
@@ -348,10 +382,10 @@ export function TransfersTeamClient({
     if (pendingOutSlot != null || plannedIds.length !== 5) return false;
     return validateFantasyTeamTransferLineup(
       plannedIds,
-      basePlayerIds,
+      lineupBaseForValidation,
       eligible,
     ).ok;
-  }, [pendingOutSlot, plannedIds, basePlayerIds, eligible]);
+  }, [pendingOutSlot, plannedIds, lineupBaseForValidation, eligible]);
 
   const captaincyReady = useMemo(() => {
     if (!captainPlayerId || !viceCaptainPlayerId) return false;
@@ -368,16 +402,20 @@ export function TransfersTeamClient({
     if (chipCode === "free_hit") {
       return validateInitialFantasyTeamBuild(pickForValidation, eligible).ok;
     }
+    if (emptyBase) {
+      return validateEmptyBaseTransferPick(pickForValidation, eligible).ok;
+    }
     return validateFantasyTeamTransferPick(
       pickForValidation,
-      basePlayerIds,
+      permanentBasePlayerIds,
       eligible,
     ).ok;
   }, [
     readOnly,
     pickForValidation,
     pendingOutSlot,
-    basePlayerIds,
+    emptyBase,
+    permanentBasePlayerIds,
     eligible,
     chipCode,
     reservePlayerId,
@@ -413,17 +451,39 @@ export function TransfersTeamClient({
     (index: number) => {
       if (readOnly) return;
       const playerId = slots[index];
+      setActiveSlot(index);
       if (playerId) {
-        setActiveSlot(index);
         setActionOpen(true);
+        return;
+      }
+      if (emptyBase) {
+        setPendingOutSlot(null);
+        setPickerOpen(true);
       }
     },
-    [readOnly, slots],
+    [readOnly, slots, emptyBase],
   );
 
   const assignPlayerToSlot = useCallback(
     (playerId: string) => {
       if (activeSlot == null) return;
+      if (emptyBase) {
+        setSlots((prev) => {
+          const next = [...prev];
+          const existingIndex = next.findIndex((id) => id === playerId);
+          if (existingIndex >= 0) next[existingIndex] = null;
+          next[activeSlot] = playerId;
+          return next;
+        });
+        if (!captainPlayerId) {
+          setCaptainPlayerId(playerId);
+        } else if (!viceCaptainPlayerId && playerId !== captainPlayerId) {
+          setViceCaptainPlayerId(playerId);
+        }
+        setPickerOpen(false);
+        setPendingOutSlot(null);
+        return;
+      }
       setPendingOutSlot(null);
       setSlots((prev) => {
         const next = [...prev];
@@ -433,7 +493,7 @@ export function TransfersTeamClient({
         return next;
       });
     },
-    [activeSlot],
+    [activeSlot, emptyBase, captainPlayerId, viceCaptainPlayerId],
   );
 
   function resetToSavedTeam() {
@@ -445,10 +505,17 @@ export function TransfersTeamClient({
       setViceCaptainPlayerId(savedTeam.viceCaptainPlayerId);
       return;
     }
-    setSlots(teamToSlots(basePlayerIds));
-    setCaptainPlayerId(basePlayerIds[0] ?? null);
+    if (emptyBase) {
+      setSlots([...EMPTY_FIVE_SLOTS]);
+      setCaptainPlayerId(null);
+      setViceCaptainPlayerId(null);
+      return;
+    }
+    setSlots(teamToSlots(permanentBasePlayerIds));
+    setCaptainPlayerId(permanentBasePlayerIds[0] ?? null);
     setViceCaptainPlayerId(
-      basePlayerIds.find((id) => id !== basePlayerIds[0]) ?? null,
+      permanentBasePlayerIds.find((id) => id !== permanentBasePlayerIds[0]) ??
+        null,
     );
   }
 
@@ -547,10 +614,12 @@ export function TransfersTeamClient({
   function handleContinueChipToTeam(code: ChipCode) {
     setChipCode(code);
     if (code === "free_hit") {
-      setSlots(teamToSlots(basePlayerIds));
-      setCaptainPlayerId(basePlayerIds[0] ?? null);
+      setSlots(teamToSlots(permanentBasePlayerIds));
+      setCaptainPlayerId(permanentBasePlayerIds[0] ?? null);
       setViceCaptainPlayerId(
-        basePlayerIds.find((id) => id !== basePlayerIds[0]) ?? null,
+        permanentBasePlayerIds.find(
+          (id) => id !== permanentBasePlayerIds[0],
+        ) ?? null,
       );
     }
     if (code !== "bench_boost") setReservePlayerId(null);
@@ -576,8 +645,12 @@ export function TransfersTeamClient({
     <div className="space-y-6 pb-44 md:pb-10">
       <PageHeader
         eyebrow={`Gameweek ${pick.matchday.number}`}
-        title="Transfers"
-        description={`${pick.matchday.playedOn} · Change players before the deadline.`}
+        title={emptyBase ? "Build your squad" : "Transfers"}
+        description={
+          emptyBase
+            ? `${pick.matchday.playedOn} · Pick your first five (free, unlimited transfers). Wildcard and Free Hit unlock after this gameweek.`
+            : `${pick.matchday.playedOn} · Change players before the deadline.`
+        }
       />
 
       <div className="sticky top-0 z-20 space-y-3 rounded-2xl border border-border/50 bg-background/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -761,7 +834,9 @@ export function TransfersTeamClient({
               <p className="text-center text-xs text-muted-foreground">
                 {captaincyStep
                   ? "Tap a player to set captain or vice-captain."
-                  : "Tap a player to set captain, vice-captain or make a transfer."}
+                  : emptyBase
+                    ? "Tap empty slots to add players, then set captain and vice-captain."
+                    : "Tap a player to set captain, vice-captain or make a transfer."}
               </p>
             ) : null}
           </div>
@@ -898,9 +973,29 @@ export function TransfersTeamClient({
           }}
           onReplace={() => {
             setActionOpen(false);
+            if (emptyBase) {
+              setPickerOpen(true);
+              return;
+            }
             if (activeSlot != null) setPendingOutSlot(activeSlot);
             setPickerOpen(true);
           }}
+          onRemove={
+            emptyBase && activeSlot != null
+              ? () => {
+                  const removed = slots[activeSlot];
+                  setSlots((prev) => {
+                    const next = [...prev];
+                    next[activeSlot] = null;
+                    return next;
+                  });
+                  if (removed === captainPlayerId) setCaptainPlayerId(null);
+                  if (removed === viceCaptainPlayerId) {
+                    setViceCaptainPlayerId(null);
+                  }
+                }
+              : undefined
+          }
         />
       ) : null}
 
@@ -909,7 +1004,7 @@ export function TransfersTeamClient({
         onClose={() => setConfirmOpen(false)}
         onConfirm={handleConfirm}
         confirming={confirming}
-        basePlayerIds={basePlayerIds}
+        basePlayerIds={lineupBaseForValidation}
         plannedPlayerIds={plannedIds}
         summary={summary}
         freeAvailable={initial.freeAvailable}

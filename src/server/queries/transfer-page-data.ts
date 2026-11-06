@@ -28,6 +28,7 @@ import {
   getChipPageData,
   type ChipPageData,
 } from "@/server/queries/chip-page-data";
+import { loadSeasonChipConfigs } from "@/server/domain/chip-plays";
 
 export type TransferHistoryEntry = {
   matchdayId: string;
@@ -54,6 +55,8 @@ export type TransferPageData =
   | {
       mode: "transfers";
       pick: PickTeamData;
+      /** First squad of the season — no prior submitted team to diff transfers from. */
+      isInitialBuild: boolean;
       teamVersion: number;
       basePlayerIds: readonly string[];
       freeAvailable: number;
@@ -203,8 +206,21 @@ export async function getTransferPageData(
     submitted,
   );
 
-  if (initialBuild || !basePlayerIds || basePlayerIds.length !== 5) {
+  const baseIncomplete =
+    basePlayerIds != null && basePlayerIds.length !== 0 && basePlayerIds.length !== 5;
+
+  if (baseIncomplete) {
     return { mode: "standard", pick, standardReason: "initial_build" };
+  }
+
+  const effectiveBasePlayerIds: readonly string[] =
+    basePlayerIds != null && basePlayerIds.length === 5 ? basePlayerIds : [];
+
+  if (initialBuild) {
+    const chipConfigs = await loadSeasonChipConfigs(db, pick.seasonId);
+    if (chipConfigs.length === 0) {
+      return { mode: "standard", pick, standardReason: "initial_build" };
+    }
   }
 
   const [teamRow] = await db
@@ -239,7 +255,7 @@ export async function getTransferPageData(
     matchdayId: pick.matchday.id,
     matchdayNumber: pick.matchday.number,
     selectionOpen: pick.selectionOpen,
-    hasBaseSquad: basePlayerIds.length === 5,
+    hasBaseSquad: effectiveBasePlayerIds.length === 5,
     transferRulesApply: transferMode,
     isInitialBuild: initialBuild,
   });
@@ -247,8 +263,9 @@ export async function getTransferPageData(
   return {
     mode: "transfers",
     pick,
+    isInitialBuild: initialBuild,
     teamVersion: teamRow?.version ?? 0,
-    basePlayerIds,
+    basePlayerIds: effectiveBasePlayerIds,
     freeAvailable,
     penaltyPerExtra: transferRules.penaltyPerExtra,
     history,
