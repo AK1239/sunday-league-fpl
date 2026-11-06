@@ -62,8 +62,8 @@ export function SlotActionSheet({
             key: "captain",
             label: "Make captain",
             hint: transferMode
-              ? "Free — your points are multiplied"
-              : "Your points are multiplied",
+              ? "Free — your points are multiplied ×2"
+              : "Your points are multiplied ×2",
             icon: <Crown />,
             onSelect: onMakeCaptain,
             hidden: isCaptain,
@@ -72,8 +72,8 @@ export function SlotActionSheet({
             key: "vice",
             label: "Make vice-captain",
             hint: transferMode
-              ? "Free — steps in if your captain doesn't play"
-              : "Steps in if your captain doesn't play",
+              ? "Free — your points are multiplied ×1.5"
+              : "Your points are multiplied ×1.5",
             icon: <ShieldCheck />,
             onSelect: onMakeVice,
             hidden: isVice,
