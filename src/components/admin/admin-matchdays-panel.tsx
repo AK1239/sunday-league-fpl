@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { connection } from "next/server";
 import { max, eq } from "drizzle-orm";
 import { CreateMatchdayForm } from "@/components/admin/create-matchday-form";
-import { MatchdayRowActions } from "@/components/admin/matchday-row-actions";
+import { MatchdayCard } from "@/components/admin/matchday-card";
 import { SectionHeading } from "@/components/fantasy/section-heading";
 import { EmptyState } from "@/components/fantasy/empty-state";
 import { requireAdmin } from "@/server/auth/require-admin";
@@ -15,19 +14,6 @@ import {
 } from "@/server/domain/matchdays-admin";
 import { getLeagueSettings } from "@/server/domain/league-settings";
 import { listSeasonsAdmin } from "@/server/domain/seasons-admin";
-
-function statusClass(status: string): string {
-  switch (status) {
-    case "scheduled":
-      return "text-primary font-medium";
-    case "published":
-      return "text-foreground font-medium";
-    case "cancelled":
-      return "text-destructive";
-    default:
-      return "text-muted-foreground";
-  }
-}
 
 export async function AdminMatchdaysPanel() {
   await connection();
@@ -50,7 +36,9 @@ export async function AdminMatchdaysPanel() {
   }
 
   const seasonId =
-    activeSeasonId ?? seasons.find((s) => s.status === "active")?.id ?? seasons[0]?.id;
+    activeSeasonId ??
+    seasons.find((s) => s.status === "active")?.id ??
+    seasons[0]?.id;
 
   if (!seasonId) {
     return (
@@ -67,8 +55,7 @@ export async function AdminMatchdaysPanel() {
     .from(matchdays)
     .where(eq(matchdays.seasonId, seasonId));
 
-  const seasonName =
-    seasons.find((s) => s.id === seasonId)?.name ?? "Season";
+  const seasonName = seasons.find((s) => s.id === seasonId)?.name ?? "Season";
 
   return (
     <div className="space-y-8">
@@ -86,55 +73,23 @@ export async function AdminMatchdaysPanel() {
             description="Create the next Sunday gameweek so managers can pick teams."
           />
         ) : (
-          <ul className="space-y-3">
-            {matchdayList.map((md) => (
-              <li
+          <ul className="space-y-4">
+            {matchdayList.map((md, i) => (
+              <MatchdayCard
                 key={md.id}
-                className="surface flex flex-col gap-4 rounded-2xl p-4 lg:flex-row lg:items-start lg:justify-between"
-              >
-                <div className="min-w-0 space-y-1">
-                  <p className="font-heading text-lg font-semibold tabular-nums">
-                    GW{md.number}
-                  </p>
-                  <p className="text-sm text-muted-foreground tabular-nums">
-                    {md.playedOn} ·{" "}
-                    <span className={statusClass(md.status)}>{md.status}</span>
-                  </p>
-                  {md.status !== "cancelled" ? (
-                    <div className="flex flex-wrap gap-3">
-                      <Link
-                        href={`/admin/matchdays/${md.id}/entry`}
-                        className="text-sm font-medium text-primary hover:underline"
-                      >
-                        {md.status === "published"
-                          ? "Edit results →"
-                          : "Enter results →"}
-                      </Link>
-                      {md.status === "published" ? (
-                        <Link
-                          href={`/admin/matchdays/${md.id}/inspector`}
-                          className="text-sm font-medium text-muted-foreground hover:text-primary hover:underline"
-                        >
-                          Scoring inspector
-                        </Link>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-                <MatchdayRowActions
-                  matchday={{
-                    id: md.id,
-                    number: md.number,
-                    playedOn: md.playedOn,
-                    deadlineLocal: formatDeadlineForDateTimeLocal(
-                      md.deadlineAt,
-                      settings.timezone,
-                    ),
-                    status: md.status,
-                  }}
-                  timezone={settings.timezone}
-                />
-              </li>
+                index={i}
+                timezone={settings.timezone}
+                matchday={{
+                  id: md.id,
+                  number: md.number,
+                  playedOn: md.playedOn,
+                  deadlineLocal: formatDeadlineForDateTimeLocal(
+                    md.deadlineAt,
+                    settings.timezone,
+                  ),
+                  status: md.status,
+                }}
+              />
             ))}
           </ul>
         )}
