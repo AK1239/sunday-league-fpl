@@ -131,7 +131,7 @@ export async function AdminActivityPanel({
         description="Sign-ins, sign-outs, and other audited actions. Use filters to focus on managers or admins."
       />
 
-      <div className="flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-10 sm:gap-y-5">
+      <div className="flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-x-8 sm:gap-y-5">
         <Segmented label="Period">
           {[7, 14, 30].map((d) => (
             <SegLink
@@ -333,7 +333,7 @@ function Segmented({
       <div
         role="group"
         aria-label={label}
-        className="inline-flex w-fit gap-1 rounded-full border border-border/60 bg-card/50 p-1"
+        className="inline-flex w-fit gap-2 rounded-full border border-border/60 bg-card/50 p-1"
       >
         {children}
       </div>
