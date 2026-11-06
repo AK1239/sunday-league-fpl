@@ -7,6 +7,7 @@ import {
   parseDeadlineAtInLeagueTz,
 } from "./deadline";
 import { getLeagueSettings } from "./league-settings";
+import { voidTransferFactsForCancelledMatchday } from "./cancel-matchday-transfers";
 import { recomputeMatchday } from "./recompute-matchday";
 
 export type MatchdayAdminRow = {
@@ -230,33 +231,40 @@ export async function cancelMatchdayAdmin(
   adminUserId: string,
   matchdayId: string,
 ): Promise<MatchdayAdminRow> {
-  const existing = await db
-    .select()
-    .from(matchdays)
-    .where(eq(matchdays.id, matchdayId))
-    .limit(1);
-  const before = existing[0];
-  if (!before) throw new Error("NOT_FOUND");
-  if (before.status === "cancelled") throw new Error("ALREADY_CANCELLED");
+  const row = await db.transaction(async (tx) => {
+    const locked = await tx
+      .select()
+      .from(matchdays)
+      .where(eq(matchdays.id, matchdayId))
+      .for("update")
+      .limit(1);
+    const before = locked[0];
+    if (!before) throw new Error("NOT_FOUND");
+    if (before.status === "cancelled") throw new Error("ALREADY_CANCELLED");
 
-  const [row] = await db
-    .update(matchdays)
-    .set({ status: "cancelled" })
-    .where(eq(matchdays.id, matchdayId))
-    .returning();
+    await voidTransferFactsForCancelledMatchday(tx, matchdayId, adminUserId);
 
-  await writeAuditLog(db, {
-    userId: adminUserId,
-    action: "cancel",
-    entity: "matchday",
-    entityId: matchdayId,
-    before: { status: before.status },
-    after: { status: row!.status },
+    const [updated] = await tx
+      .update(matchdays)
+      .set({ status: "cancelled" })
+      .where(eq(matchdays.id, matchdayId))
+      .returning();
+
+    await writeAuditLog(tx, {
+      userId: adminUserId,
+      action: "cancel",
+      entity: "matchday",
+      entityId: matchdayId,
+      before: { status: before.status },
+      after: { status: updated!.status },
+    });
+
+    return updated as MatchdayAdminRow;
   });
 
   await recomputeMatchday(matchdayId);
 
-  return row as MatchdayAdminRow;
+  return row;
 }
 
 export async function ensureMatchdayNumberUnique(

@@ -79,7 +79,12 @@ export async function getManagerStandings(
     .from(users)
     .innerJoin(totals, eq(users.id, totals.managerId))
     .leftJoin(lastGwPoints, eq(users.id, lastGwPoints.managerId))
-    .where(inArray(users.role, ["manager", "admin"]));
+    .where(
+      and(
+        inArray(users.role, ["manager", "admin"]),
+        eq(users.status, "active"),
+      ),
+    );
 
   const sorted = rows.sort((a, b) => {
     if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
@@ -163,7 +168,12 @@ export async function getAllTimeManagerStandings(
     })
     .from(users)
     .innerJoin(totals, eq(users.id, totals.managerId))
-    .where(inArray(users.role, ["manager", "admin"]));
+    .where(
+      and(
+        inArray(users.role, ["manager", "admin"]),
+        eq(users.status, "active"),
+      ),
+    );
 
   const sorted = rows.sort((a, b) => {
     if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;

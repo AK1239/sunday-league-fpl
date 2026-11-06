@@ -23,6 +23,7 @@ import {
 } from "@/server/scoring/manager-score";
 import type { ManagerScoringRules } from "@/server/scoring/manager-types";
 import { loadScoringRulesForMatchday } from "./load-matchday-scoring";
+import { loadTransferPenaltiesForMatchday } from "./transfer-penalty";
 
 type Tx = DbExecutor;
 
@@ -74,19 +75,21 @@ export async function rebuildManagerScoresFromMatchday(
     return;
   }
 
-  const managers = await tx
+  const allManagers = await tx
     .select({
       id: users.id,
       displayName: users.displayName,
+      status: users.status,
     })
     .from(users)
     .where(inArray(users.role, ["manager", "admin"]));
 
-  if (managers.length === 0) {
+  if (allManagers.length === 0) {
     await rebuildManagerRankSnapshots(tx, seasonId, fromMatchdayNumber);
     return;
   }
 
+  const managers = allManagers;
   const managerIds = managers.map((m) => m.id);
 
   const teamHeaders = await tx
@@ -174,6 +177,12 @@ export async function rebuildManagerScoresFromMatchday(
 
     const attended = new Set(attendanceRows.map((row) => row.playerId));
 
+    const transferPenalties = await loadTransferPenaltiesForMatchday(
+      tx,
+      md.id,
+      managerIds,
+    );
+
     const scored = [];
 
     for (const manager of managers) {
@@ -227,15 +236,21 @@ export async function rebuildManagerScoresFromMatchday(
         });
       }
 
-      const [entry] = scoreManagers(rules, playerPoints, attended, [
-        {
-          managerId: manager.id,
-          captainPlayerId: effective.captainPlayerId,
-          viceCaptainPlayerId: effective.viceCaptainPlayerId,
-          playerIds: effective.playerIds,
-          teamSource: effective.teamSource,
-        },
-      ]);
+      const [entry] = scoreManagers(
+        rules,
+        playerPoints,
+        attended,
+        [
+          {
+            managerId: manager.id,
+            captainPlayerId: effective.captainPlayerId,
+            viceCaptainPlayerId: effective.viceCaptainPlayerId,
+            playerIds: effective.playerIds,
+            teamSource: effective.teamSource,
+          },
+        ],
+        transferPenalties,
+      );
       scored.push(entry);
     }
 
@@ -305,7 +320,12 @@ async function rebuildManagerRankSnapshots(
       displayName: users.displayName,
     })
     .from(users)
-    .where(inArray(users.role, ["manager", "admin"]));
+    .where(
+      and(
+        inArray(users.role, ["manager", "admin"]),
+        eq(users.status, "active"),
+      ),
+    );
 
   for (const md of published) {
     const totals = await tx
@@ -329,13 +349,30 @@ async function rebuildManagerRankSnapshots(
 
     const totalsMap = new Map(totals.map((row) => [row.managerId, row.total]));
 
+    const participantRows = await tx
+      .selectDistinct({ managerId: managerMatchdayScores.managerId })
+      .from(managerMatchdayScores)
+      .innerJoin(matchdays, eq(managerMatchdayScores.matchdayId, matchdays.id))
+      .where(
+        and(
+          eq(managerMatchdayScores.seasonId, seasonId),
+          eq(matchdays.status, "published"),
+          sql`${matchdays.number} <= ${md.number}`,
+          sql`${managerMatchdayScores.teamSource} <> 'none'`,
+        ),
+      );
+
+    const participantIds = new Set(
+      participantRows.map((row) => row.managerId),
+    );
+
     const ranked = managers
+      .filter((manager) => participantIds.has(manager.id))
       .map((manager) => ({
         managerId: manager.id,
         displayName: manager.displayName,
         points: totalsMap.get(manager.id) ?? 0,
       }))
-      .filter((row) => row.points > 0)
       .sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points;
         return a.displayName.localeCompare(b.displayName);

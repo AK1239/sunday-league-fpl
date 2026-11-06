@@ -587,8 +587,8 @@ Chips (separate future project) plug into the documented hook points in §5.
 - [x] Phase 3: `submit-team` service (lock order, advisory lock, DB time, version, replay)
 - [x] Phase 3: server actions + error codes
 - [x] Phase 3: concurrency and atomicity integration tests
-- [ ] Phase 4: recompute reads windows; `squad_points` / `transfer_penalty`; fix rank filter
-- [ ] Phase 5: cancel/postpone hooks; disabled-manager handling; mid-season join
+- [x] Phase 4: recompute reads windows; `squad_points` / `transfer_penalty`; fix rank filter
+- [x] Phase 5: cancel/postpone hooks; disabled-manager handling; mid-season join
 - [ ] Phase 6: transfers UI (pitch, picker banner, summary, confirm, history, locked)
 - [ ] Phase 6: breakdown modal + gameweek card show transfers/penalty
 - [ ] Phase 7: admin activity, manager history, adjustments, corrections + preview + cascade
