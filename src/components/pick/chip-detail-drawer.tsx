@@ -14,6 +14,7 @@ export function ChipDetailDrawer({
   onContinueToTeam,
   onActivateTripleCaptain,
   activating,
+  onCancelChip,
 }: {
   open: boolean;
   onClose: () => void;
@@ -21,6 +22,8 @@ export function ChipDetailDrawer({
   onContinueToTeam: (code: ChipCode) => void;
   onActivateTripleCaptain: () => void;
   activating: boolean;
+  /** When provided and the chip is active, shows a cancel action instead of activate. */
+  onCancelChip?: () => void;
 }) {
   if (!card) return null;
   const copy = CHIP_UI_COPY[card.code];
@@ -51,7 +54,20 @@ export function ChipDetailDrawer({
         <p className="text-xs text-muted-foreground">
           Can&apos;t be undone after the deadline. One use per season.
         </p>
-        {card.code === "triple_captain" ? (
+        {card.status.kind === "active" && onCancelChip ? (
+          <Button
+            type="button"
+            variant="destructive"
+            className="w-full"
+            disabled={activating}
+            onClick={() => {
+              onCancelChip();
+              onClose();
+            }}
+          >
+            Cancel {card.label}
+          </Button>
+        ) : card.code === "triple_captain" ? (
           <HoldToConfirmButton
             label="Hold to activate Triple Captain"
             confirming={activating}

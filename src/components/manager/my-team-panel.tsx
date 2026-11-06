@@ -8,6 +8,8 @@ import { getGameweekDetails } from "@/server/queries/manager-score-lines";
 import { requireUser } from "@/server/auth/require-user";
 import { getDb } from "@/server/db";
 import { isSelectionOpen } from "@/server/fantasy/lock";
+import { MyTeamChips } from "@/components/manager/my-team-chips";
+import { getTransferPageData } from "@/server/queries/transfer-page-data";
 import { getMyTeamPageData } from "@/server/queries/manager-my-pages";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -30,6 +32,28 @@ export async function MyTeamPanel() {
   const details = latestId
     ? await getGameweekDetails(getDb(), user.userId, [latestId])
     : null;
+
+  // Chips live right above the team, same as on the Transfers page.
+  const transfer = data.upcoming
+    ? await getTransferPageData(getDb(), user.userId)
+    : null;
+  const upcomingChips =
+    data.upcoming &&
+    transfer?.mode === "transfers" &&
+    transfer.pick.matchday.id === data.upcoming.matchdayId &&
+    transfer.pick.selectionOpen
+      ? transfer.chips
+      : null;
+  const upcomingTeam = data.upcoming?.team;
+  const chipTeam =
+    upcomingTeam?.visibility === "visible" && upcomingTeam.slots.length === 5
+      ? {
+          playerIds: upcomingTeam.playerIds,
+          captainPlayerId: upcomingTeam.captainPlayerId,
+          viceCaptainPlayerId: upcomingTeam.viceCaptainPlayerId,
+          teamVersion: upcomingTeam.teamVersion,
+        }
+      : null;
 
   return (
     <div className="space-y-8">
@@ -57,6 +81,13 @@ export async function MyTeamPanel() {
               {data.upcomingFreeTransfers != null ? "Transfers" : "Pick Team"}
             </Link>
           </div>
+          {upcomingChips ? (
+            <MyTeamChips
+              matchdayId={data.upcoming.matchdayId}
+              chips={upcomingChips}
+              team={chipTeam}
+            />
+          ) : null}
           <FantasyTeamCard
             team={data.upcoming.team}
             matchdayId={data.upcoming.matchdayId}

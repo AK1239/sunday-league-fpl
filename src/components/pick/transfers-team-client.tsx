@@ -11,7 +11,7 @@ import { SlotActionSheet } from "@/components/pick/slot-action-sheet";
 import { TransferConfirmSheet } from "@/components/pick/transfer-confirm-sheet";
 import { ActiveChipBanner } from "@/components/pick/active-chip-banner";
 import { ChipDetailDrawer } from "@/components/pick/chip-detail-drawer";
-import { ChipsTab } from "@/components/pick/chips-tab";
+import { ChipRail } from "@/components/pick/chip-rail";
 import { TransferHistoryTab } from "@/components/pick/transfer-history-tab";
 import { TransferPitchSlots } from "@/components/pick/transfer-pitch-slots";
 import { TransferSummaryStrip } from "@/components/pick/transfer-summary-strip";
@@ -136,7 +136,7 @@ export function TransfersTeamClient({
   const [teamVersion, setTeamVersion] = useState(initial.teamVersion);
   const [draftStaleNotice, setDraftStaleNotice] = useState(false);
   const chipsEnabled = initial.chips?.enabled === true;
-  const [tab, setTab] = useState<"team" | "history" | "chips">("team");
+  const [tab, setTab] = useState<"team" | "history">("team");
   const [chipCode, setChipCode] = useState<ChipCode | null>(
     () => initial.chips?.activeChipCode ?? null,
   );
@@ -611,6 +611,16 @@ export function TransfersTeamClient({
     router.refresh();
   }
 
+  /** Unsaved chip choice → just drop it locally; saved chip → persist the cancel. */
+  function handleCancelChipFromDrawer() {
+    if (chipCode && chipCode !== initial.chips?.activeChipCode) {
+      setChipCode(null);
+      setReservePlayerId(null);
+      return;
+    }
+    void handleCancelChip();
+  }
+
   function handleContinueChipToTeam(code: ChipCode) {
     setChipCode(code);
     if (code === "free_hit") {
@@ -625,6 +635,39 @@ export function TransfersTeamClient({
     if (code !== "bench_boost") setReservePlayerId(null);
     setTab("team");
   }
+
+  // Deep link from My team: /pick?chip=wildcard preselects that chip once.
+  const deepLinkApplied = useRef(false);
+  useEffect(() => {
+    if (deepLinkApplied.current || readOnly) return;
+    deepLinkApplied.current = true;
+    const code = new URLSearchParams(window.location.search).get("chip");
+    if (!code) return;
+    const card = initial.chips?.chips.find((c) => c.code === code);
+    if (card?.status.kind === "available") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from the URL
+      handleContinueChipToTeam(card.code);
+    }
+    router.replace("/pick", { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** Chip strip reflects the locally chosen chip even before it is saved. */
+  const railChips = useMemo<ChipCardView[]>(() => {
+    const cards = initial.chips?.chips ?? [];
+    if (!chipCode) return cards;
+    return cards.map((card) =>
+      card.code === chipCode
+        ? {
+            ...card,
+            status: {
+              kind: "active" as const,
+              matchdayNumber: pick.matchday.number,
+            },
+          }
+        : card,
+    );
+  }, [initial.chips, chipCode, pick.matchday.number]);
 
   const activePlayerId = activeSlot != null ? slots[activeSlot] : null;
   const activePlayer = activePlayerId
@@ -679,11 +722,6 @@ export function TransfersTeamClient({
                 : null
           }
         />
-        {chipsEnabled ? (
-          <p className="text-xs text-muted-foreground">
-            One chip per gameweek · see the Chips tab
-          </p>
-        ) : null}
       </div>
 
       {draftStaleNotice ? (
@@ -701,7 +739,6 @@ export function TransfersTeamClient({
           [
             ["team", "Team"],
             ["history", "History"],
-            ...(chipsEnabled ? ([["chips", "Chips"]] as const) : []),
           ] as const
         ).map(([key, label]) => (
           <button
@@ -722,22 +759,21 @@ export function TransfersTeamClient({
         ))}
       </div>
 
-      {tab === "chips" && initial.chips ? (
-        <ChipsTab
-          chips={initial.chips.chips}
-          matchdayNumber={pick.matchday.number}
-          onSelectChip={(card) => {
-            if (card.status.kind === "available" || card.status.kind === "active") {
-              setChipDrawerCard(card);
-              setChipDrawerOpen(true);
-            }
-          }}
-        />
-      ) : tab === "history" ? (
+      {tab === "history" ? (
         <TransferHistoryTab history={initial.history} />
       ) : (
         <>
           {readOnly ? <LockedBanner /> : null}
+
+          {chipsEnabled && initial.chips && !captaincyStep ? (
+            <ChipRail
+              chips={railChips}
+              onSelectChip={(card) => {
+                setChipDrawerCard(card);
+                setChipDrawerOpen(true);
+              }}
+            />
+          ) : null}
 
           {chipCode ? (
             <ActiveChipBanner
@@ -1018,6 +1054,7 @@ export function TransfersTeamClient({
         card={chipDrawerCard}
         onContinueToTeam={handleContinueChipToTeam}
         onActivateTripleCaptain={handleTripleCaptainActivate}
+        onCancelChip={readOnly ? undefined : handleCancelChipFromDrawer}
         activating={confirming}
       />
     </div>
