@@ -66,7 +66,8 @@ export async function AdminTransfersPanel({
           freeTransfersPerMatchday={rules.freeTransfersPerMatchday}
           maxBankedFreeTransfers={rules.maxBankedFreeTransfers}
           extraTransferPenalty={rules.extraTransferPenalty}
-          locked={rules.locked}
+          editMode={rules.editMode}
+          minStartGameweek={rules.minStartGameweek}
         />
       ) : null}
 

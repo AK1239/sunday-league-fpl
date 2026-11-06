@@ -7,14 +7,33 @@ import {
   type TransferRuleSetRow,
 } from "@/server/fantasy/transfer-rules";
 
+export type TransferRulesEditMode =
+  | "editable"
+  | "enable_only"
+  | "locked";
+
 export type EditableTransferRules = {
   ruleSetId: string;
   transfersStartMatchday: number | null;
   freeTransfersPerMatchday: number;
   maxBankedFreeTransfers: number;
   extraTransferPenalty: number;
+  /** @deprecated use editMode */
   locked: boolean;
+  editMode: TransferRulesEditMode;
+  /** When enable_only: first start GW must be greater than this (published/past-deadline GWs). */
+  minStartGameweek: number | null;
 };
+
+function resolveEditMode(input: {
+  transfersStartMatchday: number | null;
+  maxLockedGameweekNumber: number | null;
+}): TransferRulesEditMode {
+  const hasLocked = input.maxLockedGameweekNumber != null;
+  if (!hasLocked) return "editable";
+  if (input.transfersStartMatchday == null) return "enable_only";
+  return "locked";
+}
 
 export async function loadEditableTransferRulesForSeason(
   db: AppDb,
@@ -38,13 +57,28 @@ export async function loadEditableTransferRulesForSeason(
 
   const mds = await db
     .select({
+      number: matchdays.number,
       status: matchdays.status,
       deadlineAt: matchdays.deadlineAt,
     })
     .from(matchdays)
     .where(eq(matchdays.seasonId, seasonId));
 
-  const locked = mds.some((md) => isLocked(md, now));
+  let maxLockedGameweekNumber: number | null = null;
+  for (const md of mds) {
+    if (!isLocked(md, now)) continue;
+    if (
+      maxLockedGameweekNumber == null ||
+      md.number > maxLockedGameweekNumber
+    ) {
+      maxLockedGameweekNumber = md.number;
+    }
+  }
+
+  const editMode = resolveEditMode({
+    transfersStartMatchday: row.transfersStartMatchday,
+    maxLockedGameweekNumber,
+  });
 
   return {
     ruleSetId: row.ruleSetId,
@@ -52,7 +86,12 @@ export async function loadEditableTransferRulesForSeason(
     freeTransfersPerMatchday: row.freeTransfersPerMatchday,
     maxBankedFreeTransfers: row.maxBankedFreeTransfers,
     extraTransferPenalty: row.extraTransferPenalty,
-    locked,
+    locked: editMode === "locked",
+    editMode,
+    minStartGameweek:
+      maxLockedGameweekNumber != null
+        ? maxLockedGameweekNumber + 1
+        : null,
   };
 }
 
@@ -75,8 +114,35 @@ export async function updateTransferRules(
   if (!editable || editable.ruleSetId !== ruleSetId) {
     throw new Error("NOT_FOUND");
   }
-  if (editable.locked) {
+
+  if (editable.editMode === "locked") {
     throw new Error("RULES_LOCKED");
+  }
+
+  if (editable.editMode === "enable_only") {
+    if (
+      patch.freeTransfersPerMatchday !== undefined ||
+      patch.maxBankedFreeTransfers !== undefined ||
+      patch.extraTransferPenalty !== undefined
+    ) {
+      throw new Error("RULES_LOCKED");
+    }
+    if (patch.transfersStartMatchday === undefined) return;
+    const start = patch.transfersStartMatchday;
+    if (start == null) {
+      throw new Error("VALIDATION");
+    }
+    if (
+      editable.minStartGameweek != null &&
+      start < editable.minStartGameweek
+    ) {
+      throw new Error("START_TOO_EARLY");
+    }
+    await db
+      .update(scoringRuleSets)
+      .set({ transfersStartMatchday: start })
+      .where(eq(scoringRuleSets.id, ruleSetId));
+    return;
   }
 
   const updates: Record<string, unknown> = {};

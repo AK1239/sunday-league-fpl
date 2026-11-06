@@ -116,6 +116,12 @@ export async function updateTransferRulesAction(
         "Transfer rules cannot change after a gameweek has locked.",
       );
     }
+    if (error instanceof Error && error.message === "START_TOO_EARLY") {
+      return actionFail(
+        "VALIDATION",
+        "Start gameweek must be after published or past-deadline gameweeks.",
+      );
+    }
     return actionFail("ERROR", "Could not save transfer rules.");
   }
 }

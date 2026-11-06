@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { useActionResultToast } from "@/hooks/use-action-result-toast";
 import { updateTransferRulesAction } from "@/server/actions/admin-transfers";
+import type { TransferRulesEditMode } from "@/server/domain/transfer-rules-admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,22 @@ async function saveRules(
   return updateTransferRulesAction(formData);
 }
 
+function rulesHelpText(
+  editMode: TransferRulesEditMode,
+  minStartGameweek: number | null,
+): string {
+  switch (editMode) {
+    case "editable":
+      return "Enable transfers from a gameweek number (leave start empty for legacy picks).";
+    case "enable_only":
+      return minStartGameweek != null
+        ? `Earlier gameweeks are already locked. Set start gameweek to ${minStartGameweek} or higher to turn transfers on from the next window (defaults for free/bank/hit stay as shown).`
+        : "Turn transfers on by setting a start gameweek.";
+    case "locked":
+      return "Transfer rules are fixed for this season — a gameweek has locked and transfers are already configured.";
+  }
+}
+
 export function AdminTransferRulesForm({
   seasonId,
   ruleSetId,
@@ -22,7 +39,8 @@ export function AdminTransferRulesForm({
   freeTransfersPerMatchday,
   maxBankedFreeTransfers,
   extraTransferPenalty,
-  locked,
+  editMode,
+  minStartGameweek,
 }: {
   seasonId: string;
   ruleSetId: string;
@@ -30,21 +48,43 @@ export function AdminTransferRulesForm({
   freeTransfersPerMatchday: number;
   maxBankedFreeTransfers: number;
   extraTransferPenalty: number;
-  locked: boolean;
+  editMode: TransferRulesEditMode;
+  minStartGameweek: number | null;
 }) {
   const [state, formAction, pending] = useActionState(saveRules, null);
   useActionResultToast(state, "Transfer rules saved");
+
+  const economyLocked = editMode !== "editable";
+  const startEditable = editMode !== "locked";
+  const canSubmit = startEditable && !pending;
 
   return (
     <form action={formAction} className="surface space-y-4 rounded-2xl p-5">
       <input type="hidden" name="seasonId" value={seasonId} />
       <input type="hidden" name="ruleSetId" value={ruleSetId} />
+      {economyLocked ? (
+        <>
+          <input
+            type="hidden"
+            name="freeTransfersPerMatchday"
+            value={freeTransfersPerMatchday}
+          />
+          <input
+            type="hidden"
+            name="maxBankedFreeTransfers"
+            value={maxBankedFreeTransfers}
+          />
+          <input
+            type="hidden"
+            name="extraTransferPenalty"
+            value={extraTransferPenalty}
+          />
+        </>
+      ) : null}
       <div>
         <h2 className="font-heading text-lg font-semibold">Transfer rules</h2>
         <p className="text-sm text-muted-foreground">
-          {locked
-            ? "Locked — a gameweek has already passed its deadline or been published."
-            : "Enable transfers from a gameweek number (leave off for legacy picks)."}
+          {rulesHelpText(editMode, minStartGameweek)}
         </p>
       </div>
 
@@ -55,14 +95,14 @@ export function AdminTransferRulesForm({
             id="transfersStartMatchday"
             name="transfersStartMatchday"
             type="number"
-            min={1}
+            min={minStartGameweek ?? 1}
             placeholder="Off (legacy)"
             defaultValue={transfersStartMatchday ?? ""}
-            disabled={locked || pending}
+            disabled={!startEditable || pending}
           />
           <p className="text-xs text-muted-foreground">
-            Empty = transfers off. Set to the first GW that uses transfer rules
-            (e.g. 3).
+            Empty = transfers off. Use the number of the first gameweek that
+            should use transfer rules.
           </p>
         </div>
         <div className="space-y-2">
@@ -73,7 +113,7 @@ export function AdminTransferRulesForm({
             type="number"
             min={0}
             defaultValue={freeTransfersPerMatchday}
-            disabled={locked || pending}
+            disabled={economyLocked || pending}
           />
         </div>
         <div className="space-y-2">
@@ -84,7 +124,7 @@ export function AdminTransferRulesForm({
             type="number"
             min={0}
             defaultValue={maxBankedFreeTransfers}
-            disabled={locked || pending}
+            disabled={economyLocked || pending}
           />
         </div>
         <div className="space-y-2">
@@ -95,12 +135,12 @@ export function AdminTransferRulesForm({
             type="number"
             min={1}
             defaultValue={extraTransferPenalty}
-            disabled={locked || pending}
+            disabled={economyLocked || pending}
           />
         </div>
       </div>
 
-      <Button type="submit" disabled={locked || pending}>
+      <Button type="submit" disabled={!canSubmit}>
         {pending ? "Saving…" : "Save rules"}
       </Button>
     </form>
