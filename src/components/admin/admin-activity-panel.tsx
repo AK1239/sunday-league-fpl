@@ -131,7 +131,7 @@ export async function AdminActivityPanel({
         description="Sign-ins, sign-outs, and other audited actions. Use filters to focus on managers or admins."
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">
+      <div className="flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-10 sm:gap-y-5">
         <Segmented label="Period">
           {[7, 14, 30].map((d) => (
             <SegLink
@@ -326,14 +326,14 @@ function Segmented({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2.5">
-      <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+    <div className="flex flex-col gap-2">
+      <span className="px-1 text-[0.7rem] font-semibold tracking-widest text-muted-foreground uppercase">
         {label}
       </span>
       <div
         role="group"
         aria-label={label}
-        className="inline-flex rounded-full border border-border/60 bg-card/50 p-1"
+        className="inline-flex w-fit gap-1 rounded-full border border-border/60 bg-card/50 p-1"
       >
         {children}
       </div>
@@ -358,7 +358,7 @@ function SegLink({
       aria-current={active ? "true" : undefined}
       aria-label={label}
       className={cn(
-        "rounded-full px-3.5 py-1.5 text-sm font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "rounded-full px-4 py-1.5 text-sm font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
           ? "bg-primary text-primary-foreground shadow-sm"
           : "text-muted-foreground hover:text-foreground",
