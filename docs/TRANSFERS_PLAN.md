@@ -592,9 +592,9 @@ Chips (separate future project) plug into the documented hook points in §5.
 - [x] Phase 6: transfers UI (pitch, picker banner, summary, confirm, history, locked)
 - [x] Phase 6: breakdown modal + gameweek card show transfers/penalty
 - [x] Phase 7: admin activity, manager history, adjustments, preview + cascade (grant)
-- [ ] Phase 7: admin squad/transfer corrections after deadline (void + replace rows)
+- [x] Phase 7: admin squad/transfer corrections after deadline (void + replace rows)
 - [x] Phase 7: transfer rules in the season/rule-set form
-- [ ] Phase 8: Playwright + a11y; docs; enable from chosen matchday
+- [x] Phase 8: Playwright + a11y (optional `E2E_TRANSFERS`); docs (`docs/TRANSFERS_ENABLE.md`)
 
 ---
 

@@ -4,8 +4,6 @@ import type { AppDb, DbExecutor } from "@/server/db";
 import {
   fantasyTeamPlayers,
   fantasyTeams,
-  fantasyTransfers,
-  managerTransferWindows,
   matchdays,
   players,
   scoringRuleSets,
@@ -17,7 +15,7 @@ import {
   hasPriorSubmittedSquadInSeason,
   resolveBaseSquadPlayerIds,
 } from "@/server/fantasy/transfer-base-squad";
-import { diffSquads, pairTransferSlots } from "@/server/fantasy/transfer-diff";
+import { syncManagerTransferMaterialisation } from "@/server/domain/transfer-materialisation";
 import {
   isTransferModeEnabled,
   seasonTransferRulesFromRow,
@@ -124,72 +122,6 @@ async function persistSquadInPlace(
       playerId,
     })),
   );
-}
-
-async function syncTransferMaterialisation(
-  tx: DbExecutor,
-  input: {
-    seasonId: string;
-    managerId: string;
-    matchdayId: string;
-    basePlayerIds: readonly string[];
-    pick: FantasyTeamPick;
-    freeAvailable: number;
-    penaltyPerExtra: number;
-    summary: TransferWindowSummary;
-  },
-) {
-  await tx
-    .delete(fantasyTransfers)
-    .where(
-      and(
-        eq(fantasyTransfers.managerId, input.managerId),
-        eq(fantasyTransfers.matchdayId, input.matchdayId),
-        eq(fantasyTransfers.status, "active"),
-      ),
-    );
-
-  const diff = diffSquads(input.basePlayerIds, input.pick.playerIds);
-  const pairs = pairTransferSlots(diff);
-
-  if (pairs.length > 0) {
-    await tx.insert(fantasyTransfers).values(
-      pairs.map((pair, index) => ({
-        seasonId: input.seasonId,
-        managerId: input.managerId,
-        matchdayId: input.matchdayId,
-        seq: index + 1,
-        playerOutId: pair.playerOutId,
-        playerInId: pair.playerInId,
-        source: "manager" as const,
-      })),
-    );
-  }
-
-  const dbNow = await readDbNow(tx);
-  await tx
-    .insert(managerTransferWindows)
-    .values({
-      managerId: input.managerId,
-      matchdayId: input.matchdayId,
-      seasonId: input.seasonId,
-      freeAvailable: input.freeAvailable,
-      unlimited: false,
-      penaltyPerExtra: input.penaltyPerExtra,
-      updatedAt: dbNow,
-    })
-    .onConflictDoUpdate({
-      target: [
-        managerTransferWindows.managerId,
-        managerTransferWindows.matchdayId,
-      ],
-      set: {
-        freeAvailable: input.freeAvailable,
-        penaltyPerExtra: input.penaltyPerExtra,
-        updatedAt: dbNow,
-        voidedAt: null,
-      },
-    });
 }
 
 export async function submitTeam(
@@ -508,7 +440,7 @@ export async function submitTeam(
       );
     }
 
-    await syncTransferMaterialisation(tx, {
+    await syncManagerTransferMaterialisation(tx, {
       seasonId: row.seasonId,
       managerId,
       matchdayId,
@@ -516,7 +448,6 @@ export async function submitTeam(
       pick: request,
       freeAvailable,
       penaltyPerExtra: transferRules.penaltyPerExtra,
-      summary,
     });
 
     result = { teamId, version: nextVersion, summary };

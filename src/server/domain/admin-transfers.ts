@@ -5,12 +5,26 @@ import {
   managerFreeTransferAdjustments,
   managerTransferWindows,
   matchdays,
+  players,
   scoringRuleSets,
   seasons,
   users,
 } from "@/server/db/schema";
 import { writeAuditLog } from "@/server/domain/audit-log";
 import { rebuildManagerScoresFromMatchday } from "@/server/domain/recompute-manager-scores";
+import { syncAdminTransferCorrection } from "@/server/domain/transfer-materialisation";
+import { FantasyTeamError } from "@/server/domain/save-fantasy-team";
+import { loadSubmittedTeamsForSeason } from "@/server/queries/fantasy-team-view";
+import {
+  hasPriorSubmittedSquadInSeason,
+  resolveBaseSquadPlayerIds,
+} from "@/server/fantasy/transfer-base-squad";
+import {
+  isTransferModeEnabled,
+  transferRulesApplyToMatchday,
+} from "@/server/fantasy/transfer-rules";
+import { validateFantasyTeamTransferPick } from "@/server/fantasy/validate-transfers";
+import type { FantasyTeamPick } from "@/server/fantasy/validate-team";
 import {
   countActiveTransfersForMatchday,
   sumAdjustmentsForMatchday,
@@ -22,7 +36,6 @@ import {
   type FreeTransferRules,
   type MatchdayBalanceInput,
 } from "@/server/fantasy/free-transfers";
-import { isTransferModeEnabled } from "@/server/fantasy/transfer-rules";
 
 export type TransferActivityRow = {
   managerId: string;
@@ -471,4 +484,169 @@ export async function getManagerTransferAdminDetail(
     })),
     windows,
   };
+}
+
+/**
+ * After an admin squad override, void/replace transfer rows and rebuild windows/scores
+ * when transfer rules apply. No-op in legacy pick-any-five mode.
+ */
+export async function applyAdminSquadTransferCorrection(
+  db: AppDb,
+  input: {
+    adminUserId: string;
+    managerId: string;
+    matchdayId: string;
+    pick: FantasyTeamPick;
+    reason: string;
+  },
+): Promise<{ applied: boolean; changes: WindowRebuildChange[] }> {
+  const reason = input.reason.trim();
+  if (reason.length < 3) {
+    throw new FantasyTeamError(
+      "Provide a short reason for the correction (at least 3 characters).",
+      "REASON_REQUIRED",
+    );
+  }
+
+  return db.transaction(async (tx) => {
+    const [md] = await tx
+      .select({
+        id: matchdays.id,
+        number: matchdays.number,
+        playedOn: matchdays.playedOn,
+        seasonId: matchdays.seasonId,
+      })
+      .from(matchdays)
+      .where(eq(matchdays.id, input.matchdayId))
+      .limit(1);
+
+    if (!md) {
+      throw new FantasyTeamError("Matchday not found.", "NOT_FOUND");
+    }
+
+    const [ruleRow] = await tx
+      .select({
+        transfersStartMatchday: scoringRuleSets.transfersStartMatchday,
+        freeTransfersPerMatchday: scoringRuleSets.freeTransfersPerMatchday,
+        maxBankedFreeTransfers: scoringRuleSets.maxBankedFreeTransfers,
+        extraTransferPenalty: scoringRuleSets.extraTransferPenalty,
+      })
+      .from(seasons)
+      .innerJoin(scoringRuleSets, eq(seasons.ruleSetId, scoringRuleSets.id))
+      .where(eq(seasons.id, md.seasonId))
+      .limit(1);
+
+    const transferRules = ruleRow
+      ? rulesFromEditable({
+          transfersStartMatchday: ruleRow.transfersStartMatchday,
+          freeTransfersPerMatchday: ruleRow.freeTransfersPerMatchday,
+          maxBankedFreeTransfers: ruleRow.maxBankedFreeTransfers,
+          extraTransferPenalty: ruleRow.extraTransferPenalty,
+        })
+      : null;
+
+    if (
+      !transferRules ||
+      !isTransferModeEnabled(transferRules.transfersStartMatchday) ||
+      !transferRulesApplyToMatchday(transferRules, md.number)
+    ) {
+      return { applied: false, changes: [] };
+    }
+
+    const [seasonRow] = await tx
+      .select({ startsOn: seasons.startsOn })
+      .from(seasons)
+      .where(eq(seasons.id, md.seasonId))
+      .limit(1);
+
+    const submitted = await loadSubmittedTeamsForSeason(tx, md.seasonId);
+    const timeline = {
+      matchdayId: md.id,
+      playedOn: md.playedOn,
+      number: md.number,
+      seasonStartsOn: seasonRow?.startsOn ?? "1970-01-01",
+    };
+
+    const initialBuild = !hasPriorSubmittedSquadInSeason(
+      input.managerId,
+      timeline,
+      submitted,
+    );
+    const basePlayerIds = resolveBaseSquadPlayerIds(
+      input.managerId,
+      timeline,
+      submitted,
+    );
+
+    if (initialBuild || !basePlayerIds || basePlayerIds.length !== 5) {
+      return { applied: false, changes: [] };
+    }
+
+    const playerRows = await tx
+      .select({ id: players.id, active: players.active })
+      .from(players);
+    const eligible = new Map(playerRows.map((p) => [p.id, p]));
+
+    const validation = validateFantasyTeamTransferPick(
+      input.pick,
+      basePlayerIds,
+      eligible,
+    );
+    if (!validation.ok) {
+      throw new FantasyTeamError(validation.message, validation.code);
+    }
+
+    const previewBefore = await previewTransferWindowRebuild(tx, {
+      managerId: input.managerId,
+      seasonId: md.seasonId,
+      fromMatchdayNumber: md.number,
+      rules: {
+        grant: transferRules.grant,
+        cap: transferRules.cap,
+        penaltyPerExtra: transferRules.penaltyPerExtra,
+      },
+      transfersStartMatchday: transferRules.transfersStartMatchday!,
+    });
+
+    await syncAdminTransferCorrection(tx, {
+      seasonId: md.seasonId,
+      managerId: input.managerId,
+      matchdayId: input.matchdayId,
+      basePlayerIds,
+      pick: input.pick,
+      adminUserId: input.adminUserId,
+      reason,
+    });
+
+    const changes = await rebuildTransferWindowsForManager(tx, {
+      managerId: input.managerId,
+      seasonId: md.seasonId,
+      fromMatchdayNumber: md.number,
+      rules: {
+        grant: transferRules.grant,
+        cap: transferRules.cap,
+        penaltyPerExtra: transferRules.penaltyPerExtra,
+      },
+      transfersStartMatchday: transferRules.transfersStartMatchday!,
+    });
+
+    await writeAuditLog(tx, {
+      userId: input.adminUserId,
+      action: "admin_correct_transfers",
+      entity: "fantasy_transfers",
+      entityId: input.matchdayId,
+      before: { preview: previewBefore },
+      after: {
+        managerId: input.managerId,
+        matchdayId: input.matchdayId,
+        reason,
+        playerIds: input.pick.playerIds,
+        windowChanges: changes,
+      },
+    });
+
+    await rebuildManagerScoresFromMatchday(tx, md.seasonId, md.number);
+
+    return { applied: true, changes };
+  });
 }

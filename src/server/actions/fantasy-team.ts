@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/server/auth/require-admin";
 import { requireUser } from "@/server/auth/require-user";
 import { getDb } from "@/server/db";
+import { applyAdminSquadTransferCorrection } from "@/server/domain/admin-transfers";
 import {
   FantasyTeamError,
   saveFantasyTeam,
@@ -96,6 +97,14 @@ export async function overrideFantasyTeamAdminAction(
       targetManagerId,
       reason,
     });
+    await applyAdminSquadTransferCorrection(getDb(), {
+      adminUserId: session.userId,
+      managerId: targetManagerId,
+      matchdayId,
+      pick: parsed.data,
+      reason,
+    });
+    revalidatePath("/admin/transfers");
     revalidatePath("/pick");
     revalidatePath("/my");
     revalidatePath("/");

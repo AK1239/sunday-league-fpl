@@ -34,7 +34,7 @@ test.describe("manager auth and /my routes", () => {
       { path: "/my/history", heading: /Gameweek teams/i, level: 1 },
       {
         path: "/pick",
-        heading: /Pick Team|No gameweek open for picks/i,
+        heading: /Transfers|Pick Team|No gameweek open for picks/i,
         level: 2,
       },
     ];
