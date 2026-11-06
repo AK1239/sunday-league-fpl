@@ -37,7 +37,8 @@ export function CreateInviteForm({
   useActionResultToast(state, "Invite created");
 
   const isPasswordReset = Boolean(resetUserId);
-  const reusableDisabled = pending || isPasswordReset || Boolean(linkedPlayerId);
+  const reusableDisabled =
+    pending || isPasswordReset || Boolean(linkedPlayerId);
 
   return (
     <form action={formAction} className="space-y-4 surface rounded-2xl p-5">
