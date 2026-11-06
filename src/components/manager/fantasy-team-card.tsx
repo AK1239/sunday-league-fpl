@@ -1,4 +1,5 @@
 import { PlayerShirt } from "@/components/fantasy/player-shirt";
+import { EmptyTeam } from "@/components/manager/empty-team";
 import { CaptainBadge } from "@/components/pick/captain-badge";
 import type { FantasyTeamView } from "@/server/queries/fantasy-team-view";
 
@@ -17,19 +18,32 @@ function sourceLabel(source: string) {
 
 export function FantasyTeamCard({
   team,
-  emptyMessage = "No team for this gameweek.",
+  emptyTitle = "No team this gameweek",
+  emptyMessage = "No lineup was saved for this gameweek.",
+  emptyAction,
 }: {
   team: FantasyTeamView;
+  emptyTitle?: string;
   emptyMessage?: string;
+  emptyAction?: { href: string; label: string };
 }) {
   if (team.visibility === "hidden") {
     return (
-      <p className="text-sm text-muted-foreground">Team not available yet.</p>
+      <EmptyTeam
+        title="Team hidden for now"
+        description="Lineups are revealed once the gameweek locks, so nobody can copy a pick."
+      />
     );
   }
 
   if (team.slots.length === 0) {
-    return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
+    return (
+      <EmptyTeam
+        title={emptyTitle}
+        description={emptyMessage}
+        action={emptyAction}
+      />
+    );
   }
 
   return (
@@ -46,7 +60,10 @@ export function FantasyTeamCard({
             <div className="relative">
               <PlayerShirt name={slot.displayName} size="md" />
               {slot.role === "captain" ? (
-                <CaptainBadge role="captain" className="absolute -right-1 -bottom-1" />
+                <CaptainBadge
+                  role="captain"
+                  className="absolute -right-1 -bottom-1"
+                />
               ) : null}
               {slot.role === "vice_captain" ? (
                 <CaptainBadge

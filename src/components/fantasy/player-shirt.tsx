@@ -127,3 +127,32 @@ export function PlayerShirt({
     </svg>
   );
 }
+
+/** Dashed placeholder shirt for empty lineup slots. */
+export function GhostShirt({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      aria-hidden
+      style={style}
+      className={cn("w-12", className)}
+    >
+      <path
+        d={SHIRT}
+        fill="currentColor"
+        fillOpacity="0.06"
+        stroke="currentColor"
+        strokeOpacity="0.45"
+        strokeWidth="2"
+        strokeDasharray="5 4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

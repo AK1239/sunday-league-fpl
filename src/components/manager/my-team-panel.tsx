@@ -42,16 +42,15 @@ export async function MyTeamPanel() {
                 {data.upcoming.playedOn}
               </p>
             </div>
-            <Link
-              href="/pick"
-              className={cn(buttonVariants({ size: "sm" }))}
-            >
+            <Link href="/pick" className={cn(buttonVariants({ size: "sm" }))}>
               Pick Team
             </Link>
           </div>
           <FantasyTeamCard
             team={data.upcoming.team}
-            emptyMessage="No team saved yet — pick five before the deadline."
+            emptyTitle="Your lineup is empty"
+            emptyMessage="Pick your five and choose a captain before the deadline — it only takes a minute."
+            emptyAction={{ href: "/pick", label: "Pick your team" }}
           />
         </section>
       ) : null}
@@ -69,7 +68,11 @@ export async function MyTeamPanel() {
                 : null}
             </p>
           </div>
-          <FantasyTeamCard team={data.latestPublished.team} />
+          <FantasyTeamCard
+            team={data.latestPublished.team}
+            emptyTitle="You sat this one out"
+            emptyMessage={`You didn't have a team for GW${data.latestPublished.number}, so no points were scored. Set yours early next time.`}
+          />
         </section>
       ) : null}
 
