@@ -3,14 +3,29 @@ import { sql } from "drizzle-orm";
 import { parseEnv } from "@/env";
 import { getDb } from "@/server/db";
 import { leagueSettings } from "@/server/db/schema";
+import { isTestDatabaseUrl, readDevDatabaseUrl } from "../test-database";
 
 export function requireDatabaseUrl(): string {
   const url = process.env.DATABASE_URL;
   if (!url) {
     throw new Error("DATABASE_URL is required for integration tests");
   }
+  if (process.env.FANTASY_INTEGRATION_TEST_DB !== "1") {
+    throw new Error(
+      "Integration tests must run via vitest setup (isolated test database).",
+    );
+  }
+  if (!isTestDatabaseUrl(url)) {
+    throw new Error(
+      `Refusing to run integration tests on non-test database. Dev DB is ${readDevDatabaseUrl()}.`,
+    );
+  }
   parseEnv(process.env);
   return url;
+}
+
+function assertSafeToTruncate(): void {
+  requireDatabaseUrl();
 }
 
 /** Drizzle often wraps deferred constraint failures as a failed COMMIT. */
@@ -45,6 +60,7 @@ export async function expectDbReject(
 }
 
 export async function resetDatabase() {
+  assertSafeToTruncate();
   const db = getDb();
   await db.execute(sql`
     truncate table

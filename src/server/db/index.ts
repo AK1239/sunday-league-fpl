@@ -31,3 +31,13 @@ export async function checkDatabase(): Promise<boolean> {
     return false;
   }
 }
+
+/** Close pool/drizzle so a new DATABASE_URL takes effect (integration tests only). */
+export function resetDbConnection(): void {
+  const pool = globalForDb.pgPool;
+  if (pool) {
+    void pool.end();
+  }
+  delete globalForDb.pgPool;
+  delete globalForDb.drizzle;
+}

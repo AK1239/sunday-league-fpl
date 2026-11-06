@@ -26,7 +26,9 @@ Open [http://localhost:3000](http://localhost:3000).
 |--------|---------|
 | `pnpm dev` | Development server |
 | `pnpm build` / `pnpm start` | Production build |
-| `pnpm test` | Unit + integration (needs `DATABASE_URL`) |
+| `pnpm test` | Unit + integration (uses isolated `fantasy_test` DB — never truncates dev) |
+| `pnpm test:unit` | Unit tests only (no database) |
+| `pnpm db:test:prepare` | Create/migrate the test database manually |
 | `pnpm test:e2e` | Playwright smoke + a11y (mobile viewport) |
 | `pnpm db:migrate` | Apply SQL migrations |
 | `pnpm db:backup` | `pg_dump` gzip to `./backups/` |
