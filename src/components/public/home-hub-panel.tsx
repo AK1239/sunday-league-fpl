@@ -30,8 +30,10 @@ export async function HomeHubPanel() {
     );
   }
 
-  const topThree = data.managerStandings.slice(0, 3);
-  const leader = data.managerStandings[0];
+  // Managers with no points yet are listed in the table but never on the podium.
+  const scored = data.managerStandings.filter((row) => row.totalPoints > 0);
+  const topThree = scored.slice(0, 3);
+  const leader = scored[0];
 
   return (
     <div className="space-y-8">

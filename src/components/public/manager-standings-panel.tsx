@@ -45,16 +45,17 @@ export async function ManagerStandingsPanel({
       : [];
 
   const rows = allTime
-    ? await getAllTimeManagerStandings(db)
-    : await getManagerStandings(db, seasonId!);
+    ? await getAllTimeManagerStandings(db, { includeUnscored: true })
+    : await getManagerStandings(db, seasonId!, { includeUnscored: true });
+  const noPointsYet = rows.every((row) => row.totalPoints === 0);
 
   if (rows.length === 0) {
     return (
       <>
         <StandingsScopeChips basePath="/table" />
         <EmptyState
-          title="No manager scores yet"
-          description="Publish a gameweek with manager teams to populate the table."
+          title="No managers yet"
+          description="Managers appear here as soon as they join the league."
         />
       </>
     );
@@ -68,6 +69,13 @@ export async function ManagerStandingsPanel({
           {allTime ? "All seasons combined" : season?.name}
         </p>
       </div>
+
+      {noPointsYet ? (
+        <p className="rounded-xl border border-border/50 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+          {rows.length} manager{rows.length === 1 ? " has" : "s have"} joined.
+          Points and rankings start once the first gameweek is published.
+        </p>
+      ) : null}
 
       <ul className="space-y-2 md:hidden" aria-label="Manager leaderboard">
         {rows.map((row, i) => (

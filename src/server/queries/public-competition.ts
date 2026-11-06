@@ -78,7 +78,9 @@ export async function getPublicHomeData(
     .where(eq(seasons.id, seasonId))
     .limit(1);
 
-  const managerStandings = await getManagerStandings(db, seasonId);
+  const managerStandings = await getManagerStandings(db, seasonId, {
+    includeUnscored: true,
+  });
   const nextMd = await getNextScheduledMatchday(db, seasonId);
 
   const [latestMd] = await db

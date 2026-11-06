@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 import type { AppDb } from "@/server/db";
 import {
   managerMatchdayScores,
@@ -17,10 +17,44 @@ export type ManagerStandingRow = {
   lastGameweekPoints: number;
 };
 
+export type StandingsOptions = {
+  /**
+   * Also list active managers who have no published score yet (0 pts), so the
+   * table shows everyone who has joined. Leave off for awards and anything
+   * that picks a winner.
+   */
+  includeUnscored?: boolean;
+};
+
+const unscoredWhere = (
+  role: typeof users.role,
+  hasScores: ReturnType<typeof isNotNull>,
+) => or(eq(role, "manager"), hasScores);
+
+/** Competition ranking: managers level on points and best GW share a rank. */
+function rankWithTies<
+  T extends { totalPoints: number; bestGameweekPoints: number },
+>(sorted: T[]): number[] {
+  const ranks: number[] = [];
+  sorted.forEach((row, i) => {
+    const prev = sorted[i - 1];
+    ranks.push(
+      prev &&
+        prev.totalPoints === row.totalPoints &&
+        prev.bestGameweekPoints === row.bestGameweekPoints
+        ? ranks[i - 1]!
+        : i + 1,
+    );
+  });
+  return ranks;
+}
+
 export async function getManagerStandings(
   db: AppDb,
   seasonId: string,
+  options: StandingsOptions = {},
 ): Promise<ManagerStandingRow[]> {
+  const includeUnscored = options.includeUnscored === true;
   const totals = db
     .select({
       managerId: managerMatchdayScores.managerId,
@@ -73,17 +107,20 @@ export async function getManagerStandings(
       managerId: users.id,
       // Public label: team name when set, otherwise the manager's own name.
       displayName: sql<string>`coalesce(${users.teamName}, ${users.displayName})`,
-      totalPoints: totals.totalPoints,
-      bestGameweekPoints: totals.bestGameweekPoints,
+      totalPoints: sql<number>`coalesce(${totals.totalPoints}, 0)::int`,
+      bestGameweekPoints: sql<number>`coalesce(${totals.bestGameweekPoints}, 0)::int`,
       lastGameweekPoints: sql<number>`coalesce(${lastGwPoints.lastGwPoints}, 0)::int`,
     })
     .from(users)
-    .innerJoin(totals, eq(users.id, totals.managerId))
+    .leftJoin(totals, eq(users.id, totals.managerId))
     .leftJoin(lastGwPoints, eq(users.id, lastGwPoints.managerId))
     .where(
       and(
         inArray(users.role, ["manager", "admin"]),
         eq(users.status, "active"),
+        includeUnscored
+          ? unscoredWhere(users.role, isNotNull(totals.managerId))
+          : isNotNull(totals.managerId),
       ),
     );
 
@@ -123,8 +160,10 @@ export async function getManagerStandings(
     rankBefore = new Map(snaps.map((s) => [s.managerId, s.rankAfter]));
   }
 
+  const ranks = includeUnscored ? rankWithTies(sorted) : null;
+
   return sorted.map((row, index) => {
-    const rank = index + 1;
+    const rank = ranks ? ranks[index]! : index + 1;
     const before = rankBefore.get(row.managerId);
     const rankDelta = before !== undefined ? before - rank : 0;
     return {
@@ -141,7 +180,9 @@ export async function getManagerStandings(
 
 export async function getAllTimeManagerStandings(
   db: AppDb,
+  options: StandingsOptions = {},
 ): Promise<ManagerStandingRow[]> {
+  const includeUnscored = options.includeUnscored === true;
   const totals = db
     .select({
       managerId: managerMatchdayScores.managerId,
@@ -165,15 +206,18 @@ export async function getAllTimeManagerStandings(
       managerId: users.id,
       // Public label: team name when set, otherwise the manager's own name.
       displayName: sql<string>`coalesce(${users.teamName}, ${users.displayName})`,
-      totalPoints: totals.totalPoints,
-      bestGameweekPoints: totals.bestGameweekPoints,
+      totalPoints: sql<number>`coalesce(${totals.totalPoints}, 0)::int`,
+      bestGameweekPoints: sql<number>`coalesce(${totals.bestGameweekPoints}, 0)::int`,
     })
     .from(users)
-    .innerJoin(totals, eq(users.id, totals.managerId))
+    .leftJoin(totals, eq(users.id, totals.managerId))
     .where(
       and(
         inArray(users.role, ["manager", "admin"]),
         eq(users.status, "active"),
+        includeUnscored
+          ? unscoredWhere(users.role, isNotNull(totals.managerId))
+          : isNotNull(totals.managerId),
       ),
     );
 
@@ -185,10 +229,12 @@ export async function getAllTimeManagerStandings(
     return a.displayName.localeCompare(b.displayName);
   });
 
+  const ranks = includeUnscored ? rankWithTies(sorted) : null;
+
   return sorted.map((row, index) => ({
     managerId: row.managerId,
     displayName: row.displayName,
-    rank: index + 1,
+    rank: ranks ? ranks[index]! : index + 1,
     rankDelta: 0,
     totalPoints: row.totalPoints,
     bestGameweekPoints: row.bestGameweekPoints,

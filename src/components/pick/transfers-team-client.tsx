@@ -936,11 +936,29 @@ export function TransfersTeamClient({
                       setCaptaincyStep(true);
                       return;
                     }
-                    setConfirmOpen(true);
+                    if (summary.extra > 0) {
+                      setConfirmOpen(true);
+                      return;
+                    }
+                    void handleConfirm(0);
                   }}
                 >
-                  {showCaptaincyNext ? "Next" : "Review"}
-                  <ArrowRight aria-hidden />
+                  {showCaptaincyNext ? (
+                    <>
+                      Next
+                      <ArrowRight aria-hidden />
+                    </>
+                  ) : summary.extra > 0 ? (
+                    <>
+                      Review
+                      <ArrowRight aria-hidden />
+                    </>
+                  ) : (
+                    <>
+                      Save
+                      <Check aria-hidden />
+                    </>
+                  )}
                 </Button>
               </div>
               {blockedMessage ? (
