@@ -16,6 +16,7 @@ import {
 } from "@/server/db/schema";
 import { getActiveSeasonId } from "@/server/domain/matchdays-admin";
 import { loadScoringRulesForMatchday } from "@/server/domain/load-matchday-scoring";
+import { fantasyMultiplierFromDb } from "@/server/scoring/chip-effects";
 import { getStandings } from "./standings";
 import { getLatestPublishedMatchdayId } from "./standings";
 
@@ -422,8 +423,8 @@ export async function getActiveSeasonRulesPublic(
       ownGoalPts: r.ownGoalPts,
       handballPts: r.handballPts,
       penaltyMissedPts: r.penaltyMissedPts,
-      captainMultiplier: r.captainMultiplier / 100,
-      viceCaptainMultiplier: r.viceCaptainMultiplier / 100,
+      captainMultiplier: fantasyMultiplierFromDb(r.captainMultiplier),
+      viceCaptainMultiplier: fantasyMultiplierFromDb(r.viceCaptainMultiplier),
     },
   };
 }

@@ -27,8 +27,15 @@ export function tripleCaptainMultiplier(
   return typeof raw === "number" && Number.isFinite(raw) ? raw : 3;
 }
 
-function scaleHundredths(hundredths: number): number {
-  return hundredths / 100;
+/**
+ * DB history: `captain_multiplier` used to be a small integer (e.g. 2 = 2×).
+ * New rows use hundredths (200 = 2×, 150 = 1.5×). Treat values ≤10 as legacy.
+ */
+export function fantasyMultiplierFromDb(stored: number): number {
+  if (Number.isFinite(stored) && stored <= 10 && stored >= 1) {
+    return stored;
+  }
+  return stored / 100;
 }
 
 /**
@@ -52,11 +59,11 @@ export function multiplierForScoredPlayer(input: {
     ) {
       return tripleCaptainMultiplier(input.chip.params);
     }
-    return scaleHundredths(input.rules.captainMultiplier);
+    return fantasyMultiplierFromDb(input.rules.captainMultiplier);
   }
 
   if (input.playerId === input.viceCaptainPlayerId) {
-    return scaleHundredths(input.rules.viceCaptainMultiplier);
+    return fantasyMultiplierFromDb(input.rules.viceCaptainMultiplier);
   }
 
   return 1;
