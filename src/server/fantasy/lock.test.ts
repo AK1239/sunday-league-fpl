@@ -28,8 +28,17 @@ describe("isLocked", () => {
     ).toBe(true);
   });
 
-  it("locks when status is draft, published, or cancelled", () => {
-    for (const status of ["draft", "published", "cancelled"] as const) {
+  it("is open before deadline when draft (admin may have started entry)", () => {
+    expect(
+      isLocked(
+        { status: "draft", deadlineAt: deadline },
+        new Date("2026-11-02T12:00:00.000Z"),
+      ),
+    ).toBe(false);
+  });
+
+  it("locks when published or cancelled regardless of deadline", () => {
+    for (const status of ["published", "cancelled"] as const) {
       expect(
         isLocked(
           { status, deadlineAt: deadline },

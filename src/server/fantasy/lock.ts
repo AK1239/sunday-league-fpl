@@ -3,9 +3,12 @@ export type MatchdayLockState = {
   deadlineAt: Date;
 };
 
-/** Selections are open only while status is scheduled and now is strictly before the deadline. */
+/**
+ * Selections stay open until the deadline for scheduled gameweeks and for
+ * draft (admin prep / results entry) — published and cancelled are always locked.
+ */
 export function isLocked(matchday: MatchdayLockState, now: Date): boolean {
-  if (matchday.status !== "scheduled") {
+  if (matchday.status === "published" || matchday.status === "cancelled") {
     return true;
   }
   return now.getTime() >= matchday.deadlineAt.getTime();

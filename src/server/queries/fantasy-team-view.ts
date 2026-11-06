@@ -310,7 +310,10 @@ export async function getNextScheduledMatchday(
     })
     .from(matchdays)
     .where(
-      and(eq(matchdays.seasonId, seasonId), eq(matchdays.status, "scheduled")),
+      and(
+        eq(matchdays.seasonId, seasonId),
+        sql`${matchdays.status} in ('scheduled', 'draft')`,
+      ),
     )
     .orderBy(asc(matchdays.playedOn), asc(matchdays.number))
     .limit(1);
