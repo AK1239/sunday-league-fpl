@@ -200,7 +200,7 @@ export async function getManagerGameweekRanking(
   const rows = await db
     .select({
       managerId: users.id,
-      displayName: users.displayName,
+      displayName: sql<string>`coalesce(${users.teamName}, ${users.displayName})`,
       totalPoints: managerMatchdayScores.totalPoints,
     })
     .from(managerMatchdayScores)
@@ -269,7 +269,11 @@ export async function getPublicMatchdayDetail(
 
 export type PublicManagerProfile = {
   managerId: string;
+  /** Team name when set, otherwise the manager's own name. */
   displayName: string;
+  /** The manager's own name; shown as a subtitle when a team name is set. */
+  managerName: string;
+  hasTeamName: boolean;
   seasonId: string;
   seasonName: string;
   standing: ManagerStandingRow | null;
@@ -290,7 +294,12 @@ export async function getPublicManagerProfile(
   if (!seasonId) return null;
 
   const [manager] = await db
-    .select({ id: users.id, displayName: users.displayName })
+    .select({
+      id: users.id,
+      displayName: sql<string>`coalesce(${users.teamName}, ${users.displayName})`,
+      managerName: users.displayName,
+      teamName: users.teamName,
+    })
     .from(users)
     .where(eq(users.id, managerId))
     .limit(1);
@@ -337,6 +346,8 @@ export async function getPublicManagerProfile(
   return {
     managerId: manager.id,
     displayName: manager.displayName,
+    managerName: manager.managerName,
+    hasTeamName: manager.teamName != null,
     seasonId,
     seasonName: season?.name ?? "Season",
     standing,

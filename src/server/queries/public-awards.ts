@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import type { AppDb } from "@/server/db";
 import { players, seasonAwards, seasons, users } from "@/server/db/schema";
 import {
@@ -52,7 +52,7 @@ export async function getAwardsHall(db: AppDb): Promise<PublicSeasonArchive[]> {
       value: seasonAwards.value,
       playerName: players.displayName,
       playerId: seasonAwards.playerId,
-      managerName: users.displayName,
+      managerName: sql<string>`coalesce(${users.teamName}, ${users.displayName})`,
       managerId: seasonAwards.managerId,
     })
     .from(seasonAwards)

@@ -19,6 +19,7 @@ export type InviteListItem = {
   usedAt: Date | null;
   isPasswordReset: boolean;
   resetUserEmail: string | null;
+  reusable: boolean;
 };
 
 export async function listManagerInvites(): Promise<InviteListItem[]> {
@@ -32,6 +33,7 @@ export async function listManagerInvites(): Promise<InviteListItem[]> {
       resetUserId: managerInvites.resetUserId,
       linkedPlayerName: players.displayName,
       resetUserEmail: users.email,
+      reusable: managerInvites.reusable,
     })
     .from(managerInvites)
     .leftJoin(players, eq(managerInvites.linkedPlayerId, players.id))
@@ -46,6 +48,7 @@ export async function listManagerInvites(): Promise<InviteListItem[]> {
     usedAt: row.usedAt,
     isPasswordReset: Boolean(row.resetUserId),
     resetUserEmail: row.resetUserEmail,
+    reusable: row.reusable,
   }));
 }
 
@@ -56,6 +59,7 @@ export async function createManagerInviteAction(
   const label = String(formData.get("label") ?? "").trim();
   const linkedPlayerId = String(formData.get("linkedPlayerId") ?? "").trim();
   const resetUserId = String(formData.get("resetUserId") ?? "").trim();
+  const reusable = formData.get("reusable") === "on";
 
   if (resetUserId) {
     const target = await getDb()
@@ -68,12 +72,19 @@ export async function createManagerInviteAction(
     }
   }
 
-  const created = await createManagerInvite({
-    label: label || undefined,
-    linkedPlayerId: linkedPlayerId || null,
-    resetUserId: resetUserId || null,
-    createdByUserId: session.userId,
-  });
+  let created;
+  try {
+    created = await createManagerInvite({
+      label: label || undefined,
+      linkedPlayerId: linkedPlayerId || null,
+      resetUserId: resetUserId || null,
+      reusable,
+      createdByUserId: session.userId,
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Could not create invite.";
+    return actionFail("VALIDATION", message);
+  }
 
   revalidatePath("/admin/invites");
   return actionOk({

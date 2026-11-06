@@ -2,8 +2,7 @@ export const TEAM_NAME_MIN = 2;
 export const TEAM_NAME_MAX = 30;
 
 export type TeamNameResult =
-  | { ok: true; value: string }
-  | { ok: false; message: string };
+  { ok: true; value: string } | { ok: false; message: string };
 
 /** Trim, collapse inner whitespace, and validate a manager's team name. */
 export function normalizeTeamName(raw: string): TeamNameResult {

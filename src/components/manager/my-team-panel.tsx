@@ -8,6 +8,8 @@ import { getGameweekDetails } from "@/server/queries/manager-score-lines";
 import { requireUser } from "@/server/auth/require-user";
 import { getDb } from "@/server/db";
 import { isSelectionOpen } from "@/server/fantasy/lock";
+import { TeamNameButton } from "@/components/manager/team-name-dialog";
+import { getTeamName } from "@/server/domain/team-name";
 import { MyTeamChips } from "@/components/manager/my-team-chips";
 import { getTransferPageData } from "@/server/queries/transfer-page-data";
 import { getMyTeamPageData } from "@/server/queries/manager-my-pages";
@@ -28,6 +30,7 @@ export async function MyTeamPanel() {
     );
   }
 
+  const teamName = await getTeamName(getDb(), user.userId);
   const latestId = data.latestPublished?.matchdayId;
   const details = latestId
     ? await getGameweekDetails(getDb(), user.userId, [latestId])
@@ -62,6 +65,9 @@ export async function MyTeamPanel() {
         title="My Team"
         description={`Season total · ${data.seasonTotalPoints} pts`}
       />
+      <div className="-mt-4">
+        <TeamNameButton teamName={teamName} />
+      </div>
 
       {data.upcoming ? (
         <section className="space-y-4">

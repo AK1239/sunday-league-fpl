@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db";
 import { managerInvites, users } from "@/server/db/schema";
 import { hashPassword } from "@/server/auth/password";
@@ -12,6 +12,8 @@ export type InvitePreview = {
   label: string | null;
   isPasswordReset: boolean;
   resetEmail: string | null;
+  /** Same link can onboard multiple managers until expiry. */
+  isReusable: boolean;
 };
 
 export type CreateInviteInput = {
@@ -19,6 +21,8 @@ export type CreateInviteInput = {
   linkedPlayerId?: string | null;
   expiresInDays?: number;
   resetUserId?: string | null;
+  /** Ignored when `resetUserId` is set (password reset stays single-use). */
+  reusable?: boolean;
   createdByUserId: string;
 };
 
@@ -53,6 +57,14 @@ const DEFAULT_INVITE_DAYS = 14;
 export async function createManagerInvite(
   input: CreateInviteInput,
 ): Promise<CreateInviteResult> {
+  const isReset = Boolean(input.resetUserId);
+  const reusable = !isReset && Boolean(input.reusable);
+  if (reusable && input.linkedPlayerId) {
+    throw new Error(
+      "Reusable invites cannot link to a footballer (each manager needs their own link for that).",
+    );
+  }
+
   const token = createSessionToken();
   const tokenHash = hashSessionToken(token);
   const days = input.expiresInDays ?? DEFAULT_INVITE_DAYS;
@@ -67,6 +79,7 @@ export async function createManagerInvite(
       createdByUserId: input.createdByUserId,
       expiresAt,
       resetUserId: input.resetUserId ?? null,
+      reusable,
     })
     .returning({ id: managerInvites.id });
 
@@ -87,6 +100,7 @@ export async function getInvitePreviewByToken(
       usedAt: managerInvites.usedAt,
       resetUserId: managerInvites.resetUserId,
       resetEmail: users.email,
+      reusable: managerInvites.reusable,
     })
     .from(managerInvites)
     .leftJoin(users, eq(managerInvites.resetUserId, users.id))
@@ -94,13 +108,18 @@ export async function getInvitePreviewByToken(
     .limit(1);
 
   const row = rows[0];
-  if (!row || row.usedAt || row.expiresAt <= now) return null;
+  if (!row || row.expiresAt <= now) return null;
+
+  const isPasswordReset = Boolean(row.resetUserId);
+  if (isPasswordReset && row.usedAt) return null;
+  if (!isPasswordReset && !row.reusable && row.usedAt) return null;
 
   return {
     inviteId: row.inviteId,
     label: row.label,
-    isPasswordReset: Boolean(row.resetUserId),
+    isPasswordReset,
     resetEmail: row.resetEmail,
+    isReusable: Boolean(row.reusable),
   };
 }
 
@@ -130,8 +149,20 @@ export async function acceptManagerInvite(
       .where(
         and(
           eq(managerInvites.tokenHash, tokenHash),
-          isNull(managerInvites.usedAt),
           gt(managerInvites.expiresAt, now),
+          or(
+            and(
+              isNotNull(managerInvites.resetUserId),
+              isNull(managerInvites.usedAt),
+            ),
+            and(
+              isNull(managerInvites.resetUserId),
+              or(
+                eq(managerInvites.reusable, true),
+                isNull(managerInvites.usedAt),
+              ),
+            ),
+          ),
         ),
       )
       .limit(1)
@@ -212,10 +243,12 @@ export async function acceptManagerInvite(
       })
       .returning({ id: users.id });
 
-    await tx
-      .update(managerInvites)
-      .set({ usedAt: now, usedByUserId: user.id })
-      .where(eq(managerInvites.id, invite.id));
+    if (!invite.reusable) {
+      await tx
+        .update(managerInvites)
+        .set({ usedAt: now, usedByUserId: user.id })
+        .where(eq(managerInvites.id, invite.id));
+    }
 
     return { ok: true, userId: user.id } as AcceptInviteResult;
   });

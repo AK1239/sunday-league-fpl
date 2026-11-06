@@ -35,8 +35,10 @@ pnpm db:restore -- ./backups/fantasy-YYYYMMDD-HHMMSS.sql.gz
 
 ## 4. Invite rollout
 
-1. Admin → **Invites** — create one invite per friend (optional linked player).
-2. Share `/join/<token>` links over your usual channel (not public listings).
+1. Admin → **Invites** — create invites as needed:
+   - **Reusable league link** — check the box to share one `/join/<token>` URL with everyone until it expires (fine for a private friends league; anyone with the link can sign up).
+   - **Single-use** — leave the box off for one manager per link, or use **Link to footballer** (implies single-use).
+2. Share `/join/<token>` links over your usual channel (treat reusable links like a shared secret).
 3. Confirm each manager can log in at `/login` and open `/pick` before the first deadline.
 
 ## 5. First gameweek

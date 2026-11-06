@@ -48,7 +48,11 @@ export function JoinForm({
           icon={<User />}
           required
           defaultValue={preview.label ?? ""}
-          hint="Shown on the manager leaderboard."
+          hint={
+            preview.isReusable
+              ? "Shown on the manager leaderboard. Ask the admin if you need your player profile linked after signing up."
+              : "Shown on the manager leaderboard."
+          }
           disabled={pending}
         />
       ) : (

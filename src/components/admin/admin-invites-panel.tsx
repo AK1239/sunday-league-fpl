@@ -38,11 +38,22 @@ export async function AdminInvitesPanel() {
         ) : (
           <ul className="surface divide-y divide-border/40 overflow-hidden rounded-2xl">
             {invites.map((invite) => {
-              const status = invite.usedAt
-                ? "Used"
-                : invite.expiresAt < new Date()
-                  ? "Expired"
-                  : "Open";
+              const expired = invite.expiresAt < new Date();
+              const status = invite.isPasswordReset
+                ? invite.usedAt
+                  ? "Used"
+                  : expired
+                    ? "Expired"
+                    : "Open"
+                : invite.reusable
+                  ? expired
+                    ? "Expired"
+                    : "Open"
+                  : invite.usedAt
+                    ? "Used"
+                    : expired
+                      ? "Expired"
+                      : "Open";
               return (
                 <li
                   key={invite.id}
@@ -53,6 +64,11 @@ export async function AdminInvitesPanel() {
                       {invite.isPasswordReset
                         ? `Password reset — ${invite.resetUserEmail ?? "user"}`
                         : invite.label || "Manager invite"}
+                      {invite.reusable && !invite.isPasswordReset ? (
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          (reusable)
+                        </span>
+                      ) : null}
                     </p>
                     <p className="text-muted-foreground">
                       {invite.linkedPlayerName

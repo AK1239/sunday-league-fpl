@@ -54,11 +54,14 @@ export async function ManagerProfilePanel({
           <PlayerAvatar name={profile.displayName} size="xl" />
           <PageHeader
             title={profile.displayName}
-            description={
+            description={[
+              profile.hasTeamName ? `Managed by ${profile.managerName}` : null,
               profile.standing
                 ? `#${profile.standing.rank} · ${profile.standing.totalPoints} pts season total`
-                : "No published scores yet"
-            }
+                : "No published scores yet",
+            ]
+              .filter(Boolean)
+              .join(" · ")}
             className="min-w-0 flex-1"
           />
         </div>

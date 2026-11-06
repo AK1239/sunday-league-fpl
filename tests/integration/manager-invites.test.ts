@@ -77,6 +77,30 @@ describe.skipIf(!hasDatabase)("manager invites and auth", () => {
     expect(adminOnly.ok).toBe(false);
   });
 
+  it("reusable invite accepts multiple signups with the same token", async () => {
+    const { token } = await createManagerInvite({
+      createdByUserId: adminId,
+      label: "League",
+      reusable: true,
+    });
+
+    const first = await acceptManagerInvite({
+      token,
+      email: "a@mkate.test",
+      displayName: "Manager A",
+      password: "manager-pass-12",
+    });
+    expect(first.ok).toBe(true);
+
+    const second = await acceptManagerInvite({
+      token,
+      email: "b@mkate.test",
+      displayName: "Manager B",
+      password: "manager-pass-12",
+    });
+    expect(second.ok).toBe(true);
+  });
+
   it("requireAdmin rejects managers", async () => {
     await getDb()
       .insert(users)

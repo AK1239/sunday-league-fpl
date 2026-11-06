@@ -71,7 +71,8 @@ export async function getManagerStandings(
   const rows = await db
     .select({
       managerId: users.id,
-      displayName: users.displayName,
+      // Public label: team name when set, otherwise the manager's own name.
+      displayName: sql<string>`coalesce(${users.teamName}, ${users.displayName})`,
       totalPoints: totals.totalPoints,
       bestGameweekPoints: totals.bestGameweekPoints,
       lastGameweekPoints: sql<number>`coalesce(${lastGwPoints.lastGwPoints}, 0)::int`,
@@ -162,7 +163,8 @@ export async function getAllTimeManagerStandings(
   const rows = await db
     .select({
       managerId: users.id,
-      displayName: users.displayName,
+      // Public label: team name when set, otherwise the manager's own name.
+      displayName: sql<string>`coalesce(${users.teamName}, ${users.displayName})`,
       totalPoints: totals.totalPoints,
       bestGameweekPoints: totals.bestGameweekPoints,
     })

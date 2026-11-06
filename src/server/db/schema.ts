@@ -446,19 +446,30 @@ export const users = pgTable(
   ],
 );
 
-export const managerInvites = pgTable("manager_invites", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  tokenHash: text("token_hash").notNull().unique(),
-  label: text("label"),
-  linkedPlayerId: uuid("linked_player_id").references(() => players.id),
-  createdByUserId: uuid("created_by_user_id")
-    .notNull()
-    .references(() => users.id),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  usedAt: timestamp("used_at", { withTimezone: true }),
-  usedByUserId: uuid("used_by_user_id").references(() => users.id),
-  resetUserId: uuid("reset_user_id").references(() => users.id),
-});
+export const managerInvites = pgTable(
+  "manager_invites",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    tokenHash: text("token_hash").notNull().unique(),
+    label: text("label"),
+    linkedPlayerId: uuid("linked_player_id").references(() => players.id),
+    createdByUserId: uuid("created_by_user_id")
+      .notNull()
+      .references(() => users.id),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    usedByUserId: uuid("used_by_user_id").references(() => users.id),
+    resetUserId: uuid("reset_user_id").references(() => users.id),
+    /** When true, many managers can register with the same link until it expires. */
+    reusable: boolean("reusable").notNull().default(false),
+  },
+  (table) => [
+    check(
+      "manager_invites_reusable_reset_exclusive",
+      sql`NOT (${table.reusable} = true AND ${table.resetUserId} IS NOT NULL)`,
+    ),
+  ],
+);
 
 export const sessions = pgTable("sessions", {
   id: uuid("id").defaultRandom().primaryKey(),

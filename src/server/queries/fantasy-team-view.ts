@@ -192,7 +192,9 @@ export async function getManagerFantasyTeamForViewer(
   }
 
   const [manager] = await db
-    .select({ displayName: users.displayName })
+    .select({
+      displayName: sql<string>`coalesce(${users.teamName}, ${users.displayName})`,
+    })
     .from(users)
     .where(eq(users.id, targetManagerId))
     .limit(1);
