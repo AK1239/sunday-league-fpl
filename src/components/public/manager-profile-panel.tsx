@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
-import { FantasyTeamCard } from "@/components/manager/fantasy-team-card";
+import { GameweekTeam } from "@/components/manager/gameweek-team";
 import { PageHeader } from "@/components/fantasy/page-header";
 import { PlayerAvatar } from "@/components/fantasy/player-avatar";
 import { RankDelta } from "@/components/fantasy/rank-delta";
 import { getDb } from "@/server/db";
+import { getManagerScoreLinesByMatchday } from "@/server/queries/manager-score-lines";
 import {
   getPublicManagerProfile,
   getPublicManagerTeamForGameweek,
@@ -26,6 +27,12 @@ export async function ManagerProfilePanel({
       ...gw,
       team: await getPublicManagerTeamForGameweek(db, managerId, gw.matchdayId),
     })),
+  );
+
+  const linesByMatchday = await getManagerScoreLinesByMatchday(
+    db,
+    managerId,
+    profile.gameweeks.map((g) => g.matchdayId),
   );
 
   return (
@@ -65,7 +72,9 @@ export async function ManagerProfilePanel({
       <section className="space-y-4">
         <h2 className="font-heading text-xl font-semibold">Gameweek scores</h2>
         {profile.gameweeks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No published gameweeks.</p>
+          <p className="text-sm text-muted-foreground">
+            No published gameweeks.
+          </p>
         ) : (
           <ul className="space-y-2">
             {profile.gameweeks.map((gw) => (
@@ -74,7 +83,9 @@ export async function ManagerProfilePanel({
                   href={`/matchdays/${gw.matchdayId}`}
                   className="surface flex items-center justify-between rounded-xl px-4 py-3 text-sm"
                 >
-                  <span className="font-medium tabular-nums">GW{gw.number}</span>
+                  <span className="font-medium tabular-nums">
+                    GW{gw.number}
+                  </span>
                   <span className="tabular-nums text-muted-foreground">
                     {gw.playedOn}
                   </span>
@@ -94,19 +105,20 @@ export async function ManagerProfilePanel({
           Teams are visible after each gameweek selection deadline.
         </p>
         {teamsWithVisibility.map((entry) => (
-          <div key={entry.matchdayId} className="space-y-2">
-            <h3 className="text-sm font-semibold tabular-nums">
-              GW{entry.number} · {entry.playedOn}
-            </h3>
-            <FantasyTeamCard
-              team={entry.team}
-              emptyMessage={
-                entry.team.visibility === "hidden"
-                  ? "Team hidden until deadline."
-                  : "No team this gameweek."
-              }
-            />
-          </div>
+          <GameweekTeam
+            key={entry.matchdayId}
+            number={entry.number}
+            playedOn={entry.playedOn}
+            totalPoints={entry.totalPoints}
+            rankAfter={entry.rankAfter}
+            team={entry.team}
+            lines={linesByMatchday[entry.matchdayId]}
+            emptyMessage={
+              entry.team.visibility === "hidden"
+                ? "Team hidden until deadline."
+                : "No team this gameweek."
+            }
+          />
         ))}
       </section>
     </div>

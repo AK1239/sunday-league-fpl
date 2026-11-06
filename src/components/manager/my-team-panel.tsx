@@ -3,6 +3,8 @@ import { connection } from "next/server";
 import { FantasyTeamCard } from "@/components/manager/fantasy-team-card";
 import { PageHeader } from "@/components/fantasy/page-header";
 import { EmptyState } from "@/components/fantasy/empty-state";
+import { GameweekTeam } from "@/components/manager/gameweek-team";
+import { getManagerScoreLinesByMatchday } from "@/server/queries/manager-score-lines";
 import { requireUser } from "@/server/auth/require-user";
 import { getDb } from "@/server/db";
 import { getMyTeamPageData } from "@/server/queries/manager-my-pages";
@@ -22,6 +24,14 @@ export async function MyTeamPanel() {
       />
     );
   }
+
+  const latestLines = data.latestPublished
+    ? (
+        await getManagerScoreLinesByMatchday(getDb(), user.userId, [
+          data.latestPublished.matchdayId,
+        ])
+      )[data.latestPublished.matchdayId]
+    : undefined;
 
   return (
     <div className="space-y-8">
@@ -57,19 +67,13 @@ export async function MyTeamPanel() {
 
       {data.latestPublished ? (
         <section className="space-y-4">
-          <div>
-            <h2 className="font-heading text-xl font-semibold">
-              Latest result · GW{data.latestPublished.number}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {data.latestPublished.playedOn}
-              {data.latestPublished.totalPoints != null
-                ? ` · ${data.latestPublished.totalPoints} pts`
-                : null}
-            </p>
-          </div>
-          <FantasyTeamCard
+          <h2 className="font-heading text-xl font-semibold">Latest result</h2>
+          <GameweekTeam
+            number={data.latestPublished.number}
+            playedOn={data.latestPublished.playedOn}
+            totalPoints={data.latestPublished.totalPoints}
             team={data.latestPublished.team}
+            lines={latestLines}
             emptyTitle="You sat this one out"
             emptyMessage={`You didn't have a team for GW${data.latestPublished.number}, so no points were scored. Set yours early next time.`}
           />

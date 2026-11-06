@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { connection } from "next/server";
-import { FantasyTeamCard } from "@/components/manager/fantasy-team-card";
+import { GameweekTeam } from "@/components/manager/gameweek-team";
 import { PageHeader } from "@/components/fantasy/page-header";
 import { EmptyState } from "@/components/fantasy/empty-state";
 import { requireUser } from "@/server/auth/require-user";
 import { getDb } from "@/server/db";
+import { getManagerScoreLinesByMatchday } from "@/server/queries/manager-score-lines";
 import {
   getManagerMySeasonId,
   getMyHistoricalTeams,
@@ -16,11 +16,20 @@ export async function MyHistoryPanel() {
   const seasonId = await getManagerMySeasonId(getDb());
   if (!seasonId) {
     return (
-      <EmptyState title="No active season" description="Historical teams need published gameweeks." />
+      <EmptyState
+        title="No active season"
+        description="Historical teams need published gameweeks."
+      />
     );
   }
 
   const history = await getMyHistoricalTeams(getDb(), user.userId, seasonId);
+
+  const linesByMatchday = await getManagerScoreLinesByMatchday(
+    getDb(),
+    user.userId,
+    history.map((h) => h.matchdayId),
+  );
 
   return (
     <div className="space-y-8">
@@ -36,26 +45,16 @@ export async function MyHistoryPanel() {
           description="Published gameweeks will appear here with the squad you scored with."
         />
       ) : (
-        <ul className="space-y-8">
+        <ul className="space-y-6">
           {history.map((entry) => (
-            <li key={entry.matchdayId} className="space-y-3">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <h2 className="font-heading text-lg font-semibold tabular-nums">
-                  GW{entry.number}
-                </h2>
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="text-muted-foreground tabular-nums">
-                    {entry.playedOn}
-                  </span>
-                  <Link
-                    href={`/my/points/${entry.matchdayId}`}
-                    className="font-semibold tabular-nums text-primary hover:underline"
-                  >
-                    {entry.totalPoints} pts
-                  </Link>
-                </div>
-              </div>
-              <FantasyTeamCard team={entry.team} />
+            <li key={entry.matchdayId}>
+              <GameweekTeam
+                number={entry.number}
+                playedOn={entry.playedOn}
+                totalPoints={entry.totalPoints}
+                team={entry.team}
+                lines={linesByMatchday[entry.matchdayId]}
+              />
             </li>
           ))}
         </ul>
