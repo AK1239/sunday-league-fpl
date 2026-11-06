@@ -1,3 +1,4 @@
+import type { ChipPageData } from "@/server/queries/chip-page-data";
 import type {
   TransferHistoryEntry,
   TransferPageData,
@@ -18,6 +19,7 @@ export type SerializedTransferPageData =
       freeAvailable: number;
       penaltyPerExtra: number;
       history: TransferHistoryEntry[];
+      chips: ChipPageData | null;
     };
 
 export function serializeTransferPageData(
@@ -38,6 +40,7 @@ export function serializeTransferPageData(
     freeAvailable: data.freeAvailable,
     penaltyPerExtra: data.penaltyPerExtra,
     history: data.history,
+    chips: data.chips,
   };
 }
 
@@ -50,4 +53,6 @@ export type LocalTransferDraft = {
   playerIds: string[];
   captainPlayerId: string;
   viceCaptainPlayerId: string;
+  pendingChipCode?: string | null;
+  reservePlayerId?: string | null;
 };

@@ -50,16 +50,31 @@ export function GameweekTeamBody({
         <FantasyPitch slots={slots} lines={lines} onSelectPlayer={select} />
 
         <div className="space-y-4">
-          {scoreBreakdown && scoreBreakdown.transferPenalty < 0 ? (
+          {scoreBreakdown &&
+          (scoreBreakdown.transferPenalty < 0 ||
+            scoreBreakdown.chipBonus > 0 ||
+            scoreBreakdown.chipCode) ? (
             <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm">
-              <span className="font-medium">Transfers</span>
-              <span className="text-muted-foreground">
-                {" "}
-                · squad {scoreBreakdown.squadPoints} pts · hit{" "}
-              </span>
-              <span className="font-semibold tabular-nums text-destructive">
-                {scoreBreakdown.transferPenalty}
-              </span>
+              {scoreBreakdown.chipCode ? (
+                <p className="font-medium capitalize">
+                  {scoreBreakdown.chipCode.replace(/_/g, " ")}
+                  {scoreBreakdown.chipBonus > 0
+                    ? ` +${scoreBreakdown.chipBonus}`
+                    : ""}
+                </p>
+              ) : null}
+              {scoreBreakdown.transferPenalty < 0 ? (
+                <>
+                  <span className="font-medium">Transfers</span>
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · squad {scoreBreakdown.squadPoints} pts · hit{" "}
+                  </span>
+                  <span className="font-semibold tabular-nums text-destructive">
+                    {scoreBreakdown.transferPenalty}
+                  </span>
+                </>
+              ) : null}
               <span className="text-muted-foreground">
                 {" "}
                 · total {scoreBreakdown.totalPoints}

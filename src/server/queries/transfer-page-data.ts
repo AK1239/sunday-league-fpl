@@ -24,6 +24,10 @@ import {
   getPickTeamData,
   type PickTeamData,
 } from "@/server/queries/pick-team-data";
+import {
+  getChipPageData,
+  type ChipPageData,
+} from "@/server/queries/chip-page-data";
 
 export type TransferHistoryEntry = {
   matchdayId: string;
@@ -49,6 +53,7 @@ export type TransferPageData =
       freeAvailable: number;
       penaltyPerExtra: number;
       history: TransferHistoryEntry[];
+      chips: ChipPageData | null;
     };
 
 async function loadTransferHistory(
@@ -213,6 +218,17 @@ export async function getTransferPageData(
 
   const history = await loadTransferHistory(db, managerId, pick.seasonId);
 
+  const chips = await getChipPageData(db, {
+    managerId,
+    seasonId: pick.seasonId,
+    matchdayId: pick.matchday.id,
+    matchdayNumber: pick.matchday.number,
+    selectionOpen: pick.selectionOpen,
+    hasBaseSquad: basePlayerIds.length === 5,
+    transferRulesApply: transferMode,
+    isInitialBuild: initialBuild,
+  });
+
   return {
     mode: "transfers",
     pick,
@@ -221,5 +237,6 @@ export async function getTransferPageData(
     freeAvailable,
     penaltyPerExtra: transferRules.penaltyPerExtra,
     history,
+    chips,
   };
 }

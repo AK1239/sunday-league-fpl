@@ -72,6 +72,8 @@ export type MatchdayScoreBreakdown = {
   squadPoints: number;
   transferPenalty: number;
   totalPoints: number;
+  chipCode: string | null;
+  chipBonus: number;
 };
 
 export type GameweekDetails = {
@@ -92,6 +94,8 @@ async function loadMatchdayScoreBreakdowns(
       squadPoints: managerMatchdayScores.squadPoints,
       transferPenalty: managerMatchdayScores.transferPenalty,
       totalPoints: managerMatchdayScores.totalPoints,
+      chipCode: managerMatchdayScores.chipCode,
+      chipBonus: managerMatchdayScores.chipBonus,
     })
     .from(managerMatchdayScores)
     .where(
@@ -106,6 +110,8 @@ async function loadMatchdayScoreBreakdowns(
       squadPoints: r.squadPoints,
       transferPenalty: r.transferPenalty,
       totalPoints: r.totalPoints,
+      chipCode: r.chipCode,
+      chipBonus: r.chipBonus,
     };
   }
   return out;

@@ -9,6 +9,9 @@ import { LockedBanner } from "@/components/pick/locked-banner";
 import { PlayerPickerSheet } from "@/components/pick/player-picker-sheet";
 import { SlotActionSheet } from "@/components/pick/slot-action-sheet";
 import { TransferConfirmSheet } from "@/components/pick/transfer-confirm-sheet";
+import { ActiveChipBanner } from "@/components/pick/active-chip-banner";
+import { ChipDetailDrawer } from "@/components/pick/chip-detail-drawer";
+import { ChipsTab } from "@/components/pick/chips-tab";
 import { TransferHistoryTab } from "@/components/pick/transfer-history-tab";
 import { TransferPitchSlots } from "@/components/pick/transfer-pitch-slots";
 import { TransferSummaryStrip } from "@/components/pick/transfer-summary-strip";
@@ -20,9 +23,12 @@ import {
 import { submitTeamAction } from "@/server/actions/submit-team";
 import { diffSquads } from "@/server/fantasy/transfer-diff";
 import { summariseTransferWindow } from "@/server/fantasy/transfer-summary";
+import type { ChipCode } from "@/server/chips/registry";
+import type { ChipCardView } from "@/server/queries/chip-page-data";
 import {
   validateFantasyTeamTransferLineup,
   validateFantasyTeamTransferPick,
+  validateInitialFantasyTeamBuild,
 } from "@/server/fantasy/validate-transfers";
 import { ArrowRight, Check, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -107,7 +113,19 @@ export function TransfersTeamClient({
 
   const [teamVersion, setTeamVersion] = useState(initial.teamVersion);
   const [draftStaleNotice, setDraftStaleNotice] = useState(false);
-  const [tab, setTab] = useState<"team" | "history">("team");
+  const chipsEnabled = initial.chips?.enabled === true;
+  const [tab, setTab] = useState<"team" | "history" | "chips">("team");
+  const [chipCode, setChipCode] = useState<ChipCode | null>(
+    () => initial.chips?.activeChipCode ?? null,
+  );
+  const [reservePlayerId, setReservePlayerId] = useState<string | null>(
+    () => initial.chips?.savedReservePlayerId ?? null,
+  );
+  const [chipDrawerCard, setChipDrawerCard] = useState<ChipCardView | null>(
+    null,
+  );
+  const [chipDrawerOpen, setChipDrawerOpen] = useState(false);
+  const [reservePickerOpen, setReservePickerOpen] = useState(false);
 
   // Restore an in-progress draft (same server version) before falling back to
   // the saved team, then the base squad.
@@ -191,6 +209,9 @@ export function TransfersTeamClient({
   );
   const incomingIds = useMemo(() => new Set(diff.in), [diff.in]);
 
+  const unlimitedTransfers =
+    chipCode === "wildcard" || chipCode === "free_hit";
+
   const summary = useMemo(
     () =>
       summariseTransferWindow({
@@ -198,15 +219,27 @@ export function TransfersTeamClient({
         nextSquad: plannedIds,
         freeAvailable: initial.freeAvailable,
         penaltyPerExtra: initial.penaltyPerExtra,
+        unlimited: unlimitedTransfers,
       }),
-    [basePlayerIds, plannedIds, initial.freeAvailable, initial.penaltyPerExtra],
+    [
+      basePlayerIds,
+      plannedIds,
+      initial.freeAvailable,
+      initial.penaltyPerExtra,
+      unlimitedTransfers,
+    ],
   );
 
   const pickerWouldBeExtra = useMemo(() => {
-    if (pendingOutSlot == null) return false;
+    if (unlimitedTransfers || pendingOutSlot == null) return false;
     const hypotheticalMade = summary.made + 1;
     return hypotheticalMade > initial.freeAvailable;
-  }, [pendingOutSlot, summary.made, initial.freeAvailable]);
+  }, [
+    unlimitedTransfers,
+    pendingOutSlot,
+    summary.made,
+    initial.freeAvailable,
+  ]);
 
   const matchesSavedTeam = useMemo(
     () =>
@@ -331,12 +364,24 @@ export function TransfersTeamClient({
 
   const canConfirm = useMemo(() => {
     if (readOnly || !pickForValidation || pendingOutSlot != null) return false;
+    if (chipCode === "bench_boost" && !reservePlayerId) return false;
+    if (chipCode === "free_hit") {
+      return validateInitialFantasyTeamBuild(pickForValidation, eligible).ok;
+    }
     return validateFantasyTeamTransferPick(
       pickForValidation,
       basePlayerIds,
       eligible,
     ).ok;
-  }, [readOnly, pickForValidation, pendingOutSlot, basePlayerIds, eligible]);
+  }, [
+    readOnly,
+    pickForValidation,
+    pendingOutSlot,
+    basePlayerIds,
+    eligible,
+    chipCode,
+    reservePlayerId,
+  ]);
 
   useEffect(() => {
     if (!dirty) setCaptaincyStep(false);
@@ -407,37 +452,109 @@ export function TransfersTeamClient({
     );
   }
 
-  async function handleConfirm(acknowledgedPenalty: number) {
-    if (!pickForValidation || !canConfirm) return;
+  async function submitCurrentPlan(acknowledgedPenalty: number) {
+    if (!pickForValidation) return false;
     setConfirming(true);
     const result = await submitTeamAction(pick.matchday.id, {
       ...pickForValidation,
       expectedVersion: teamVersion,
       acknowledgedPenalty,
+      chipCode,
+      reservePlayerId:
+        chipCode === "bench_boost" ? reservePlayerId : null,
     });
     setConfirming(false);
     if (result.ok === false) {
       if (result.code === "CONFLICT") {
         appToast.error(`${result.message} Reloading…`);
         router.refresh();
-        return;
+        return false;
       }
       appToast.error(result.message);
-      return;
+      return false;
     }
     const made = result.data.summary?.made ?? summary.made;
     const extra = result.data.summary?.extra ?? 0;
     appToast.success(
-      extra > 0
-        ? `Team confirmed — ${made} transfers (${extra} extra)`
-        : made > 0
-          ? `Team confirmed — ${made} transfer${made === 1 ? "" : "s"} (free)`
-          : "Team confirmed",
+      chipCode
+        ? `Team and ${chipCode.replace(/_/g, " ")} saved`
+        : extra > 0
+          ? `Team confirmed — ${made} transfers (${extra} extra)`
+          : made > 0
+            ? `Team confirmed — ${made} transfer${made === 1 ? "" : "s"} (free)`
+            : "Team confirmed",
     );
     clearLocalDraft(pick.matchday.id);
     setTeamVersion(result.data.version);
     setConfirmOpen(false);
     router.refresh();
+    return true;
+  }
+
+  async function handleConfirm(acknowledgedPenalty: number) {
+    if (!pickForValidation || !canConfirm) return;
+    await submitCurrentPlan(acknowledgedPenalty);
+  }
+
+  async function handleTripleCaptainActivate() {
+    if (!pickForValidation || readOnly) return;
+    setConfirming(true);
+    const result = await submitTeamAction(pick.matchday.id, {
+      ...pickForValidation,
+      expectedVersion: teamVersion,
+      acknowledgedPenalty: 0,
+      chipCode: "triple_captain",
+      reservePlayerId: null,
+    });
+    setConfirming(false);
+    if (result.ok === false) {
+      appToast.error(result.message);
+      return;
+    }
+    setChipCode("triple_captain");
+    setChipDrawerOpen(false);
+    setTeamVersion(result.data.version);
+    appToast.success("Triple Captain activated");
+    router.refresh();
+  }
+
+  async function handleCancelChip() {
+    if (readOnly || !chipCode) return;
+    setConfirming(true);
+    const result = await submitTeamAction(pick.matchday.id, {
+      ...(pickForValidation ?? {
+        playerIds: plannedIds,
+        captainPlayerId: captainPlayerId!,
+        viceCaptainPlayerId: viceCaptainPlayerId!,
+      }),
+      expectedVersion: teamVersion,
+      acknowledgedPenalty: 0,
+      chipCode: null,
+      reservePlayerId: null,
+    });
+    setConfirming(false);
+    if (result.ok === false) {
+      appToast.error(result.message);
+      return;
+    }
+    setChipCode(null);
+    setReservePlayerId(null);
+    setTeamVersion(result.data.version);
+    appToast.success("Chip cancelled");
+    router.refresh();
+  }
+
+  function handleContinueChipToTeam(code: ChipCode) {
+    setChipCode(code);
+    if (code === "free_hit") {
+      setSlots(teamToSlots(basePlayerIds));
+      setCaptainPlayerId(basePlayerIds[0] ?? null);
+      setViceCaptainPlayerId(
+        basePlayerIds.find((id) => id !== basePlayerIds[0]) ?? null,
+      );
+    }
+    if (code !== "bench_boost") setReservePlayerId(null);
+    setTab("team");
   }
 
   const activePlayerId = activeSlot != null ? slots[activeSlot] : null;
@@ -476,7 +593,19 @@ export function TransfersTeamClient({
         <TransferSummaryStrip
           summary={summary}
           freeAvailable={initial.freeAvailable}
+          unlimitedLabel={
+            chipCode === "wildcard"
+              ? "Free (Wildcard)"
+              : chipCode === "free_hit"
+                ? "Free (Free Hit)"
+                : null
+          }
         />
+        {chipsEnabled ? (
+          <p className="text-xs text-muted-foreground">
+            One chip per gameweek · see the Chips tab
+          </p>
+        ) : null}
       </div>
 
       {draftStaleNotice ? (
@@ -486,7 +615,13 @@ export function TransfersTeamClient({
       ) : null}
 
       <div className="flex gap-2 rounded-xl bg-muted/40 p-1">
-        {(["team", "history"] as const).map((key) => (
+        {(
+          [
+            ["team", "Team"],
+            ["history", "History"],
+            ...(chipsEnabled ? ([["chips", "Chips"]] as const) : []),
+          ] as const
+        ).map(([key, label]) => (
           <button
             key={key}
             type="button"
@@ -498,16 +633,36 @@ export function TransfersTeamClient({
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {key === "team" ? "Team" : "History"}
+            {label}
           </button>
         ))}
       </div>
 
-      {tab === "history" ? (
+      {tab === "chips" && initial.chips ? (
+        <ChipsTab
+          chips={initial.chips.chips}
+          matchdayNumber={pick.matchday.number}
+          onSelectChip={(card) => {
+            if (card.status.kind === "available" || card.status.kind === "active") {
+              setChipDrawerCard(card);
+              setChipDrawerOpen(true);
+            }
+          }}
+        />
+      ) : tab === "history" ? (
         <TransferHistoryTab history={initial.history} />
       ) : (
         <>
           {readOnly ? <LockedBanner /> : null}
+
+          {chipCode ? (
+            <ActiveChipBanner
+              chipCode={chipCode}
+              readOnly={readOnly}
+              cancelling={confirming}
+              onCancel={handleCancelChip}
+            />
+          ) : null}
 
           {!readOnly && !dirty && savedTeam ? (
             <p
@@ -549,12 +704,48 @@ export function TransfersTeamClient({
               pendingOutSlot={pendingOutSlot}
               incomingIds={incomingIds}
               showRoleBadges
-              showIncomingBadges={!captaincyStep}
+              showIncomingBadges={!captaincyStep && chipCode !== "free_hit"}
+              captainMultiplier={
+                chipCode === "triple_captain" ? 3 : undefined
+              }
+              pitchClassName={
+                chipCode === "free_hit"
+                  ? "border-violet-500/30 bg-gradient-to-b from-violet-500/15 via-card/80 to-card/40"
+                  : undefined
+              }
               onSlotPress={handleSlotPress}
               onUndoPending={(index) => {
                 if (pendingOutSlot === index) setPendingOutSlot(null);
               }}
             />
+            {chipCode === "bench_boost" ? (
+              <button
+                type="button"
+                disabled={readOnly}
+                onClick={() => setReservePickerOpen(true)}
+                className="mx-auto flex w-full max-w-sm flex-col items-center gap-2 rounded-2xl border border-dashed border-primary/40 bg-muted/20 px-4 py-4 text-sm"
+              >
+                <span className="font-medium">Reserve — counts this gameweek</span>
+                <span className="text-muted-foreground">
+                  {reservePlayerId
+                    ? (playerById.get(reservePlayerId)?.displayName ??
+                      "Selected")
+                    : "Tap to choose a reserve (not in your five)"}
+                </span>
+              </button>
+            ) : null}
+            {chipCode === "free_hit" ? (
+              <details className="rounded-xl border border-border/50 bg-muted/20 px-4 py-2 text-sm">
+                <summary className="cursor-pointer font-medium">
+                  Your permanent squad
+                </summary>
+                <p className="mt-2 text-muted-foreground">
+                  {basePlayerIds
+                    .map((id) => playerNameById.get(id) ?? "?")
+                    .join(" · ")}
+                </p>
+              </details>
+            ) : null}
             {!readOnly ? (
               <p className="text-center text-xs text-muted-foreground">
                 {captaincyStep
@@ -641,10 +832,25 @@ export function TransfersTeamClient({
             : null
         }
         costBanner={
-          pickerWouldBeExtra
-            ? `This transfer costs −${initial.penaltyPerExtra}`
-            : null
+          unlimitedTransfers
+            ? null
+            : pickerWouldBeExtra
+              ? `This transfer costs −${initial.penaltyPerExtra}`
+              : null
         }
+      />
+
+      <PlayerPickerSheet
+        open={reservePickerOpen}
+        onClose={() => setReservePickerOpen(false)}
+        players={pick.players.filter((p) => !plannedIds.includes(p.id))}
+        selectedIds={new Set(reservePlayerId ? [reservePlayerId] : [])}
+        onSelect={(playerId) => {
+          setReservePlayerId(playerId);
+          setReservePickerOpen(false);
+        }}
+        replacingName={null}
+        costBanner={null}
       />
 
       {activePlayer ? (
@@ -691,6 +897,15 @@ export function TransfersTeamClient({
         summary={summary}
         freeAvailable={initial.freeAvailable}
         playerNameById={playerNameById}
+      />
+
+      <ChipDetailDrawer
+        open={chipDrawerOpen}
+        onClose={() => setChipDrawerOpen(false)}
+        card={chipDrawerCard}
+        onContinueToTeam={handleContinueChipToTeam}
+        onActivateTripleCaptain={handleTripleCaptainActivate}
+        activating={confirming}
       />
     </div>
   );

@@ -26,6 +26,8 @@ export function TransferPitchSlots({
   onUndoPending,
   showRoleBadges = true,
   showIncomingBadges = true,
+  captainMultiplier,
+  pitchClassName,
 }: {
   selection: readonly (string | null)[];
   captainPlayerId: string | null;
@@ -38,10 +40,15 @@ export function TransferPitchSlots({
   onUndoPending: (slotIndex: number) => void;
   showRoleBadges?: boolean;
   showIncomingBadges?: boolean;
+  captainMultiplier?: 2 | 3;
+  pitchClassName?: string;
 }) {
   return (
     <div
-      className="surface relative mx-auto aspect-[4/5] max-w-sm rounded-3xl border border-primary/15 bg-gradient-to-b from-primary/10 via-card/80 to-card/40 p-4"
+      className={cn(
+        "surface relative mx-auto aspect-[4/5] max-w-sm rounded-3xl border border-primary/15 bg-gradient-to-b from-primary/10 via-card/80 to-card/40 p-4",
+        pitchClassName,
+      )}
       aria-label="Your five-a-side lineup"
     >
       <div
@@ -84,6 +91,7 @@ export function TransferPitchSlots({
                       {showRoleBadges && isCaptain ? (
                         <CaptainBadge
                           role="captain"
+                          captainMultiplier={captainMultiplier}
                           className="absolute -right-1 -bottom-1"
                         />
                       ) : null}

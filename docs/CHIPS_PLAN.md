@@ -528,7 +528,7 @@ Transfers (migration `0008`, `submit-team`, balance chain, windows) are **alread
 - [x] Phase 4: recompute reads plays; `chip_code`/`chip_bonus`; reserve score lines
 - [x] Phase 5: submit service chip paths; replay equality; concurrency tests
 - [x] Phase 6: cancel refund; season/disabled handling; "Enable chips" admin action
-- [ ] Phase 7: Chips tab/drawer, confirm flows, banners, pitch treatments, points badges
+- [x] Phase 7: Chips tab/drawer, confirm flows, banners, pitch treatments, points badges
 - [ ] Phase 8: admin usage/config/corrections/inspector
 - [ ] Phase 9: Playwright + a11y; docs; rollout
 

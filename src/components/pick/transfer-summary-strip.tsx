@@ -5,13 +5,35 @@ export function TransferSummaryStrip({
   summary,
   freeAvailable,
   className,
+  unlimitedLabel,
 }: {
   summary: TransferWindowSummary;
   freeAvailable: number;
   className?: string;
+  unlimitedLabel?: string | null;
 }) {
   const penalty = summary.transferPenalty;
   const hasPenalty = penalty < 0;
+
+  if (unlimitedLabel) {
+    return (
+      <div
+        className={cn(
+          "rounded-2xl border border-podium-gold/30 bg-podium-gold/10 px-4 py-3 text-sm font-medium",
+          className,
+        )}
+        role="status"
+      >
+        {unlimitedLabel}
+        {summary.made > 0 ? (
+          <span className="text-muted-foreground">
+            {" "}
+            · {summary.made} change{summary.made === 1 ? "" : "s"}
+          </span>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div
