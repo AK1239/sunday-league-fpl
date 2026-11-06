@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { appToast } from "@/lib/app-toast";
 import { PageHeader } from "@/components/fantasy/page-header";
@@ -17,7 +17,6 @@ import {
   type LocalTransferDraft,
   type SerializedTransferPageData,
 } from "@/components/pick/transfer-types";
-import type { SerializedPickTeamData } from "@/components/pick/pick-team-types";
 import { submitTeamAction } from "@/server/actions/submit-team";
 import { diffSquads } from "@/server/fantasy/transfer-diff";
 import { summariseTransferWindow } from "@/server/fantasy/transfer-summary";
@@ -25,6 +24,7 @@ import {
   validateFantasyTeamTransferLineup,
   validateFantasyTeamTransferPick,
 } from "@/server/fantasy/validate-transfers";
+import { ArrowRight, Check, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -92,24 +92,6 @@ function teamPickMatchesSaved(
   );
 }
 
-function shouldStartEditing(
-  pick: SerializedPickTeamData,
-  teamVersion: number,
-): boolean {
-  const saved = pick.myTeam;
-  if (!saved || saved.playerIds.length !== 5) return true;
-  const draft = readLocalDraft(pick.matchday.id, teamVersion);
-  if (draft?.playerIds.length === 5) {
-    return !teamPickMatchesSaved(
-      draft.playerIds,
-      draft.captainPlayerId,
-      draft.viceCaptainPlayerId,
-      saved,
-    );
-  }
-  return false;
-}
-
 export function TransfersTeamClient({
   initial,
 }: {
@@ -127,35 +109,33 @@ export function TransfersTeamClient({
   const [draftStaleNotice, setDraftStaleNotice] = useState(false);
   const [tab, setTab] = useState<"team" | "history">("team");
 
+  // Restore an in-progress draft (same server version) before falling back to
+  // the saved team, then the base squad.
+  const [initialDraft] = useState(() =>
+    readLocalDraft(pick.matchday.id, initial.teamVersion),
+  );
   const [slots, setSlots] = useState<(string | null)[]>(() => {
-    const fromTeam =
-      pick.myTeam?.playerIds.length === 5
-        ? teamToSlots(pick.myTeam.playerIds)
-        : teamToSlots(basePlayerIds);
-    const draft = readLocalDraft(pick.matchday.id, initial.teamVersion);
-    if (draft?.playerIds.length === 5) return teamToSlots(draft.playerIds);
-    return fromTeam;
+    if (initialDraft?.playerIds.length === 5) {
+      return teamToSlots(initialDraft.playerIds);
+    }
+    return pick.myTeam?.playerIds.length === 5
+      ? teamToSlots(pick.myTeam.playerIds)
+      : teamToSlots(basePlayerIds);
   });
 
-  const [captainPlayerId, setCaptainPlayerId] = useState<string | null>(() => {
-    const draft = readLocalDraft(pick.matchday.id, initial.teamVersion);
-    return (
+  const [captainPlayerId, setCaptainPlayerId] = useState<string | null>(
+    () =>
+      initialDraft?.captainPlayerId ??
       pick.myTeam?.captainPlayerId ??
-      draft?.captainPlayerId ??
       basePlayerIds[0] ??
-      null
-    );
-  });
+      null,
+  );
   const [viceCaptainPlayerId, setViceCaptainPlayerId] = useState<string | null>(
-    () => {
-      const draft = readLocalDraft(pick.matchday.id, initial.teamVersion);
-      return (
-        pick.myTeam?.viceCaptainPlayerId ??
-        draft?.viceCaptainPlayerId ??
-        basePlayerIds[1] ??
-        null
-      );
-    },
+    () =>
+      initialDraft?.viceCaptainPlayerId ??
+      pick.myTeam?.viceCaptainPlayerId ??
+      basePlayerIds[1] ??
+      null,
   );
 
   const [pendingOutSlot, setPendingOutSlot] = useState<number | null>(null);
@@ -164,12 +144,6 @@ export function TransfersTeamClient({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [confirming, setConfirming] = useState(false);
-  const [wizardStep, setWizardStep] = useState<"lineup" | "captaincy">(
-    "lineup",
-  );
-  const [isEditing, setIsEditing] = useState(() =>
-    shouldStartEditing(pick, initial.teamVersion),
-  );
 
   const readOnly = pick.locked || !pick.selectionOpen;
   const savedTeam = pick.myTeam;
@@ -189,7 +163,14 @@ export function TransfersTeamClient({
     }
   }, [pick.matchday.id, initial.teamVersion]);
 
+  // After a save (router.refresh) the server state replaces local state. Skip
+  // the first run so a restored draft isn't immediately overwritten.
+  const firstSync = useRef(true);
   useEffect(() => {
+    if (firstSync.current) {
+      firstSync.current = false;
+      return;
+    }
     if (pick.myTeam?.playerIds.length === 5) {
       setSlots(teamToSlots(pick.myTeam.playerIds));
       setCaptainPlayerId(pick.myTeam.captainPlayerId);
@@ -217,12 +198,7 @@ export function TransfersTeamClient({
         freeAvailable: initial.freeAvailable,
         penaltyPerExtra: initial.penaltyPerExtra,
       }),
-    [
-      basePlayerIds,
-      plannedIds,
-      initial.freeAvailable,
-      initial.penaltyPerExtra,
-    ],
+    [basePlayerIds, plannedIds, initial.freeAvailable, initial.penaltyPerExtra],
   );
 
   const pickerWouldBeExtra = useMemo(() => {
@@ -242,14 +218,26 @@ export function TransfersTeamClient({
     [plannedIds, captainPlayerId, viceCaptainPlayerId, savedTeam],
   );
 
+  const dirty = !savedTeam || !matchesSavedTeam || pendingOutSlot != null;
+  const captaincyChanged =
+    savedTeam != null &&
+    (captainPlayerId !== savedTeam.captainPlayerId ||
+      viceCaptainPlayerId !== savedTeam.viceCaptainPlayerId);
+
   useEffect(() => {
-    if (readOnly || !isEditing) return;
-    if (plannedIds.length !== 5) return;
+    if (readOnly) return;
+    if (!dirty) {
+      clearLocalDraft(pick.matchday.id);
+      return;
+    }
+    if (plannedIds.length !== 5 || !captainPlayerId || !viceCaptainPlayerId) {
+      return;
+    }
     writeLocalDraft(pick.matchday.id, {
       baseVersion: teamVersion,
       playerIds: plannedIds,
-      captainPlayerId: captainPlayerId!,
-      viceCaptainPlayerId: viceCaptainPlayerId!,
+      captainPlayerId,
+      viceCaptainPlayerId,
     });
   }, [
     plannedIds,
@@ -257,16 +245,12 @@ export function TransfersTeamClient({
     viceCaptainPlayerId,
     pick.matchday.id,
     readOnly,
-    isEditing,
+    dirty,
     teamVersion,
   ]);
 
   const pickForValidation = useMemo(() => {
-    if (
-      plannedIds.length !== 5 ||
-      !captainPlayerId ||
-      !viceCaptainPlayerId
-    ) {
+    if (plannedIds.length !== 5 || !captainPlayerId || !viceCaptainPlayerId) {
       return null;
     }
     return {
@@ -285,12 +269,8 @@ export function TransfersTeamClient({
   );
 
   useEffect(() => {
-    setCaptainPlayerId((c) =>
-      c && plannedIds.includes(c) ? c : null,
-    );
-    setViceCaptainPlayerId((v) =>
-      v && plannedIds.includes(v) ? v : null,
-    );
+    setCaptainPlayerId((c) => (c && plannedIds.includes(c) ? c : null));
+    setViceCaptainPlayerId((v) => (v && plannedIds.includes(v) ? v : null));
   }, [plannedIds]);
 
   useEffect(() => {
@@ -303,62 +283,29 @@ export function TransfersTeamClient({
     }
   }, [captainPlayerId, viceCaptainPlayerId]);
 
-  const canAdvanceLineup = useMemo(() => {
-    if (readOnly || pendingOutSlot != null || plannedIds.length !== 5) {
-      return false;
-    }
-    return validateFantasyTeamTransferLineup(
-      plannedIds,
-      basePlayerIds,
-      eligible,
-    ).ok;
-  }, [readOnly, pendingOutSlot, plannedIds, basePlayerIds, eligible]);
-
-  const lineupBlockedMessage = useMemo(() => {
-    if (readOnly) return null;
+  const blockedMessage = useMemo(() => {
+    if (readOnly || !dirty) return null;
     if (pendingOutSlot != null) {
       return "Pick a replacement to finish this transfer.";
     }
-    if (plannedIds.length !== 5) {
-      return "Your squad must have 5 players.";
-    }
-    const result = validateFantasyTeamTransferLineup(
+    if (plannedIds.length !== 5) return "Your squad must have 5 players.";
+    const lineup = validateFantasyTeamTransferLineup(
       plannedIds,
       basePlayerIds,
       eligible,
     );
-    return result.ok ? null : result.message;
-  }, [readOnly, pendingOutSlot, plannedIds, basePlayerIds, eligible]);
-
-  const canAdvanceCaptaincy = useMemo(() => {
-    if (readOnly || !pickForValidation) return false;
-    if (pendingOutSlot != null) return false;
-    if (!captainPlayerId || !viceCaptainPlayerId) return false;
-    if (captainPlayerId === viceCaptainPlayerId) return false;
-    if (!plannedIds.includes(captainPlayerId)) return false;
-    if (!plannedIds.includes(viceCaptainPlayerId)) return false;
-    return true;
-  }, [
-    readOnly,
-    pickForValidation,
-    pendingOutSlot,
-    captainPlayerId,
-    viceCaptainPlayerId,
-    plannedIds,
-  ]);
-
-  const captaincyBlockedMessage = useMemo(() => {
-    if (readOnly || wizardStep !== "captaincy") return null;
+    if (!lineup.ok) return lineup.message;
     if (!captainPlayerId || !viceCaptainPlayerId) {
-      return "Tap a player to choose captain and vice-captain.";
-    }
-    if (captainPlayerId === viceCaptainPlayerId) {
-      return "Captain and vice-captain must be different players.";
+      return "Tap a player to choose your captain and vice-captain.";
     }
     return null;
   }, [
     readOnly,
-    wizardStep,
+    dirty,
+    pendingOutSlot,
+    plannedIds,
+    basePlayerIds,
+    eligible,
     captainPlayerId,
     viceCaptainPlayerId,
   ]);
@@ -370,15 +317,16 @@ export function TransfersTeamClient({
       basePlayerIds,
       eligible,
     ).ok;
-  }, [
-    readOnly,
-    pickForValidation,
-    pendingOutSlot,
-    basePlayerIds,
-    eligible,
-  ]);
+  }, [readOnly, pickForValidation, pendingOutSlot, basePlayerIds, eligible]);
 
   const selectedIds = useMemo(() => new Set(plannedIds), [plannedIds]);
+
+  const changeLabel =
+    summary.made > 0
+      ? `${summary.made} transfer${summary.made === 1 ? "" : "s"}${captaincyChanged ? " + captaincy" : ""}`
+      : captaincyChanged
+        ? "Captaincy updated"
+        : "Confirm your team";
 
   const handleSlotPress = useCallback(
     (index: number) => {
@@ -409,7 +357,6 @@ export function TransfersTeamClient({
 
   function resetToSavedTeam() {
     setPendingOutSlot(null);
-    setWizardStep("lineup");
     if (savedTeam?.playerIds.length === 5) {
       setSlots(teamToSlots(savedTeam.playerIds));
       setCaptainPlayerId(savedTeam.captainPlayerId);
@@ -453,8 +400,6 @@ export function TransfersTeamClient({
     clearLocalDraft(pick.matchday.id);
     setTeamVersion(result.data.version);
     setConfirmOpen(false);
-    setWizardStep("lineup");
-    setIsEditing(false);
     router.refresh();
   }
 
@@ -469,7 +414,7 @@ export function TransfersTeamClient({
   );
 
   return (
-    <div className="space-y-6 pb-28">
+    <div className="space-y-6 pb-44 md:pb-10">
       <PageHeader
         eyebrow={`Gameweek ${pick.matchday.number}`}
         title="Transfers"
@@ -527,132 +472,86 @@ export function TransfersTeamClient({
         <>
           {readOnly ? <LockedBanner /> : null}
 
-          {!readOnly && isEditing ? (
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              {wizardStep === "captaincy" ? (
+          {!readOnly && !dirty && savedTeam ? (
+            <p
+              className="animate-fade inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+              role="status"
+            >
+              <Check className="size-3.5" aria-hidden />
+              Team saved
+            </p>
+          ) : null}
+
+          <div className="space-y-3">
+            <TransferPitchSlots
+              selection={slots}
+              captainPlayerId={captainPlayerId}
+              viceCaptainPlayerId={viceCaptainPlayerId}
+              playerById={playerById}
+              disabled={readOnly}
+              pendingOutSlot={pendingOutSlot}
+              incomingIds={incomingIds}
+              showRoleBadges
+              showIncomingBadges
+              onSlotPress={handleSlotPress}
+              onUndoPending={(index) => {
+                if (pendingOutSlot === index) setPendingOutSlot(null);
+              }}
+            />
+            {!readOnly ? (
+              <p className="text-center text-xs text-muted-foreground">
+                Tap a player to set captain, vice-captain or make a transfer.
+              </p>
+            ) : null}
+          </div>
+
+          {!readOnly && dirty ? (
+            <div className="glass animate-rise fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 rounded-2xl p-3 md:sticky md:inset-x-0 md:bottom-4">
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold">
+                    {changeLabel}
+                  </p>
+                  <p
+                    className={cn(
+                      "truncate text-xs",
+                      summary.transferPenalty < 0
+                        ? "font-medium text-amber-500"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {summary.transferPenalty < 0
+                      ? `${summary.extra} extra · ${summary.transferPenalty} pts`
+                      : summary.made > 0
+                        ? "Free — no points cost"
+                        : "No cost"}
+                  </p>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => setWizardStep("lineup")}
+                  onClick={resetToSavedTeam}
                 >
-                  Back to transfers
+                  <RotateCcw aria-hidden />
+                  Reset
                 </Button>
-              ) : (
-                <span />
-              )}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={resetToSavedTeam}
-                disabled={
-                  matchesSavedTeam && pendingOutSlot == null
-                }
-              >
-                Reset to saved team
-              </Button>
-            </div>
-          ) : null}
-
-          {!readOnly && !isEditing && savedTeam ? (
-            <p
-              className="rounded-xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm text-muted-foreground"
-              role="status"
-            >
-              Team saved for this gameweek — captain and vice are set below.
-              Tap <span className="font-medium text-foreground">Edit team</span>{" "}
-              to make more changes before the deadline.
-            </p>
-          ) : null}
-
-          {wizardStep === "captaincy" && !readOnly && isEditing ? (
-            <p className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-              Choose a captain and vice-captain from your squad. Tap a player
-              below — these changes are free.
-            </p>
-          ) : null}
-
-          <TransferPitchSlots
-            selection={slots}
-            captainPlayerId={captainPlayerId}
-            viceCaptainPlayerId={viceCaptainPlayerId}
-            playerById={playerById}
-            disabled={readOnly || !isEditing}
-            pendingOutSlot={pendingOutSlot}
-            incomingIds={incomingIds}
-            showRoleBadges={!isEditing || wizardStep === "captaincy"}
-            showIncomingBadges={isEditing && wizardStep === "lineup"}
-            onSlotPress={handleSlotPress}
-            onUndoPending={(index) => {
-              if (pendingOutSlot === index) setPendingOutSlot(null);
-            }}
-          />
-
-          {!readOnly ? (
-            <div className="glass fixed inset-x-3 bottom-3 z-30 rounded-2xl border border-border/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:rounded-2xl md:border md:bg-card/80">
-              {!isEditing && savedTeam ? (
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Button
-                    type="button"
-                    size="lg"
-                    className="w-full sm:flex-1"
-                    onClick={() => {
-                      setIsEditing(true);
-                      setWizardStep("lineup");
-                    }}
-                  >
-                    Edit team
-                  </Button>
-                  <Button
-                    type="button"
-                    size="lg"
-                    variant="outline"
-                    className="w-full sm:flex-1"
-                    onClick={() => {
-                      setIsEditing(true);
-                      setWizardStep("captaincy");
-                    }}
-                  >
-                    Change captain / vice
-                  </Button>
-                </div>
-              ) : wizardStep === "lineup" ? (
-                <>
-                  <Button
-                    type="button"
-                    size="lg"
-                    className="w-full"
-                    disabled={!canAdvanceLineup}
-                    onClick={() => setWizardStep("captaincy")}
-                  >
-                    Next
-                  </Button>
-                  {lineupBlockedMessage ? (
-                    <p className="mt-2 text-center text-xs text-muted-foreground">
-                      {lineupBlockedMessage}
-                    </p>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  <Button
-                    type="button"
-                    size="lg"
-                    className="w-full"
-                    disabled={!canConfirm || confirming}
-                    aria-busy={confirming}
-                    onClick={() => setConfirmOpen(true)}
-                  >
-                    Review & confirm
-                  </Button>
-                  {captaincyBlockedMessage ? (
-                    <p className="mt-2 text-center text-xs text-muted-foreground">
-                      {captaincyBlockedMessage}
-                    </p>
-                  ) : null}
-                </>
-              )}
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled={!canConfirm || confirming}
+                  aria-busy={confirming}
+                  onClick={() => setConfirmOpen(true)}
+                >
+                  Review
+                  <ArrowRight aria-hidden />
+                </Button>
+              </div>
+              {blockedMessage ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {blockedMessage}
+                </p>
+              ) : null}
             </div>
           ) : null}
         </>
@@ -682,8 +581,8 @@ export function TransfersTeamClient({
           isCaptain={activePlayerId === captainPlayerId}
           isVice={activePlayerId === viceCaptainPlayerId}
           transferMode
-          showCaptainActions={isEditing && wizardStep === "captaincy"}
-          showSquadEditActions={isEditing && wizardStep === "lineup"}
+          showCaptainActions
+          showSquadEditActions
           onMakeCaptain={() => {
             if (activePlayerId) {
               setCaptainPlayerId(activePlayerId);

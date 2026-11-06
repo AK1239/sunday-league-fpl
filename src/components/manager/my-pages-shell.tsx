@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { MyAuthLoading } from "@/components/manager/my-auth-loading";
-import { ManagerSubnav } from "@/components/manager/manager-subnav";
 import { MyProtectedGate } from "@/components/manager/my-protected-gate";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -9,7 +8,6 @@ export function MyPagesShell({ children }: { children: React.ReactNode }) {
     <Suspense fallback={<MyAuthLoading />}>
       <MyProtectedGate>
         <div className="mx-auto max-w-3xl space-y-6">
-          <ManagerSubnav />
           <Suspense
             fallback={
               <div className="space-y-4" role="status">

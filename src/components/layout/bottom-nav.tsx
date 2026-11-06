@@ -3,23 +3,24 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  CalendarDays,
   Home,
   LayoutDashboard,
+  LineChart,
   MoreHorizontal,
   Shirt,
   Trophy,
 } from "lucide-react";
+import { PRIMARY_SITE_NAV, navActive } from "@/lib/site-nav";
 import { cn } from "@/lib/utils";
 
-const ITEMS = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/table", label: "Table", icon: Trophy },
-  { href: "/matchdays", label: "Days", icon: CalendarDays },
-  { href: "/pick", label: "Pick", icon: Shirt },
-  { href: "/my", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/more", label: "More", icon: MoreHorizontal },
-] as const;
+const ICONS = {
+  "/": Home,
+  "/my": LayoutDashboard,
+  "/my/points": LineChart,
+  "/pick": Shirt,
+  "/table": Trophy,
+  "/more": MoreHorizontal,
+} as const;
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -30,21 +31,15 @@ export function BottomNav() {
       aria-label="Primary"
     >
       <ul className="mx-auto flex max-w-lg">
-        {ITEMS.map(({ href, label, icon: Icon }) => {
-          const active =
-            href === "/"
-              ? pathname === "/"
-              : href === "/my"
-                ? pathname === "/my" || pathname.startsWith("/my/")
-                : href === "/more"
-                  ? pathname === "/more"
-                  : pathname.startsWith(href);
+        {PRIMARY_SITE_NAV.map((item) => {
+          const Icon = ICONS[item.href as keyof typeof ICONS];
+          const active = navActive(pathname, item);
           return (
-            <li key={href} className="flex-1">
+            <li key={item.href} className="min-w-0 flex-1">
               <Link
-                href={href}
+                href={item.href}
                 className={cn(
-                  "relative flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring active:scale-95",
+                  "relative flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[10px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring active:scale-95",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
                 aria-current={active ? "page" : undefined}
@@ -56,11 +51,11 @@ export function BottomNav() {
                   />
                 ) : null}
                 <Icon
-                  className="mt-1 size-5"
+                  className="mt-1 size-5 shrink-0"
                   aria-hidden
                   strokeWidth={active ? 2.5 : 2}
                 />
-                {label}
+                <span className="max-w-full truncate">{item.label}</span>
               </Link>
             </li>
           );

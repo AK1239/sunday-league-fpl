@@ -1,4 +1,3 @@
-import { Shirt } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { LEAGUE_NAME, LEAGUE_SHORT } from "@/lib/league";
@@ -25,13 +24,6 @@ export function SiteHeader() {
           <SiteHeaderNav />
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Link
-            href="/pick"
-            className="glow-primary hidden items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground transition-all outline-none hover:-translate-y-px hover:brightness-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:inline-flex"
-          >
-            <Shirt className="size-4" aria-hidden />
-            Pick team
-          </Link>
           <ThemeToggle />
           <Suspense
             fallback={

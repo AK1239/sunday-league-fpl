@@ -1,40 +1,21 @@
-import {
-  Award,
-  BookOpen,
-  CalendarDays,
-  ChevronRight,
-  Footprints,
-  Trophy,
-} from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/fantasy/page-header";
 import { LEAGUE_NAME } from "@/lib/league";
+import { MORE_SITE_NAV } from "@/lib/site-nav";
 
 export default function MorePage() {
   return (
     <div className="space-y-8">
-      <PageHeader eyebrow={LEAGUE_NAME} title="More" />
+      <PageHeader
+        eyebrow={LEAGUE_NAME}
+        title="More"
+        description="Matchdays, standings, awards, and the rest of the league."
+      />
       <ul className="space-y-3">
-        <MoreLink
-          href="/table"
-          label="Manager table"
-          icon={<Trophy />}
-          i={0}
-        />
-        <MoreLink
-          href="/matchdays"
-          label="Matchdays"
-          icon={<CalendarDays />}
-          i={1}
-        />
-        <MoreLink
-          href="/players"
-          label="Player standings"
-          icon={<Footprints />}
-          i={2}
-        />
-        <MoreLink href="/rules" label="Scoring rules" icon={<BookOpen />} i={3} />
-        <MoreLink href="/awards" label="Awards & archive" icon={<Award />} i={4} />
+        {MORE_SITE_NAV.map((item, i) => (
+          <MoreLink key={item.href} href={item.href} label={item.label} i={i} />
+        ))}
       </ul>
     </div>
   );
@@ -43,12 +24,10 @@ export default function MorePage() {
 function MoreLink({
   href,
   label,
-  icon,
   i,
 }: {
   href: string;
   label: string;
-  icon: React.ReactNode;
   i: number;
 }) {
   return (
@@ -60,9 +39,6 @@ function MoreLink({
         href={href}
         className="group surface surface-hover flex min-h-14 items-center gap-4 rounded-2xl px-4 py-3 font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary [&_svg]:size-5">
-          {icon}
-        </span>
         <span className="flex-1">{label}</span>
         <ChevronRight
           className="size-5 text-muted-foreground transition-transform group-hover:translate-x-1"
