@@ -423,18 +423,28 @@ export const seasonAwards = pgTable(
   ],
 );
 
-export const users = pgTable("users", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  displayName: text("display_name").notNull(),
-  role: userRoleEnum("role").notNull().default("manager"),
-  linkedPlayerId: uuid("linked_player_id").references(() => players.id),
-  status: userStatusEnum("status").notNull().default("active"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    email: text("email").notNull().unique(),
+    passwordHash: text("password_hash").notNull(),
+    displayName: text("display_name").notNull(),
+    /** Optional team name shown in public tables instead of `displayName`. */
+    teamName: text("team_name"),
+    role: userRoleEnum("role").notNull().default("manager"),
+    linkedPlayerId: uuid("linked_player_id").references(() => players.id),
+    status: userStatusEnum("status").notNull().default("active"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("users_team_name_lower_unique")
+      .on(sql`lower(${table.teamName})`)
+      .where(sql`${table.teamName} IS NOT NULL`),
+  ],
+);
 
 export const managerInvites = pgTable("manager_invites", {
   id: uuid("id").defaultRandom().primaryKey(),
