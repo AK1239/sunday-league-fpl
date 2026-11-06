@@ -5,12 +5,13 @@ import { Search, TriangleAlert, X } from "lucide-react";
 import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { Drawer } from "@/components/ui/drawer";
 import { FormPips } from "@/components/pick/form-pips";
+import { SelectedBy } from "@/components/pick/selected-by";
 import type { PickTeamPlayerRow } from "@/server/queries/pick-team-data";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 export type PickerSort =
-  "expected" | "form" | "average" | "appearances" | "name";
+  "expected" | "form" | "average" | "appearances" | "name" | "selected";
 
 const SORTS = [
   ["expected", "Expected"],
@@ -18,6 +19,7 @@ const SORTS = [
   ["average", "Average"],
   ["appearances", "Apps"],
   ["name", "Name"],
+  ["selected", "Selected"],
 ] as const;
 
 export function PlayerPickerSheet({
@@ -43,6 +45,12 @@ export function PlayerPickerSheet({
 }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<PickerSort>("expected");
+  // "Selected by %" is hidden server-side until enough teams exist.
+  const hasSelectedBy = players.some((p) => p.selectedByPercent != null);
+  const sorts = SORTS.filter(
+    ([value]) => value !== "selected" || hasSelectedBy,
+  );
+  const activeSort = hasSelectedBy || sort !== "selected" ? sort : "expected";
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -56,7 +64,12 @@ export function PlayerPickerSheet({
     });
 
     list = [...list].sort((a, b) => {
-      switch (sort) {
+      switch (activeSort) {
+        case "selected":
+          return (
+            (b.selectedByPercent ?? 0) - (a.selectedByPercent ?? 0) ||
+            a.displayName.localeCompare(b.displayName)
+          );
         case "expected":
           return (
             b.expectedPoints - a.expectedPoints ||
@@ -91,7 +104,7 @@ export function PlayerPickerSheet({
     });
 
     return list;
-  }, [players, query, selectedIds, sort]);
+  }, [players, query, selectedIds, activeSort]);
 
   function close() {
     setQuery("");
@@ -163,15 +176,15 @@ export function PlayerPickerSheet({
             aria-label="Sort players"
             className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:-mx-5 sm:px-5 [&::-webkit-scrollbar]:hidden"
           >
-            {SORTS.map(([value, label]) => (
+            {sorts.map(([value, label]) => (
               <button
                 key={value}
                 type="button"
-                aria-pressed={sort === value}
+                aria-pressed={activeSort === value}
                 onClick={() => setSort(value)}
                 className={cn(
                   "h-9 shrink-0 rounded-full border px-3.5 text-sm font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95",
-                  sort === value
+                  activeSort === value
                     ? "border-primary/40 bg-primary text-primary-foreground"
                     : "border-border/60 bg-card/60 text-muted-foreground hover:text-foreground",
                 )}
@@ -228,6 +241,9 @@ export function PlayerPickerSheet({
                       Last GW {player.lastGameweekPoints ?? "—"}
                     </span>
                   </div>
+                  {player.selectedByPercent != null ? (
+                    <SelectedBy percent={player.selectedByPercent} />
+                  ) : null}
                 </div>
                 <div className="rounded-xl bg-primary/10 px-2.5 py-1 text-center">
                   <p className="font-heading text-lg leading-none font-bold text-primary tabular-nums">

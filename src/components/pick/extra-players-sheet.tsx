@@ -4,6 +4,7 @@ import { Armchair, Check, Plus, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { FormPips } from "@/components/pick/form-pips";
+import { SelectedBy } from "@/components/pick/selected-by";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
@@ -182,6 +183,9 @@ export function ExtraPlayersSheet({
                         Last GW {player.lastGameweekPoints ?? "—"}
                       </span>
                     </div>
+                    {player.selectedByPercent != null ? (
+                      <SelectedBy percent={player.selectedByPercent} />
+                    ) : null}
                   </div>
                   {selected ? (
                     <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
