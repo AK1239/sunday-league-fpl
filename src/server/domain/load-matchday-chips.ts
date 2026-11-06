@@ -51,7 +51,6 @@ export function toChipScoringInput(
   return {
     code: play.chipCode,
     params,
-    reservePlayerIds:
-      play.chipCode === "bench_boost" ? reservePlayerIds : [],
+    reservePlayerIds: play.chipCode === "bench_boost" ? reservePlayerIds : [],
   };
 }

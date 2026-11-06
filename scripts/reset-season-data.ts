@@ -30,7 +30,10 @@ function assertSafeToRun() {
     process.exit(1);
   }
   const nodeEnv = process.env.NODE_ENV ?? "development";
-  if (nodeEnv === "production" && process.env.FORCE_PRODUCTION_RESET !== "YES") {
+  if (
+    nodeEnv === "production" &&
+    process.env.FORCE_PRODUCTION_RESET !== "YES"
+  ) {
     console.error(
       "Refusing to run in NODE_ENV=production without FORCE_PRODUCTION_RESET=YES",
     );
@@ -79,7 +82,9 @@ async function main() {
 
   console.log("Reset complete.");
   console.log(`  New season: ${seasonName} (${startsOn} → ${endsOn}), active`);
-  console.log("  Gameweeks: load home or pick (auto-schedule) or create in Admin.");
+  console.log(
+    "  Gameweeks: load home or pick (auto-schedule) or create in Admin.",
+  );
   console.log("  Users, sessions, players, and scoring rules were kept.");
 }
 

@@ -29,27 +29,29 @@ export function DeadlineCountdown({
   serverNowIso: string;
   className?: string;
 }) {
-  const skewMs = useMemo(
-    () => Date.now() - new Date(serverNowIso).getTime(),
-    [serverNowIso],
-  );
   const deadlineMs = useMemo(
     () => new Date(deadlineAtIso).getTime(),
     [deadlineAtIso],
   );
 
+  // First paint uses the server's clock (pure); the effect then corrects for
+  // any skew between the server and this device and keeps ticking.
   const [remainingMs, setRemainingMs] = useState(() =>
-    Math.max(0, deadlineMs - (Date.now() - skewMs)),
+    Math.max(0, deadlineMs - new Date(serverNowIso).getTime()),
   );
 
   useEffect(() => {
+    const skewMs = Date.now() - new Date(serverNowIso).getTime();
     const tick = () => {
       setRemainingMs(Math.max(0, deadlineMs - (Date.now() - skewMs)));
     };
-    tick();
+    const first = window.setTimeout(tick, 0);
     const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
-  }, [deadlineMs, skewMs]);
+    return () => {
+      window.clearTimeout(first);
+      window.clearInterval(id);
+    };
+  }, [deadlineMs, serverNowIso]);
 
   const label = formatRemaining(remainingMs);
 

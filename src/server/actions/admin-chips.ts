@@ -66,7 +66,10 @@ export async function forceActivateChipAction(
     reason: formData.get("reason"),
   });
   if (!parsed.success) {
-    return actionFail("VALIDATION", "Check manager, gameweek, chip, and reason.");
+    return actionFail(
+      "VALIDATION",
+      "Check manager, gameweek, chip, and reason.",
+    );
   }
 
   try {

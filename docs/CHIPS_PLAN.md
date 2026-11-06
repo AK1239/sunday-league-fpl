@@ -14,7 +14,7 @@
 1. **Four chips** — Triple Captain, Wildcard, Free Hit, Bench Boost — each usable **once per season**, **one chip per matchday**, activated **before the deadline**, recorded historically.
 2. **Chips are plays on a matchday, not new game modes.** A chip play is a fact (`manager_chip_plays`), validated and written **in the same transaction as the squad submission** (the existing `submitTeam` flow, evolved), so squad + captain + reserve + chip can never disagree.
 3. **Chip behaviour lives in a small code registry**, with **per-season availability rows in the database** (`season_chips`). Adding a chip next season = one registry entry + one config row; the scoring engine is not rewritten.
-4. **Scoring stays a deterministic pipeline** (extending the 6 stages from `TRANSFERS_PLAN` §4). Chips only change *which players' points count and how they are multiplied* (Triple Captain, Bench Boost), or *which squad is used / whether transfers are free* (Free Hit, Wildcard). **Chips never modify real-player points** (`point_ledger` is untouched).
+4. **Scoring stays a deterministic pipeline** (extending the 6 stages from `TRANSFERS_PLAN` §4). Chips only change _which players' points count and how they are multiplied_ (Triple Captain, Bench Boost), or _which squad is used / whether transfers are free_ (Free Hit, Wildcard). **Chips never modify real-player points** (`point_ledger` is untouched).
 5. **Free Hit never touches the permanent squad.** The temporary squad is a separate kind of squad row that the squad-lineage functions skip, so the original team returns automatically — including after admin corrections and recomputes. **This requires changing the lineage functions** (important finding in §1.2).
 6. **Bench Boost reserve: recommended "only when activated" (Option B).** The 6th player is chosen only when the manager plays the chip, stored on that matchday's snapshot (`fantasy_teams.reserve_player_id`), never permanent. This keeps the 5-player core, the transfer maths and the DB invariant (`exactly 5 players`) untouched. The reserve can **not** be captain/vice.
 7. **Transfer interaction (already half-built):** Wildcard and Free Hit make the window `unlimited` (no penalty). The free-transfer allowance for that matchday is **preserved** (`carry = base`), exactly what `computeBalanceChain` already does for `unlimited`. Triple Captain and Bench Boost do not touch transfers.
@@ -28,40 +28,41 @@
 
 ### 1.1 What exists today (relevant to chips)
 
-| Area | As built | Where |
-|---|---|---|
-| Squad snapshot | One row per `(manager, matchday)` in `fantasy_teams` (unique index) + exactly 5 rows in `fantasy_team_players`. `source` ∈ `manual / carry_over / admin`. `version` for optimistic concurrency. | `schema.ts`, `0008_transfers.sql` |
-| Player-count invariant | **Deferred constraint trigger** `fantasy_team_players_count_check` raises if a team does not have exactly 5 players at commit. | `0008_transfers.sql` |
-| Submit | `submitTeam`: one transaction — manager active → per-manager advisory lock → matchday `FOR UPDATE` → DB-time lock check → **next open matchday only** → idempotent replay (`pickEquals`) → version check → initial build *or* transfer validation → penalty acknowledgement → squad update in place → `syncManagerTransferMaterialisation`. | `domain/submit-team.ts` |
-| Transfer facts | `fantasy_transfers` (diff rows, `active/void`), `manager_transfer_windows` (**already has `chip_code` text and `unlimited` bool**), `manager_free_transfer_adjustments`. | `schema.ts` |
-| Balance chain | `computeBalanceChain`: `unlimited` ⇒ `extra = 0`, `carry = base_m` (allowance preserved). Cancelled matchdays skipped. | `fantasy/free-transfers.ts` |
-| Penalty | `deriveTransferPenalty` returns 0 when `unlimited`; `loadTransferPenaltiesForMatchday` reads windows + active transfer rows and **never writes**. | `domain/transfer-penalty.ts` |
-| Lineage | `resolveBaseSquadPlayerIds` and `resolveEffectiveTeam` use the **latest earlier `manual`/`admin` squad** as the base/carry-over. | `fantasy/transfer-base-squad.ts`, `fantasy/effective-team.ts` |
-| Scoring | `scoreManagers(rules, playerPoints, attended, teams, transferPenalties)`: multiplier player = captain if attended else vice if attended else none; `points = base × rules.captainMultiplier`; `squadPoints`, `transferPenalty`, `totalPoints`. | `scoring/manager-score.ts` |
-| Recompute | `rebuildManagerScoresFromMatchday` deletes and rebuilds lines/scores from matchday N forward, re-materialises `carry_over` squads, and **reads** transfer facts. | `domain/recompute-manager-scores.ts` |
-| Cancel | Voids transfers + windows and **deletes `manual`/`admin` squads for that matchday**, then recomputes. | `domain/cancel-matchday-transfers.ts`, `matchdays-admin.ts` |
-| Config | `scoring_rule_sets` (points, `captain_multiplier`, transfer rule columns), referenced by `seasons.rule_set_id`; transfers on from `transfers_start_matchday`. | `schema.ts` |
-| Admin | Transfers panel, rules form, corrections with `audit_log`. | `components/admin/admin-transfers-panel.tsx` |
+| Area                   | As built                                                                                                                                                                                                                                                                                                                                    | Where                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Squad snapshot         | One row per `(manager, matchday)` in `fantasy_teams` (unique index) + exactly 5 rows in `fantasy_team_players`. `source` ∈ `manual / carry_over / admin`. `version` for optimistic concurrency.                                                                                                                                             | `schema.ts`, `0008_transfers.sql`                             |
+| Player-count invariant | **Deferred constraint trigger** `fantasy_team_players_count_check` raises if a team does not have exactly 5 players at commit.                                                                                                                                                                                                              | `0008_transfers.sql`                                          |
+| Submit                 | `submitTeam`: one transaction — manager active → per-manager advisory lock → matchday `FOR UPDATE` → DB-time lock check → **next open matchday only** → idempotent replay (`pickEquals`) → version check → initial build _or_ transfer validation → penalty acknowledgement → squad update in place → `syncManagerTransferMaterialisation`. | `domain/submit-team.ts`                                       |
+| Transfer facts         | `fantasy_transfers` (diff rows, `active/void`), `manager_transfer_windows` (**already has `chip_code` text and `unlimited` bool**), `manager_free_transfer_adjustments`.                                                                                                                                                                    | `schema.ts`                                                   |
+| Balance chain          | `computeBalanceChain`: `unlimited` ⇒ `extra = 0`, `carry = base_m` (allowance preserved). Cancelled matchdays skipped.                                                                                                                                                                                                                      | `fantasy/free-transfers.ts`                                   |
+| Penalty                | `deriveTransferPenalty` returns 0 when `unlimited`; `loadTransferPenaltiesForMatchday` reads windows + active transfer rows and **never writes**.                                                                                                                                                                                           | `domain/transfer-penalty.ts`                                  |
+| Lineage                | `resolveBaseSquadPlayerIds` and `resolveEffectiveTeam` use the **latest earlier `manual`/`admin` squad** as the base/carry-over.                                                                                                                                                                                                            | `fantasy/transfer-base-squad.ts`, `fantasy/effective-team.ts` |
+| Scoring                | `scoreManagers(rules, playerPoints, attended, teams, transferPenalties)`: multiplier player = captain if attended else vice if attended else none; `points = base × rules.captainMultiplier`; `squadPoints`, `transferPenalty`, `totalPoints`.                                                                                              | `scoring/manager-score.ts`                                    |
+| Recompute              | `rebuildManagerScoresFromMatchday` deletes and rebuilds lines/scores from matchday N forward, re-materialises `carry_over` squads, and **reads** transfer facts.                                                                                                                                                                            | `domain/recompute-manager-scores.ts`                          |
+| Cancel                 | Voids transfers + windows and **deletes `manual`/`admin` squads for that matchday**, then recomputes.                                                                                                                                                                                                                                       | `domain/cancel-matchday-transfers.ts`, `matchdays-admin.ts`   |
+| Config                 | `scoring_rule_sets` (points, `captain_multiplier`, transfer rule columns), referenced by `seasons.rule_set_id`; transfers on from `transfers_start_matchday`.                                                                                                                                                                               | `schema.ts`                                                   |
+| Admin                  | Transfers panel, rules form, corrections with `audit_log`.                                                                                                                                                                                                                                                                                  | `components/admin/admin-transfers-panel.tsx`                  |
 
 ### 1.2 Findings / conflicts the chips design must resolve
 
-| # | Finding | Why it matters | Resolution |
-|---|---|---|---|
-| **K1** | **Free Hit would silently become permanent.** `resolveBaseSquadPlayerIds` / `resolveEffectiveTeam` / carry-over materialisation take the latest earlier `manual`/`admin` squad as the next base. A temporary squad saved as a normal row would become next week's base. | The most dangerous bug the feature could ship. | Add a squad **kind** (`permanent` / `free_hit`) and make every lineage function ignore `free_hit` rows (§7.2, §3.3). |
-| **K2** | **DB trigger forces exactly 5 players per team.** | A sixth (reserve) player cannot live in `fantasy_team_players` without relaxing a hard invariant used by transfers. | Store the reserve as a nullable column on `fantasy_teams`, keeping the table and trigger untouched (§7.2). |
-| **K3** | `pickEquals` (idempotent replay) compares squad + captain + vice only. | A chip-only change (e.g. Triple Captain) would be treated as a no-op replay and silently dropped. | Replay equality must include `chip`, `reserve`, and the squad kind. |
-| **K4** | `submitTeam` returns early for "no change" **before** version/penalty checks. | Same: chip changes must not short-circuit. | Evaluate the full desired state `{squad, captain, vice, reserve, chip}`. |
-| **K5** | Cancel deletes all `manual`/`admin` squads of the matchday. | Good for Free Hit (its row has `source='manual'`), but chip plays and reserve must also be voided/refunded. | Extend `voidTransferFactsForCancelledMatchday` to void chip plays (refund). |
-| **K6** | `manager_transfer_windows.chip_code` / `unlimited` already exist but nothing writes them. | Two representations of "this window has a chip" would drift. | The chip play is the **source of truth**; window `chip_code`/`unlimited` are written only by the single submit path from that play (§3.5). |
-| **K7** | Initial build is not a transfer window (no window row). | Wildcard/Free Hit are meaningless on the initial build (everything is already free; no permanent team to restore). | Chip legality rules (§3.2). |
-| **K8** | `scoreManagers` takes one global `captainMultiplier` from rules. | Triple Captain needs a per-manager multiplier. | Chip effects computed by a pure function and passed in; multiplier for the captain becomes `chipMultiplier ?? rules.captainMultiplier`. |
-| **K9** | `loadSubmittedTeamsForSeason` / `SubmittedFantasyTeam` carry no kind or reserve. | Lineage filter and scoring need them. | Add `kind` and `reservePlayerId` to the type and loader. |
+| #      | Finding                                                                                                                                                                                                                                                                 | Why it matters                                                                                                      | Resolution                                                                                                                                 |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **K1** | **Free Hit would silently become permanent.** `resolveBaseSquadPlayerIds` / `resolveEffectiveTeam` / carry-over materialisation take the latest earlier `manual`/`admin` squad as the next base. A temporary squad saved as a normal row would become next week's base. | The most dangerous bug the feature could ship.                                                                      | Add a squad **kind** (`permanent` / `free_hit`) and make every lineage function ignore `free_hit` rows (§7.2, §3.3).                       |
+| **K2** | **DB trigger forces exactly 5 players per team.**                                                                                                                                                                                                                       | A sixth (reserve) player cannot live in `fantasy_team_players` without relaxing a hard invariant used by transfers. | Store the reserve as a nullable column on `fantasy_teams`, keeping the table and trigger untouched (§7.2).                                 |
+| **K3** | `pickEquals` (idempotent replay) compares squad + captain + vice only.                                                                                                                                                                                                  | A chip-only change (e.g. Triple Captain) would be treated as a no-op replay and silently dropped.                   | Replay equality must include `chip`, `reserve`, and the squad kind.                                                                        |
+| **K4** | `submitTeam` returns early for "no change" **before** version/penalty checks.                                                                                                                                                                                           | Same: chip changes must not short-circuit.                                                                          | Evaluate the full desired state `{squad, captain, vice, reserve, chip}`.                                                                   |
+| **K5** | Cancel deletes all `manual`/`admin` squads of the matchday.                                                                                                                                                                                                             | Good for Free Hit (its row has `source='manual'`), but chip plays and reserve must also be voided/refunded.         | Extend `voidTransferFactsForCancelledMatchday` to void chip plays (refund).                                                                |
+| **K6** | `manager_transfer_windows.chip_code` / `unlimited` already exist but nothing writes them.                                                                                                                                                                               | Two representations of "this window has a chip" would drift.                                                        | The chip play is the **source of truth**; window `chip_code`/`unlimited` are written only by the single submit path from that play (§3.5). |
+| **K7** | Initial build is not a transfer window (no window row).                                                                                                                                                                                                                 | Wildcard/Free Hit are meaningless on the initial build (everything is already free; no permanent team to restore).  | Chip legality rules (§3.2).                                                                                                                |
+| **K8** | `scoreManagers` takes one global `captainMultiplier` from rules.                                                                                                                                                                                                        | Triple Captain needs a per-manager multiplier.                                                                      | Chip effects computed by a pure function and passed in; multiplier for the captain becomes `chipMultiplier ?? rules.captainMultiplier`.    |
+| **K9** | `loadSubmittedTeamsForSeason` / `SubmittedFantasyTeam` carry no kind or reserve.                                                                                                                                                                                        | Lineage filter and scoring need them.                                                                               | Add `kind` and `reservePlayerId` to the type and loader.                                                                                   |
 
 ---
 
 ## 2. Functional requirements (additions)
 
 ### Chips — general
+
 - **FR-C1** Four chips exist: **Triple Captain, Wildcard, Free Hit, Bench Boost**.
 - **FR-C2** Each chip can be played **once per season** per manager. A manager can play **at most one chip per matchday**.
 - **FR-C3** A chip can only be played, changed or cancelled **before the matchday deadline**, for the **next open matchday**, by an **active** manager. After the deadline everything about the chip is locked.
@@ -72,12 +73,14 @@
 - **FR-C8** Chips never alter real players' points, the player standings, or awards.
 
 ### Per chip
+
 - **FR-TC** Triple Captain: captain ×3 instead of ×2 (§3.4).
 - **FR-WC** Wildcard: unlimited free transfers that become the **permanent** squad (§3.3).
 - **FR-FH** Free Hit: temporary 5-player squad for one matchday; the permanent squad returns automatically (§3.3).
 - **FR-BB** Bench Boost: a 6th reserve player's points count for that matchday (§3.4).
 
 ### Admin
+
 - **FR-A1** View/inspect all chip plays; configure chips per season; void (refund) or force-activate with a reason; everything audited; nothing silently rewritten.
 
 ---
@@ -86,30 +89,32 @@
 
 ### 3.1 Common rules
 
-| Rule | Specification |
-|---|---|
-| Uses | One use per chip per season (DB-enforced for active plays). |
-| Per matchday | At most one **active** chip play per manager per matchday (DB-enforced). |
-| Deadline | DB time, same lock check as squads (`isSelectionOpen`). |
-| Target matchday | The **next open matchday** only (same as transfers). |
-| Not cancelled | Cancelled matchdays accept no plays; existing plays are voided and **refunded** (§6). |
-| Window mutability | While the matchday is open, a chip play is a **plan**: the manager can change or cancel it freely. After the deadline it is immutable except by an audited admin correction. |
-| Cancelling your own chip | Allowed until the deadline; the chip returns to "available". Squad changes made under the chip are re-validated under normal rules (§4.3). |
-| Visibility | Other managers see a manager's chip only **after the deadline** (same rule as teams). |
+| Rule                     | Specification                                                                                                                                                                |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Uses                     | One use per chip per season (DB-enforced for active plays).                                                                                                                  |
+| Per matchday             | At most one **active** chip play per manager per matchday (DB-enforced).                                                                                                     |
+| Deadline                 | DB time, same lock check as squads (`isSelectionOpen`).                                                                                                                      |
+| Target matchday          | The **next open matchday** only (same as transfers).                                                                                                                         |
+| Not cancelled            | Cancelled matchdays accept no plays; existing plays are voided and **refunded** (§6).                                                                                        |
+| Window mutability        | While the matchday is open, a chip play is a **plan**: the manager can change or cancel it freely. After the deadline it is immutable except by an audited admin correction. |
+| Cancelling your own chip | Allowed until the deadline; the chip returns to "available". Squad changes made under the chip are re-validated under normal rules (§4.3).                                   |
+| Visibility               | Other managers see a manager's chip only **after the deadline** (same rule as teams).                                                                                        |
 
 ### 3.2 Chip legality (server-side, in the submit transaction)
 
 A chip can be played only if **all** hold:
+
 1. The chip exists and is **enabled for this season** (`season_chips`) and the matchday number ≥ its `available_from_matchday` (default 1).
 2. The manager has **not already used** this chip this season (no other active play of this chip).
 3. The manager has **no other active chip** on this matchday.
-4. **Wildcard / Free Hit** additionally require that transfer rules **apply to this matchday** (`transfersStartMatchday` reached) **and** the manager already has a **base squad** (i.e. this is *not* their initial build). On the initial build everything is already free and there is nothing to rebuild or restore — playing either chip would be wasted, so the server rejects it (`CHIP_NOT_APPLICABLE`) and the UI shows "Available from your second squad".
+4. **Wildcard / Free Hit** additionally require that transfer rules **apply to this matchday** (`transfersStartMatchday` reached) **and** the manager already has a **base squad** (i.e. this is _not_ their initial build). On the initial build everything is already free and there is nothing to rebuild or restore — playing either chip would be wasted, so the server rejects it (`CHIP_NOT_APPLICABLE`) and the UI shows "Available from your second squad".
 5. **Bench Boost** requires a valid reserve (§3.4). **Free Hit** requires a valid temporary squad (§3.3).
 6. The desired chip state is consistent with the submitted squad (e.g. a reserve is present iff Bench Boost; a Free Hit squad kind iff Free Hit).
 
 ### 3.3 Squad-affecting chips
 
 #### Wildcard — permanent rebuild
+
 - The matchday's window becomes **`unlimited`**: any number of transfers, `extra = 0`, **no penalty**.
 - The submitted squad is saved as a **normal permanent squad** — it **becomes the base squad for the next matchday**. Wildcard is permanent; nothing is restored.
 - Transfer rows are still materialised (diff vs. base) so history can show "Wildcard: 4 changes".
@@ -117,6 +122,7 @@ A chip can be played only if **all** hold:
 - Zero transfers with a Wildcard is **allowed** (the server does not second-guess the manager) but the UI warns that the chip would be spent without changing the team.
 
 #### Free Hit — temporary team
+
 - The manager builds a **temporary 5-player squad** for this matchday only (any active players; validated like an initial build, not as transfers).
 - Stored as a `fantasy_teams` row with **`squad_kind = 'free_hit'`**. **The permanent squad for this matchday is simply not stored** — it is implied by the base squad.
 - **Lineage ignores `free_hit` rows** (K1). The next matchday's base squad is the latest earlier **permanent** squad, so the original team returns automatically — there is **no "restore" job and nothing to forget**.
@@ -129,12 +135,14 @@ A chip can be played only if **all** hold:
 ### 3.4 Score-affecting chips
 
 #### Triple Captain
+
 - Chip multiplier **3** (value snapshotted on the play from `season_chips.params`, default `{ "multiplier": 3 }`) replaces the normal captain multiplier for the **captain only**.
 - **Vice-captain fallback:** if the captain **did not attend**, the vice-captain takes over with the **normal** multiplier (`rules.captainMultiplier`, default 2) — as specified, the vice does **not** inherit ×3. The Triple Captain is then **wasted** (no refund). The UI warns about this risk at activation (D8).
 - If neither captain nor vice attended: no multiplier player; no bonus (chip wasted).
 - Example: captain has 12 base points → normal 24; Triple Captain 36 (`chip_bonus = +12`).
 
 #### Bench Boost
+
 - **Reserve selection (recommended Option B — see D1):** the manager picks one extra **active** player, **not** among their five, **only when playing the chip**. Stored on that matchday's snapshot as `fantasy_teams.reserve_player_id`. It is **never permanent**: it is not copied to carry-over squads and does not appear in the next matchday.
 - **Scoring:** the reserve's base points are counted **×1** in the matchday's squad points. The reserve is **not eligible** for captain/vice and never gets a multiplier (D2).
 - If the reserve **does not attend**, they score 0 and the chip is wasted (no refund); the UI warns the manager to pick a likely attendee, ideally showing expected points.
@@ -153,28 +161,28 @@ A chip can be played only if **all** hold:
 
 ### 4.1 Rules per chip
 
-| Chip | Transfers in that window | Penalty | Permanent squad | Free-transfer balance after the window |
-|---|---|---|---|---|
-| **Triple Captain** | Normal rules (free/extra as usual) | Normal | Normal | Normal (`carry = max(0, A − used)`) |
-| **Bench Boost** | Normal rules | Normal | Normal | Normal |
-| **Wildcard** | Unlimited, recorded as transfers | **0** | **Replaced permanently** | **Preserved:** `carry = base_m` |
-| **Free Hit** | None recorded (temporary squad ≠ transfers) | **0** | **Unchanged** (original returns) | **Preserved:** `carry = base_m` |
+| Chip               | Transfers in that window                    | Penalty | Permanent squad                  | Free-transfer balance after the window |
+| ------------------ | ------------------------------------------- | ------- | -------------------------------- | -------------------------------------- |
+| **Triple Captain** | Normal rules (free/extra as usual)          | Normal  | Normal                           | Normal (`carry = max(0, A − used)`)    |
+| **Bench Boost**    | Normal rules                                | Normal  | Normal                           | Normal                                 |
+| **Wildcard**       | Unlimited, recorded as transfers            | **0**   | **Replaced permanently**         | **Preserved:** `carry = base_m`        |
+| **Free Hit**       | None recorded (temporary squad ≠ transfers) | **0**   | **Unchanged** (original returns) | **Preserved:** `carry = base_m`        |
 
 `base_m = min(cap, carry_{m−1} + grant)` (existing definition). "Preserved" means the matchday behaves like a window in which the manager **saved everything**: they keep the bank they had **plus this matchday's grant**, capped at 3 by the existing `min(cap, …)`.
 
 ### 4.2 Anti-exploitation analysis
 
-| Attempted exploit | Why it fails |
-|---|---|
-| Play Wildcard, then keep unlimited changes by re-submitting | Chip play is **state, not an event**; one play per season; window is derived from it. |
-| Use Free Hit to pre-build a team and "carry" it into next week | Lineage ignores `free_hit` rows; next base = last permanent squad. |
-| Use Free Hit to dodge penalties on real transfers | Free Hit window records **no transfers**; any permanent change must happen in a different (non-Free-Hit) window under normal rules. |
-| Plan 4 transfers (−8), then switch to Wildcard before the deadline to erase the penalty | Allowed and **legitimate** — that is exactly what the chip is for, and it spends the Wildcard. |
-| Plan Wildcard rebuild, then cancel the chip to keep the free rebuild | Removing the chip is a **new full submission**: the server recomputes transfers vs. the base squad and requires `acknowledgedPenalty` (`PENALTY_NOT_CONFIRMED`). No free path. |
-| Stack chips (e.g. Free Hit + Triple Captain) | One active chip per matchday (DB partial unique index). |
-| Reuse a chip by deleting/recreating the play | Pre-deadline edits are plans; after the deadline the play is immutable; use count is derived from active plays. Admin refunds are audited. |
-| Abuse preserved allowance by chaining chips every week | Each chip is once per season; the cap of 3 bounds the bank. Worst case: a manager preserves a full bank across **two** chip matchdays — an intended, bounded benefit. |
-| Concurrent duplicate activation | Per-manager advisory lock + partial unique indexes (`(manager, matchday)` and `(manager, season, chip)` where active). |
+| Attempted exploit                                                                       | Why it fails                                                                                                                                                                   |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Play Wildcard, then keep unlimited changes by re-submitting                             | Chip play is **state, not an event**; one play per season; window is derived from it.                                                                                          |
+| Use Free Hit to pre-build a team and "carry" it into next week                          | Lineage ignores `free_hit` rows; next base = last permanent squad.                                                                                                             |
+| Use Free Hit to dodge penalties on real transfers                                       | Free Hit window records **no transfers**; any permanent change must happen in a different (non-Free-Hit) window under normal rules.                                            |
+| Plan 4 transfers (−8), then switch to Wildcard before the deadline to erase the penalty | Allowed and **legitimate** — that is exactly what the chip is for, and it spends the Wildcard.                                                                                 |
+| Plan Wildcard rebuild, then cancel the chip to keep the free rebuild                    | Removing the chip is a **new full submission**: the server recomputes transfers vs. the base squad and requires `acknowledgedPenalty` (`PENALTY_NOT_CONFIRMED`). No free path. |
+| Stack chips (e.g. Free Hit + Triple Captain)                                            | One active chip per matchday (DB partial unique index).                                                                                                                        |
+| Reuse a chip by deleting/recreating the play                                            | Pre-deadline edits are plans; after the deadline the play is immutable; use count is derived from active plays. Admin refunds are audited.                                     |
+| Abuse preserved allowance by chaining chips every week                                  | Each chip is once per season; the cap of 3 bounds the bank. Worst case: a manager preserves a full bank across **two** chip matchdays — an intended, bounded benefit.          |
+| Concurrent duplicate activation                                                         | Per-manager advisory lock + partial unique indexes (`(manager, matchday)` and `(manager, season, chip)` where active).                                                         |
 
 ### 4.3 Order of operations in the submit transaction
 
@@ -206,61 +214,61 @@ else:
 
 No code change to the maths is needed: this is already implemented. **Worked example** (grant 2, cap 3):
 
-| Matchday | Chip | `base` | Made | Extra | Carry out |
-|---|---|---:|---:|---:|---:|
-| 1 | — | 2 | 0 | 0 | 2 |
-| 2 | — | 3 | 2 | 0 | 1 |
-| 3 | **Wildcard** (5 changes) | 3 | 5 (recorded) | **0** | **3** *(= base)* |
-| 4 | — | 3 | 1 | 0 | 2 |
-| 5 | **Free Hit** | 3 | 0 (none recorded) | **0** | **3** *(= base)* |
-| 6 | — | 3 | 3 | 0 | 0 |
+| Matchday | Chip                     | `base` |              Made | Extra |        Carry out |
+| -------- | ------------------------ | -----: | ----------------: | ----: | ---------------: |
+| 1        | —                        |      2 |                 0 |     0 |                2 |
+| 2        | —                        |      3 |                 2 |     0 |                1 |
+| 3        | **Wildcard** (5 changes) |      3 |      5 (recorded) | **0** | **3** _(= base)_ |
+| 4        | —                        |      3 |                 1 |     0 |                2 |
+| 5        | **Free Hit**             |      3 | 0 (none recorded) | **0** | **3** _(= base)_ |
+| 6        | —                        |      3 |                 3 |     0 |                0 |
 
 ### 5.2 Deterministic calculation order (extends the 6 stages in `TRANSFERS_PLAN` §4)
 
-| Stage | What happens | Chip involvement |
-|---|---|---|
-| **1. Underlying points** | Sum of `point_ledger` per real player. **Never modified.** | None — chips cannot touch this. |
-| **2. Effective squad** | Matchday squad = the manager's snapshot for that matchday: **Free Hit squad** if Free Hit was played, otherwise the permanent squad (manual/admin/carry-over). | **Free Hit** selects which snapshot; **Bench Boost** adds the reserve. |
-| **3. Attendance** | Players with no attendance are flagged `attended = false`. | — |
-| **4. Multiplier player & value** | Captain if attended, else vice if attended, else none. Value: **captain** gets `chipMultiplier` (Triple Captain: 3) else `rules.captainMultiplier`; **vice fallback always** gets `rules.captainMultiplier`. | **Triple Captain** |
-| **5. Lines & squad subtotal** | Five starter lines: `points = base × multiplier`. **Reserve line** (role `reserve`): `points = base × 1` if Bench Boost, else `points = 0` (base still recorded for "what you missed"). `squad_points = Σ points`. | **Bench Boost** |
-| **6. Chip bonus (informational)** | `chip_bonus = squad_points − squad_points_without_chip` for Triple Captain / Bench Boost (recompute steps 4–5 with the chip disabled). `0` for Wildcard/Free Hit. | Display only |
-| **7. Transfer penalty** | `transfer_penalty` from the window + active transfer rows (`unlimited` ⇒ 0). | **Wildcard / Free Hit** zero it. |
-| **8. Total** | `total_points = squad_points + transfer_penalty` (existing DB `CHECK` keeps holding; chip effects are already inside `squad_points`). | — |
+| Stage                             | What happens                                                                                                                                                                                                       | Chip involvement                                                       |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| **1. Underlying points**          | Sum of `point_ledger` per real player. **Never modified.**                                                                                                                                                         | None — chips cannot touch this.                                        |
+| **2. Effective squad**            | Matchday squad = the manager's snapshot for that matchday: **Free Hit squad** if Free Hit was played, otherwise the permanent squad (manual/admin/carry-over).                                                     | **Free Hit** selects which snapshot; **Bench Boost** adds the reserve. |
+| **3. Attendance**                 | Players with no attendance are flagged `attended = false`.                                                                                                                                                         | —                                                                      |
+| **4. Multiplier player & value**  | Captain if attended, else vice if attended, else none. Value: **captain** gets `chipMultiplier` (Triple Captain: 3) else `rules.captainMultiplier`; **vice fallback always** gets `rules.captainMultiplier`.       | **Triple Captain**                                                     |
+| **5. Lines & squad subtotal**     | Five starter lines: `points = base × multiplier`. **Reserve line** (role `reserve`): `points = base × 1` if Bench Boost, else `points = 0` (base still recorded for "what you missed"). `squad_points = Σ points`. | **Bench Boost**                                                        |
+| **6. Chip bonus (informational)** | `chip_bonus = squad_points − squad_points_without_chip` for Triple Captain / Bench Boost (recompute steps 4–5 with the chip disabled). `0` for Wildcard/Free Hit.                                                  | Display only                                                           |
+| **7. Transfer penalty**           | `transfer_penalty` from the window + active transfer rows (`unlimited` ⇒ 0).                                                                                                                                       | **Wildcard / Free Hit** zero it.                                       |
+| **8. Total**                      | `total_points = squad_points + transfer_penalty` (existing DB `CHECK` keeps holding; chip effects are already inside `squad_points`).                                                                              | —                                                                      |
 
 **Reproducibility:** everything is derived from recorded facts — match events (`point_ledger`, attendance), squad snapshots (incl. kind, reserve), chip plays (with snapshotted `params`), transfer rows/windows. Recompute (`rebuildManagerScoresFromMatchday`) rebuilds lines/scores and **never writes** chip plays, transfer facts or windows; running it N times gives identical numbers. Chip bonus is recomputed, not stored as an input.
 
 ### 5.3 Edge cases in scoring
 
-| Scenario | Result |
-|---|---|
-| Triple Captain, captain attends, 12 base | `36` (+12 bonus) |
-| Triple Captain, captain absent, vice attends (8 base) | vice `16` (×2), captain `0`; Triple Captain wasted, `chip_bonus = 0` |
-| Triple Captain, captain and vice absent | no multiplier; `chip_bonus = 0` |
-| Bench Boost, reserve attends (6 base) | `+6` (×1), `chip_bonus = +6` |
-| Bench Boost, reserve absent | reserve line `0`, `chip_bonus = 0` |
-| Reserve is also a high scorer but not captain | still ×1 (D2) |
-| Wildcard with 4 changes at A = 2 | penalty `0` (would have been −8) |
-| Free Hit squad scored | uses Free Hit snapshot; permanent squad unaffected |
-| Admin corrects a goal | `point_ledger` changes ⇒ recompute ⇒ chip effects re-derived; penalties and plays unchanged |
+| Scenario                                              | Result                                                                                      |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Triple Captain, captain attends, 12 base              | `36` (+12 bonus)                                                                            |
+| Triple Captain, captain absent, vice attends (8 base) | vice `16` (×2), captain `0`; Triple Captain wasted, `chip_bonus = 0`                        |
+| Triple Captain, captain and vice absent               | no multiplier; `chip_bonus = 0`                                                             |
+| Bench Boost, reserve attends (6 base)                 | `+6` (×1), `chip_bonus = +6`                                                                |
+| Bench Boost, reserve absent                           | reserve line `0`, `chip_bonus = 0`                                                          |
+| Reserve is also a high scorer but not captain         | still ×1 (D2)                                                                               |
+| Wildcard with 4 changes at A = 2                      | penalty `0` (would have been −8)                                                            |
+| Free Hit squad scored                                 | uses Free Hit snapshot; permanent squad unaffected                                          |
+| Admin corrects a goal                                 | `point_ledger` changes ⇒ recompute ⇒ chip effects re-derived; penalties and plays unchanged |
 
 ---
 
 ## 6. Exceptional scenarios
 
-| Scenario | Rule |
-|---|---|
-| **Cancelled matchday (D5)** | In the same transaction as the cancel: chip play is **voided and refunded**, the Free Hit squad row is deleted (already covered: it is a `manual` squad of that matchday), the reserve disappears with the squad row, the window is voided (existing). Managers see "GW cancelled — your chip was refunded." If the matchday was already **published**, the cancel path recomputes scores and the chain forward (existing) and the admin sees the chip impact in the preview. |
-| **Postponed matchday** | Play stays attached to the matchday id; the (new) deadline applies. |
-| **Season rollover** | Availability derives from `season_chips` + plays **of that season**; a new season starts with all chips available. No chip state carries over. |
-| **Manager disabled/removed** | Cannot play chips; history remains; no recomputation of their past chip plays. |
-| **Real player unavailable after deadline** | No chip compensation. Triple Captain/Bench Boost wasted if the captain/reserve doesn't attend (existing no-auto-compensation principle). |
-| **Real player deactivated before the deadline** | Normal squad rules (retained inactive player allowed, can't be transferred in). Can't be chosen as Free Hit/Wildcard member or reserve. |
-| **Admin corrects match events after Free Hit** | Recompute uses the Free Hit snapshot for that matchday only; permanent lineage unaffected. Tested explicitly. |
-| **Admin corrects a Free Hit squad** | Admin override preserves `squad_kind` (cannot convert Free Hit ⇄ permanent silently). |
-| **Admin corrects a permanent squad before a Free Hit week** | Lineage recomputes; Free Hit snapshots are independent. |
-| **Manager joins mid-season** | Chips are available per rules (§3.2); Wildcard/Free Hit available from their first **transfer** window (second squad). |
-| **No squad submitted but chip played** | Triple Captain: allowed with carried squad. Others require their squad parts in the same submission. |
+| Scenario                                                    | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Cancelled matchday (D5)**                                 | In the same transaction as the cancel: chip play is **voided and refunded**, the Free Hit squad row is deleted (already covered: it is a `manual` squad of that matchday), the reserve disappears with the squad row, the window is voided (existing). Managers see "GW cancelled — your chip was refunded." If the matchday was already **published**, the cancel path recomputes scores and the chain forward (existing) and the admin sees the chip impact in the preview. |
+| **Postponed matchday**                                      | Play stays attached to the matchday id; the (new) deadline applies.                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **Season rollover**                                         | Availability derives from `season_chips` + plays **of that season**; a new season starts with all chips available. No chip state carries over.                                                                                                                                                                                                                                                                                                                                |
+| **Manager disabled/removed**                                | Cannot play chips; history remains; no recomputation of their past chip plays.                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Real player unavailable after deadline**                  | No chip compensation. Triple Captain/Bench Boost wasted if the captain/reserve doesn't attend (existing no-auto-compensation principle).                                                                                                                                                                                                                                                                                                                                      |
+| **Real player deactivated before the deadline**             | Normal squad rules (retained inactive player allowed, can't be transferred in). Can't be chosen as Free Hit/Wildcard member or reserve.                                                                                                                                                                                                                                                                                                                                       |
+| **Admin corrects match events after Free Hit**              | Recompute uses the Free Hit snapshot for that matchday only; permanent lineage unaffected. Tested explicitly.                                                                                                                                                                                                                                                                                                                                                                 |
+| **Admin corrects a Free Hit squad**                         | Admin override preserves `squad_kind` (cannot convert Free Hit ⇄ permanent silently).                                                                                                                                                                                                                                                                                                                                                                                         |
+| **Admin corrects a permanent squad before a Free Hit week** | Lineage recomputes; Free Hit snapshots are independent.                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Manager joins mid-season**                                | Chips are available per rules (§3.2); Wildcard/Free Hit available from their first **transfer** window (second squad).                                                                                                                                                                                                                                                                                                                                                        |
+| **No squad submitted but chip played**                      | Triple Captain: allowed with carried squad. Others require their squad parts in the same submission.                                                                                                                                                                                                                                                                                                                                                                          |
 
 ---
 
@@ -277,36 +285,39 @@ No code change to the maths is needed: this is already implemented. **Worked exa
 ### 7.2 New and changed tables
 
 **`season_chips`** (new)
-| Column | Type | Notes |
-|---|---|---|
-| `season_id` | uuid fk → seasons | PK part |
-| `chip_code` | text | PK part (`triple_captain`, `wildcard`, `free_hit`, `bench_boost`); validated against the registry in app code |
-| `enabled` | boolean default true | |
-| `available_from_matchday` | integer default 1 | optional timing restriction (D4) |
-| `params` | jsonb default `{}` | e.g. `{"multiplier":3}` for Triple Captain |
-| `created_at` | timestamptz | |
+
+| Column                    | Type                 | Notes                                                                                                         |
+| ------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `season_id`               | uuid fk → seasons    | PK part                                                                                                       |
+| `chip_code`               | text                 | PK part (`triple_captain`, `wildcard`, `free_hit`, `bench_boost`); validated against the registry in app code |
+| `enabled`                 | boolean default true |                                                                                                               |
+| `available_from_matchday` | integer default 1    | optional timing restriction (D4)                                                                              |
+| `params`                  | jsonb default `{}`   | e.g. `{"multiplier":3}` for Triple Captain                                                                    |
+| `created_at`              | timestamptz          |                                                                                                               |
 
 Editable only before the season's first locked matchday (mirrors rule-set immutability).
 
 **`manager_chip_plays`** (new — the chip fact)
-| Column | Type | Notes |
-|---|---|---|
-| `id` | uuid pk | |
-| `season_id`, `manager_id`, `matchday_id` | uuid fk | `manager_id` cascade like squads |
-| `chip_code` | text | **FK `(season_id, chip_code)` → `season_chips`** |
-| `status` | enum `active \| void` | `void` for refunds/cancellations/admin reversals |
-| `source` | enum `manager \| admin` | admin force-activate |
-| `params` | jsonb | **snapshot** of chip parameters at activation (reproducible history) |
-| `activated_at` | timestamptz | |
-| `voided_at`, `void_reason`, `voided_by` | | audit trail; `CHECK` that void fields are set iff `status='void'` |
+
+| Column                                   | Type                    | Notes                                                                |
+| ---------------------------------------- | ----------------------- | -------------------------------------------------------------------- |
+| `id`                                     | uuid pk                 |                                                                      |
+| `season_id`, `manager_id`, `matchday_id` | uuid fk                 | `manager_id` cascade like squads                                     |
+| `chip_code`                              | text                    | **FK `(season_id, chip_code)` → `season_chips`**                     |
+| `status`                                 | enum `active \| void`   | `void` for refunds/cancellations/admin reversals                     |
+| `source`                                 | enum `manager \| admin` | admin force-activate                                                 |
+| `params`                                 | jsonb                   | **snapshot** of chip parameters at activation (reproducible history) |
+| `activated_at`                           | timestamptz             |                                                                      |
+| `voided_at`, `void_reason`, `voided_by`  |                         | audit trail; `CHECK` that void fields are set iff `status='void'`    |
 
 Constraints: **partial unique** `(manager_id, matchday_id) WHERE status='active'` (one chip per matchday); **partial unique** `(manager_id, season_id, chip_code) WHERE status='active'` (once per season). While the matchday is open, an active play may be deleted/replaced by the submit service (it is a plan); after the deadline it is immutable except via the admin path.
 
 **`fantasy_teams`** (changed — additive)
-| Column | Type | Notes |
-|---|---|---|
-| `squad_kind` | enum `permanent \| free_hit`, default `permanent` | **Existing unique `(manager_id, matchday_id)` stays**: a Free Hit matchday has only the temporary row (the permanent squad is implied by lineage) |
-| `reserve_player_id` | uuid null fk → players | Bench Boost only; `CHECK (reserve_player_id IS NULL OR (reserve_player_id <> captain_player_id AND reserve_player_id <> vice_captain_player_id))`; a small **deferred trigger** asserts the reserve is not among the 5 players and is null unless a Bench Boost play is active for that row |
+
+| Column              | Type                                              | Notes                                                                                                                                                                                                                                                                                       |
+| ------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `squad_kind`        | enum `permanent \| free_hit`, default `permanent` | **Existing unique `(manager_id, matchday_id)` stays**: a Free Hit matchday has only the temporary row (the permanent squad is implied by lineage)                                                                                                                                           |
+| `reserve_player_id` | uuid null fk → players                            | Bench Boost only; `CHECK (reserve_player_id IS NULL OR (reserve_player_id <> captain_player_id AND reserve_player_id <> vice_captain_player_id))`; a small **deferred trigger** asserts the reserve is not among the 5 players and is null unless a Bench Boost play is active for that row |
 
 `fantasy_team_players` and its **exactly-5 trigger are unchanged** (K2).
 
@@ -321,8 +332,9 @@ Constraints: **partial unique** `(manager_id, matchday_id) WHERE status='active'
 ### 7.3 Lineage changes (K1/K9) — code, not schema
 
 `SubmittedFantasyTeam` gains `kind` and `reservePlayerId`. The following **must ignore `free_hit` rows when looking for the "latest earlier squad"**:
+
 - `resolveBaseSquadPlayerIds`, `hasPriorSubmittedSquadInSeason` (`transfer-base-squad.ts`)
-- the *prior manual* search in `resolveEffectiveTeam` and the carry-over materialisation in `recompute-manager-scores.ts`
+- the _prior manual_ search in `resolveEffectiveTeam` and the carry-over materialisation in `recompute-manager-scores.ts`
 - `getManagerFantasyTeamForViewer` / `loadSubmittedTeamsForSeason` consumers for the pick screen
 - admin transfer correction (`admin-transfers.ts`) base resolution
 
@@ -353,15 +365,15 @@ erDiagram
 
 ### 7.5 Historical reconstruction
 
-| Question | Source |
-|---|---|
-| Which chip did a manager play, when, by whom? | `manager_chip_plays` (`activated_at`, `source`, `voided_*`) |
-| With which parameters? | `manager_chip_plays.params` (snapshot) |
+| Question                                            | Source                                                                       |
+| --------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Which chip did a manager play, when, by whom?       | `manager_chip_plays` (`activated_at`, `source`, `voided_*`)                  |
+| With which parameters?                              | `manager_chip_plays.params` (snapshot)                                       |
 | Which five (or temporary five) + reserve + captain? | `fantasy_teams` (`squad_kind`, `reserve_player_id`) + `fantasy_team_players` |
-| Permanent squad during a Free Hit week? | Lineage: latest earlier permanent squad |
-| Transfers/penalty that week? | `fantasy_transfers`, `manager_transfer_windows` |
-| What did the chip add? | `manager_matchday_scores.chip_bonus`, lines with `multiplier`/role `reserve` |
-| Corrections? | `audit_log` + void markers |
+| Permanent squad during a Free Hit week?             | Lineage: latest earlier permanent squad                                      |
+| Transfers/penalty that week?                        | `fantasy_transfers`, `manager_transfer_windows`                              |
+| What did the chip add?                              | `manager_matchday_scores.chip_bonus`, lines with `multiplier`/role `reserve` |
+| Corrections?                                        | `audit_log` + void markers                                                   |
 
 ### 7.6 Integrity safeguards
 
@@ -375,26 +387,30 @@ erDiagram
 ## 8. UI / UX (mobile-first)
 
 ### 8.1 Chips hub
-- Entry points: a **Chips** tab beside *Team / History* on the Transfers screen, and a compact chip strip on **My Team**.
+
+- Entry points: a **Chips** tab beside _Team / History_ on the Transfers screen, and a compact chip strip on **My Team**.
 - **Chip cards** (2×2 on mobile): icon, name, one-line effect, **status**:
   - **Available** (lime), **Active · GW n** (gold, glowing), **Used · GW n** (muted, with the gameweek), **Unavailable** + reason ("Available from your second squad", "Not enabled this season", "Deadline passed").
 - Header shows the **deadline countdown** and "1 chip per gameweek" hint.
 
 ### 8.2 Activation flow (prevents accidents)
-1. Tap a chip → **right-hand drawer** (existing `Drawer`; full-screen on phones) with: *What it does* (3 bullets), a **Permanent / This gameweek only** pill, **Transfer implications**, **Risks** (e.g. "If your captain doesn't play, Triple Captain is lost"), and "Can't be undone after the deadline / once per season".
+
+1. Tap a chip → **right-hand drawer** (existing `Drawer`; full-screen on phones) with: _What it does_ (3 bullets), a **Permanent / This gameweek only** pill, **Transfer implications**, **Risks** (e.g. "If your captain doesn't play, Triple Captain is lost"), and "Can't be undone after the deadline / once per season".
 2. **Triple Captain** (no squad change): confirm step with a **press-and-hold (~1s)** button or a required checkbox → submits immediately.
-3. **Wildcard / Free Hit / Bench Boost**: "Continue" enters the **Transfers screen in chip mode** (banner + tailored behaviour below); the chip is only *committed* by the normal **Review → Confirm** sheet, which restates the effect and requires the explicit acknowledgement.
+3. **Wildcard / Free Hit / Bench Boost**: "Continue" enters the **Transfers screen in chip mode** (banner + tailored behaviour below); the chip is only _committed_ by the normal **Review → Confirm** sheet, which restates the effect and requires the explicit acknowledgement.
 4. A chip can be **cancelled** from the active-chip banner until the deadline.
 
 ### 8.3 Chip-specific treatments
-| Chip | Team screen |
-|---|---|
-| **Triple Captain** | Captain gets a gold ring + **×3** badge (replaces ×2); preview of "up to +X". |
-| **Wildcard** | Banner: "Wildcard active — changes are free and **permanent**". Summary strip shows "Free (Wildcard)", penalty hidden. Player picker shows no cost banner. |
-| **Free Hit** | Pitch tinted/labelled **Free Hit**; banner "Your original team returns after this gameweek"; a collapsible "Your team" strip shows the permanent squad. Builds from the base squad as a starting point. |
-| **Bench Boost** | A dashed **"Reserve — counts this gameweek"** slot under the pitch; reserve picker shows expected points; clear note that the reserve cannot be captain/vice. |
+
+| Chip               | Team screen                                                                                                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Triple Captain** | Captain gets a gold ring + **×3** badge (replaces ×2); preview of "up to +X".                                                                                                                           |
+| **Wildcard**       | Banner: "Wildcard active — changes are free and **permanent**". Summary strip shows "Free (Wildcard)", penalty hidden. Player picker shows no cost banner.                                              |
+| **Free Hit**       | Pitch tinted/labelled **Free Hit**; banner "Your original team returns after this gameweek"; a collapsible "Your team" strip shows the permanent squad. Builds from the base squad as a starting point. |
+| **Bench Boost**    | A dashed **"Reserve — counts this gameweek"** slot under the pitch; reserve picker shows expected points; clear note that the reserve cannot be captain/vice.                                           |
 
 ### 8.4 Elsewhere
+
 - **My Points / gameweek card:** chip badge in the header; breakdown row "Triple Captain +12" / "Bench Boost +6"; reserve shown as a bench card (greyed with "would have scored N" when no chip).
 - **Public manager profile:** chip badge per gameweek, visible after the deadline.
 - Accessibility: chip state is text + icon (not colour alone), live-region announcements on activate/cancel, ≥44px targets, reduced-motion respected.
@@ -416,32 +432,36 @@ erDiagram
 Next.js server actions + domain services; **no new infrastructure**.
 
 ### 10.1 Pure modules (unit-tested, no DB)
-| Module | Responsibility |
-|---|---|
-| `chips/registry.ts` | chip metadata + behaviour descriptors (code, permanence, requires-reserve/temporary-squad, params schema) |
-| `chips/validate-chip.ts` | legality rules §3.2 (uses, one per matchday, applicability, deadline inputs) |
-| `scoring/chip-effects.ts` | pure functions: multiplier policy (TC, vice fallback), reserve inclusion, chip bonus counterfactual |
-| `scoring/manager-score.ts` (extended) | accepts per-manager `ChipEffect`; adds reserve lines, `chipBonus`, `chipCode` |
-| `fantasy/transfer-base-squad.ts`, `effective-team.ts` (extended) | **permanent-only lineage** (K1) |
-| `fantasy/free-transfers.ts` | **unchanged** (already supports `unlimited`) — new fixtures only |
+
+| Module                                                           | Responsibility                                                                                            |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `chips/registry.ts`                                              | chip metadata + behaviour descriptors (code, permanence, requires-reserve/temporary-squad, params schema) |
+| `chips/validate-chip.ts`                                         | legality rules §3.2 (uses, one per matchday, applicability, deadline inputs)                              |
+| `scoring/chip-effects.ts`                                        | pure functions: multiplier policy (TC, vice fallback), reserve inclusion, chip bonus counterfactual       |
+| `scoring/manager-score.ts` (extended)                            | accepts per-manager `ChipEffect`; adds reserve lines, `chipBonus`, `chipCode`                             |
+| `fantasy/transfer-base-squad.ts`, `effective-team.ts` (extended) | **permanent-only lineage** (K1)                                                                           |
+| `fantasy/free-transfers.ts`                                      | **unchanged** (already supports `unlimited`) — new fixtures only                                          |
 
 ### 10.2 Services
-| Service | Notes |
-|---|---|
+
+| Service                                                    | Notes                                                                                                                                                                                                                                    |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `domain/submit-team.ts` (evolved → "submit matchday plan") | Same transaction/lock order; desired state includes `chip`, `reservePlayerId`; writes squad kind/reserve/plays/windows atomically; replay equality extended (K3/K4). `submitTeamAction` stays backward-compatible (new fields optional). |
-| `domain/chip-plays.ts` | read/write helpers used **only** inside the submit tx and admin paths; maintains window mirrors. |
-| `domain/cancel-matchday-transfers.ts` (extended) | voids/refunds chip plays. |
-| `domain/recompute-manager-scores.ts` (extended) | loads plays + squad kind/reserve; passes `ChipEffect`; writes `chip_code`/`chip_bonus`. |
-| `domain/admin-chips.ts` | void/force-activate with audit; impact preview via recompute dry-run; season chip config. |
-| `queries/chip-page-data.ts` | chip statuses for the UI (derived inventory). |
+| `domain/chip-plays.ts`                                     | read/write helpers used **only** inside the submit tx and admin paths; maintains window mirrors.                                                                                                                                         |
+| `domain/cancel-matchday-transfers.ts` (extended)           | voids/refunds chip plays.                                                                                                                                                                                                                |
+| `domain/recompute-manager-scores.ts` (extended)            | loads plays + squad kind/reserve; passes `ChipEffect`; writes `chip_code`/`chip_bonus`.                                                                                                                                                  |
+| `domain/admin-chips.ts`                                    | void/force-activate with audit; impact preview via recompute dry-run; season chip config.                                                                                                                                                |
+| `queries/chip-page-data.ts`                                | chip statuses for the UI (derived inventory).                                                                                                                                                                                            |
 
 ### 10.3 Server actions
+
 **Manager:** `getChipsPageData(matchdayId?)`; `submitTeamAction(matchdayId, { playerIds, captain, vice, reservePlayerId?, chip?, expectedVersion, acknowledgedPenalty })` (single entry point for squads **and** chips).
 **Admin:** `listChipUsageAction`, `getManagerChipHistoryAction`, `voidChipPlayAction(playId, reason)`, `forceActivateChipAction(managerId, matchdayId, chip, reason)`, `updateSeasonChipsAction(seasonId, rows)`.
 
 **Error codes (new):** `CHIP_UNKNOWN`, `CHIP_NOT_ENABLED`, `CHIP_ALREADY_USED`, `CHIP_MATCHDAY_TAKEN`, `CHIP_NOT_APPLICABLE`, `CHIP_RESERVE_REQUIRED`, `CHIP_RESERVE_INVALID`, plus existing `LOCKED`, `CANCELLED`, `CONFLICT`, `PENALTY_NOT_CONFIRMED`.
 
 ### 10.4 Concurrency & idempotency
+
 - Same per-manager advisory lock (`manager:season`) already used by `submitTeam` serialises double-taps and two tabs; matchday row lock serialises with admin cancel/publish.
 - Chip activation is **set-state** ("desired chip = X"), so repeating a request is a no-op; the two partial unique indexes are the backstop against races or bugs.
 - DB time for the deadline; failures roll back everything (squad, reserve, play, window).
@@ -461,6 +481,7 @@ Next.js server actions + domain services; **no new infrastructure**.
 ## 12. Test plan
 
 ### 12.1 Unit (no DB)
+
 - **Chip legality:** two chips one matchday; reuse of a used chip; disabled chip; `available_from`; Wildcard/Free Hit on initial build or without transfer mode (`CHIP_NOT_APPLICABLE`); Bench Boost without/invalid reserve; reserve ∈ five, = captain/vice, inactive.
 - **Chip effects:** Triple Captain ×3; **captain absent → vice ×2 (not ×3)**; both absent; Bench Boost reserve present/absent; chip bonus counterfactual; reserve never gets a multiplier.
 - **Balance chain fixtures** for Wildcard/Free Hit (§5.1 table), cancelled matchday skipped, adjustments.
@@ -468,6 +489,7 @@ Next.js server actions + domain services; **no new infrastructure**.
 - Scoring pipeline order and totals with penalties + chips; negative totals.
 
 ### 12.2 Integration (isolated `fantasy_test` DB)
+
 - Activate each chip happy path; **duplicate request** (replay) and **concurrent** activation (`Promise.all`) → one play, one consumption.
 - Two chips on one matchday rejected; reuse rejected; after-deadline activation rejected (DB-time boundary).
 - **Wildcard** with 0, 1 and several transfers: no penalty; becomes permanent base next matchday; free-transfer carry = base.
@@ -481,6 +503,7 @@ Next.js server actions + domain services; **no new infrastructure**.
 - Migration with chips disabled: all existing integration tests still pass.
 
 ### 12.3 End-to-end (Playwright, mobile viewport)
+
 - Chips tab shows correct statuses; Triple Captain flow with hold-to-confirm; Wildcard flow (free changes, permanent banner); Free Hit flow (banner, "your team returns" strip, next gameweek shows original); Bench Boost reserve flow; cancel chip before deadline; locked state after deadline; a11y (axe) on chips drawer and banners.
 
 ---
@@ -505,22 +528,24 @@ Next.js server actions + domain services; **no new infrastructure**.
 ## 14. Implementation sequence and to-do list
 
 ### Dependencies
+
 Transfers (migration `0008`, `submit-team`, balance chain, windows) are **already shipped** and are prerequisites. Free Hit lineage (K1) must land **before** any chip UI.
 
-| Phase | Work | Depends on |
-|---|---|---|
-| **0** | Approve decisions D1–D12 (§15). | — |
-| **1** | Pure domain: registry, `validate-chip`, `chip-effects`, scoring extension, **permanent-only lineage** + unit tests (incl. §5.1 fixtures). No DB. | 0 |
-| **2** | Migration `0009_chips.sql` + Drizzle schema; reserve/kind constraints and triggers. | 1 |
-| **3** | Lineage + `SubmittedFantasyTeam` (kind/reserve) wired through loaders, recompute, carry-over, admin base resolution. **Gate:** all existing tests green. | 2 |
-| **4** | Scoring/recompute: read plays, write `chip_code`/`chip_bonus`, reserve lines; Triple Captain + Bench Boost **backend-only** end to end. | 3 |
-| **5** | Submit service: chip legality, Wildcard/Free Hit paths, window mirrors, extended replay; concurrency/atomicity tests. | 3–4 |
-| **6** | Lifecycle: cancel/refund, postpone, disabled managers, season rollover, enable-chips admin action. | 5 |
-| **7** | Manager UI: Chips tab + drawer, hold-to-confirm, active-chip banner, TC/WC/FH/BB treatments, points/profile badges. | 5–6 |
-| **8** | Admin: usage table, season config, void/force-activate with audit, scoring-inspector chip stages. | 5–6 |
-| **9** | E2E + a11y, docs (`TRANSFERS_ENABLE.md`, README link), enable on the live season from a chosen matchday. | all |
+| Phase | Work                                                                                                                                                     | Depends on |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **0** | Approve decisions D1–D12 (§15).                                                                                                                          | —          |
+| **1** | Pure domain: registry, `validate-chip`, `chip-effects`, scoring extension, **permanent-only lineage** + unit tests (incl. §5.1 fixtures). No DB.         | 0          |
+| **2** | Migration `0009_chips.sql` + Drizzle schema; reserve/kind constraints and triggers.                                                                      | 1          |
+| **3** | Lineage + `SubmittedFantasyTeam` (kind/reserve) wired through loaders, recompute, carry-over, admin base resolution. **Gate:** all existing tests green. | 2          |
+| **4** | Scoring/recompute: read plays, write `chip_code`/`chip_bonus`, reserve lines; Triple Captain + Bench Boost **backend-only** end to end.                  | 3          |
+| **5** | Submit service: chip legality, Wildcard/Free Hit paths, window mirrors, extended replay; concurrency/atomicity tests.                                    | 3–4        |
+| **6** | Lifecycle: cancel/refund, postpone, disabled managers, season rollover, enable-chips admin action.                                                       | 5          |
+| **7** | Manager UI: Chips tab + drawer, hold-to-confirm, active-chip banner, TC/WC/FH/BB treatments, points/profile badges.                                      | 5–6        |
+| **8** | Admin: usage table, season config, void/force-activate with audit, scoring-inspector chip stages.                                                        | 5–6        |
+| **9** | E2E + a11y, docs (`TRANSFERS_ENABLE.md`, README link), enable on the live season from a chosen matchday.                                                 | all        |
 
 ### To-do
+
 - [x] Approve D1–D12 (recommended defaults in §15)
 - [x] Phase 1: registry, chip legality, chip-effects, scoring extension, permanent-only lineage (+ tests)
 - [x] Phase 2: `0009_chips.sql`, schema, constraints, reserve trigger
@@ -538,20 +563,20 @@ Transfers (migration `0008`, `submit-team`, balance chain, windows) are **alread
 
 Each has a recommended default and the trade-off. Nothing is built until you confirm.
 
-| # | Decision | Recommended default | Trade-offs / alternatives |
-|---|---|---|---|
-| **D1** | **Bench Boost reserve:** must managers keep a 6th player every matchday? | **No — pick the reserve only when activating Bench Boost (Option B), per matchday, stored on that snapshot.** | *A (maintain every week)* mirrors FPL and allows pre-planning, but it changes the core model: 6-player squads, a bench move ≠ transfer?, penalties for bench changes, the exactly-5 DB trigger, base-squad diff, double the UI — all for a chip played once a season. *B* keeps the 5-player game untouched; cost = choosing the reserve at activation time (a small extra step in the flow). |
-| **D2** | **Reserve and captaincy:** can the reserve be captain/vice or get a multiplier? | **No** — reserve is ×1, not captain/vice-eligible. | Eligible would break "captain must be one of the five", complicates vice fallback and makes Triple Captain × Bench Boost ambiguous (they can't combine anyway). Your stated preference is also "no". |
-| **D3** | **Free-transfer rollover with Wildcard / Free Hit.** | **Preserve:** `carry = base_m` (that matchday's allowance and grant are kept, capped at 3) — already how `computeBalanceChain` treats `unlimited`. | *Consume* (carry 0) would punish chips and discourage use; *no grant that week* is stricter but adds a special case. Preserved is consistent, simple, bounded by the cap and one use per chip. |
-| **D4** | **Chips available from the first matchday?** | **Triple Captain / Bench Boost from GW1; Wildcard / Free Hit only when transfer rules apply and the manager already has a base squad** (so not on the initial build). Per-chip `available_from_matchday` is configurable per season. | Delaying all chips (e.g. from GW3) lets people learn first but adds a rule; Wildcard/Free Hit on the initial build would just waste the chip. |
-| **D5** | **Matchday cancelled after a chip was activated.** | **Auto-void and refund** (consistent with transfers: no penalty, nothing consumed); Free Hit squad/reserve removed. | Not refunding is unfair (the chip had no chance to score). Only edge: a cancel *after kickoff* — still refund (matchday never completed). |
-| **D6** | **Admin reversal of an activation.** | **Yes — before the deadline *and* after (with reason, audit, recompute + impact preview).** Managers can also cancel their own chip until the deadline. | Restricting admin to pre-deadline would leave genuine mistakes (e.g. app bug) uncorrectable. |
-| **D7** | **Per-season chip configuration.** | **Yes — `season_chips` rows per season** (enable/disable, timing, params), copy-forward from the previous season, locked once the season has a locked matchday. | A global config is simpler but prevents trying new chips or tuning next season. |
-| **D8** | **Triple Captain when the captain doesn't attend.** | **Chip is wasted; vice gets the normal ×2** (as you specified). UI warns clearly. | Alternatives: refund the chip, or let the vice inherit ×3. Refund adds post-hoc state changes and complexity; vice-×3 contradicts your rule. |
-| **D9** | **Bench Boost reserve doesn't attend.** | **Chip is wasted (reserve scores 0), no refund**; UI nudges the manager toward likely attendees using expected points. | Auto-refund again adds after-the-fact state changes. |
-| **D10** | **Wildcard with zero changes / Free Hit with an identical team.** | **Allowed**, with a strong warning in the confirm step. | Blocking is paternalistic and hard to define for Free Hit; the confirm step already protects against accidents. |
-| **D11** | **Visibility of other managers' chips.** | **After the deadline** (same as teams) — shown as a badge on their gameweek. | Hiding chips permanently loses the social/fun aspect; showing pre-deadline leaks strategy. |
-| **D12** | **Free Hit + captaincy.** | The Free Hit squad has its own captain/vice; the permanent squad's captaincy returns next week. | Reusing the permanent captain forces a bad choice if the captain isn't in the temporary squad. |
+| #       | Decision                                                                        | Recommended default                                                                                                                                                                                                                  | Trade-offs / alternatives                                                                                                                                                                                                                                                                                                                                                                     |
+| ------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D1**  | **Bench Boost reserve:** must managers keep a 6th player every matchday?        | **No — pick the reserve only when activating Bench Boost (Option B), per matchday, stored on that snapshot.**                                                                                                                        | _A (maintain every week)_ mirrors FPL and allows pre-planning, but it changes the core model: 6-player squads, a bench move ≠ transfer?, penalties for bench changes, the exactly-5 DB trigger, base-squad diff, double the UI — all for a chip played once a season. _B_ keeps the 5-player game untouched; cost = choosing the reserve at activation time (a small extra step in the flow). |
+| **D2**  | **Reserve and captaincy:** can the reserve be captain/vice or get a multiplier? | **No** — reserve is ×1, not captain/vice-eligible.                                                                                                                                                                                   | Eligible would break "captain must be one of the five", complicates vice fallback and makes Triple Captain × Bench Boost ambiguous (they can't combine anyway). Your stated preference is also "no".                                                                                                                                                                                          |
+| **D3**  | **Free-transfer rollover with Wildcard / Free Hit.**                            | **Preserve:** `carry = base_m` (that matchday's allowance and grant are kept, capped at 3) — already how `computeBalanceChain` treats `unlimited`.                                                                                   | _Consume_ (carry 0) would punish chips and discourage use; _no grant that week_ is stricter but adds a special case. Preserved is consistent, simple, bounded by the cap and one use per chip.                                                                                                                                                                                                |
+| **D4**  | **Chips available from the first matchday?**                                    | **Triple Captain / Bench Boost from GW1; Wildcard / Free Hit only when transfer rules apply and the manager already has a base squad** (so not on the initial build). Per-chip `available_from_matchday` is configurable per season. | Delaying all chips (e.g. from GW3) lets people learn first but adds a rule; Wildcard/Free Hit on the initial build would just waste the chip.                                                                                                                                                                                                                                                 |
+| **D5**  | **Matchday cancelled after a chip was activated.**                              | **Auto-void and refund** (consistent with transfers: no penalty, nothing consumed); Free Hit squad/reserve removed.                                                                                                                  | Not refunding is unfair (the chip had no chance to score). Only edge: a cancel _after kickoff_ — still refund (matchday never completed).                                                                                                                                                                                                                                                     |
+| **D6**  | **Admin reversal of an activation.**                                            | **Yes — before the deadline _and_ after (with reason, audit, recompute + impact preview).** Managers can also cancel their own chip until the deadline.                                                                              | Restricting admin to pre-deadline would leave genuine mistakes (e.g. app bug) uncorrectable.                                                                                                                                                                                                                                                                                                  |
+| **D7**  | **Per-season chip configuration.**                                              | **Yes — `season_chips` rows per season** (enable/disable, timing, params), copy-forward from the previous season, locked once the season has a locked matchday.                                                                      | A global config is simpler but prevents trying new chips or tuning next season.                                                                                                                                                                                                                                                                                                               |
+| **D8**  | **Triple Captain when the captain doesn't attend.**                             | **Chip is wasted; vice gets the normal ×2** (as you specified). UI warns clearly.                                                                                                                                                    | Alternatives: refund the chip, or let the vice inherit ×3. Refund adds post-hoc state changes and complexity; vice-×3 contradicts your rule.                                                                                                                                                                                                                                                  |
+| **D9**  | **Bench Boost reserve doesn't attend.**                                         | **Chip is wasted (reserve scores 0), no refund**; UI nudges the manager toward likely attendees using expected points.                                                                                                               | Auto-refund again adds after-the-fact state changes.                                                                                                                                                                                                                                                                                                                                          |
+| **D10** | **Wildcard with zero changes / Free Hit with an identical team.**               | **Allowed**, with a strong warning in the confirm step.                                                                                                                                                                              | Blocking is paternalistic and hard to define for Free Hit; the confirm step already protects against accidents.                                                                                                                                                                                                                                                                               |
+| **D11** | **Visibility of other managers' chips.**                                        | **After the deadline** (same as teams) — shown as a badge on their gameweek.                                                                                                                                                         | Hiding chips permanently loses the social/fun aspect; showing pre-deadline leaks strategy.                                                                                                                                                                                                                                                                                                    |
+| **D12** | **Free Hit + captaincy.**                                                       | The Free Hit squad has its own captain/vice; the permanent squad's captaincy returns next week.                                                                                                                                      | Reusing the permanent captain forces a bad choice if the captain isn't in the temporary squad.                                                                                                                                                                                                                                                                                                |
 
 ---
 

@@ -111,11 +111,7 @@ export function PlayerPointsModal({
       title={slot.displayName}
       description={`${roleLabel(slot.role)} · Gameweek ${gameweek}`}
       leading={
-        <PlayerShirt
-          name={slot.displayName}
-          kitKey={slot.kitKey}
-          size="lg"
-        />
+        <PlayerShirt name={slot.displayName} kitKey={slot.kitKey} size="lg" />
       }
     >
       <div className="space-y-4 pt-1">

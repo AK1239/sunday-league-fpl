@@ -509,7 +509,9 @@ export const fantasyTeams = pgTable(
       .notNull()
       .defaultNow(),
     version: integer("version").notNull().default(1),
-    squadKind: fantasySquadKindEnum("squad_kind").notNull().default("permanent"),
+    squadKind: fantasySquadKindEnum("squad_kind")
+      .notNull()
+      .default("permanent"),
     reservePlayerId: uuid("reserve_player_id").references(() => players.id),
     /** Bench Boost second extra player (first is `reservePlayerId`). */
     reservePlayerId2: uuid("reserve_player_id_2").references(() => players.id),
@@ -646,9 +648,7 @@ export const seasonChips = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [
-    primaryKey({ columns: [table.seasonId, table.chipCode] }),
-  ],
+  (table) => [primaryKey({ columns: [table.seasonId, table.chipCode] })],
 );
 
 export const managerChipPlays = pgTable(

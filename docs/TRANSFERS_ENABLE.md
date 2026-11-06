@@ -2,9 +2,9 @@
 
 Transfers are controlled by **`transfers_start_matchday`** on the season’s scoring rule set.
 
-| Value | Behaviour |
-|--------|-----------|
-| **`null`** | Transfers off — managers can pick any five each open gameweek (testing / not configured). |
+| Value             | Behaviour                                                                                                                   |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **`null`**        | Transfers off — managers can pick any five each open gameweek (testing / not configured).                                   |
 | **`N` (integer)** | From gameweek **N** onward: squad evolves by **transfers** (free bank, −4 hits, etc.). Earlier gameweeks stay unrestricted. |
 
 Fresh **`pnpm db:seed`** installs use **start gameweek 1** so transfers are on from the first gameweek.
@@ -33,10 +33,10 @@ Use the gameweek **number**, not the row id.
 
 ## Manager experience
 
-| Situation | `/pick` screen |
-|-----------|----------------|
-| Transfers off for this GW | Pick any five |
-| Transfers on, no squad yet | **Build your squad** (first five free) |
+| Situation                    | `/pick` screen                            |
+| ---------------------------- | ----------------------------------------- |
+| Transfers off for this GW    | Pick any five                             |
+| Transfers on, no squad yet   | **Build your squad** (first five free)    |
 | Transfers on, has base squad | **Transfers** (summary, confirm, history) |
 
 ## E2E

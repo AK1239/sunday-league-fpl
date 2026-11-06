@@ -61,6 +61,9 @@ export async function seedDatabase() {
         return row;
       }),
     )
+    // Migrations (e.g. 0014) already add some squad players on a fresh database;
+    // skip any that exist instead of failing on the unique display-name index.
+    .onConflictDoNothing()
     .returning();
 
   await seedAdminUser(db);

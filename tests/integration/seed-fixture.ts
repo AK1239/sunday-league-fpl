@@ -143,7 +143,6 @@ async function seedPublishedMatch(options: {
       seq: seq++,
     });
   }
-
 }
 
 export async function getActiveSeasonId(db: AppDb): Promise<string> {

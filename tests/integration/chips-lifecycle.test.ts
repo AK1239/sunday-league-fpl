@@ -88,7 +88,10 @@ describe.skipIf(!hasDatabase)("chips lifecycle (phase 6)", () => {
     const db = getDb();
     await enableChipsForSeason(db, adminId, seasonId);
 
-    const playersList = await db.select({ id: players.id }).from(players);
+    const playersList = await db
+      .select({ id: players.id })
+      .from(players)
+      .where(eq(players.active, true));
     const base = playersList.slice(0, 5).map((p) => p.id);
     const extra = playersList.slice(5, 10).map((p) => p.id);
 
@@ -177,10 +180,12 @@ describe.skipIf(!hasDatabase)("chips lifecycle (phase 6)", () => {
       .set({ status: "disabled" })
       .where(eq(users.id, managerId));
 
-    const squad = (await db.select({ id: players.id }).from(players)).slice(
-      0,
-      5,
-    );
+    const squad = (
+      await db
+        .select({ id: players.id })
+        .from(players)
+        .where(eq(players.active, true))
+    ).slice(0, 5);
     const [open] = await db
       .insert(matchdays)
       .values({

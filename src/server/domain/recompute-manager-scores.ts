@@ -137,7 +137,7 @@ export async function rebuildManagerScoresFromMatchday(
     playersByTeam.set(row.fantasyTeamId, list);
   }
 
-  let submittedTeams: SubmittedFantasyTeam[] = teamHeaders.map((team) => ({
+  const submittedTeams: SubmittedFantasyTeam[] = teamHeaders.map((team) => ({
     managerId: team.managerId,
     source: team.source,
     captainPlayerId: team.captainPlayerId,
@@ -264,10 +264,7 @@ export async function rebuildManagerScoresFromMatchday(
       const chipsByManager = new Map<string, ChipScoringInput>();
       const play = chipPlaysByManager.get(manager.id);
       if (play) {
-        const chipInput = toChipScoringInput(
-          play,
-          effective.reservePlayerIds,
-        );
+        const chipInput = toChipScoringInput(play, effective.reservePlayerIds);
         if (chipInput) {
           chipsByManager.set(manager.id, chipInput);
         }
@@ -402,9 +399,7 @@ async function rebuildManagerRankSnapshots(
         ),
       );
 
-    const participantIds = new Set(
-      participantRows.map((row) => row.managerId),
-    );
+    const participantIds = new Set(participantRows.map((row) => row.managerId));
 
     const ranked = managers
       .filter((manager) => participantIds.has(manager.id))

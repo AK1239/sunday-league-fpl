@@ -10,10 +10,7 @@ export default function AdminPlayersPage() {
 
       <Suspense
         fallback={
-          <div
-            className="grid gap-3 sm:grid-cols-2"
-            role="status"
-          >
+          <div className="grid gap-3 sm:grid-cols-2" role="status">
             <span className="sr-only">Loading squad</span>
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-24 rounded-2xl" />

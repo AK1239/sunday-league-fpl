@@ -1,9 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import type { DbExecutor } from "@/server/db";
-import {
-  fantasyTransfers,
-  managerTransferWindows,
-} from "@/server/db/schema";
+import { fantasyTransfers } from "@/server/db/schema";
 import { diffSquads, pairTransferSlots } from "@/server/fantasy/transfer-diff";
 import type { FantasyTeamPick } from "@/server/fantasy/validate-team";
 

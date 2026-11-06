@@ -31,7 +31,12 @@ describe("computeBalanceChain §3.3 penalty scenarios", () => {
       rules,
       0,
     );
-    expect(step).toMatchObject({ available: 2, extra: 0, penalty: 0, carry: 0 });
+    expect(step).toMatchObject({
+      available: 2,
+      extra: 0,
+      penalty: 0,
+      carry: 0,
+    });
   });
 
   it("uses one free transfer", () => {
@@ -58,7 +63,12 @@ describe("computeBalanceChain §3.3 penalty scenarios", () => {
       rules,
       2,
     );
-    expect(step).toMatchObject({ available: 3, extra: 0, penalty: 0, carry: 2 });
+    expect(step).toMatchObject({
+      available: 3,
+      extra: 0,
+      penalty: 0,
+      carry: 2,
+    });
   });
 
   it("3 banked, uses 4 — one extra (−4)", () => {
@@ -67,7 +77,12 @@ describe("computeBalanceChain §3.3 penalty scenarios", () => {
       rules,
       2,
     );
-    expect(step).toMatchObject({ available: 3, extra: 1, penalty: 4, carry: 0 });
+    expect(step).toMatchObject({
+      available: 3,
+      extra: 1,
+      penalty: 4,
+      carry: 0,
+    });
   });
 
   it("2 available, makes 4 — two extras (−8)", () => {
@@ -76,7 +91,12 @@ describe("computeBalanceChain §3.3 penalty scenarios", () => {
       rules,
       0,
     );
-    expect(step).toMatchObject({ available: 2, extra: 2, penalty: 8, carry: 0 });
+    expect(step).toMatchObject({
+      available: 2,
+      extra: 2,
+      penalty: 8,
+      carry: 0,
+    });
   });
 });
 

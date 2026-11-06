@@ -97,10 +97,7 @@ describe("resolveEffectiveTeam", () => {
       number: 3,
       seasonStartsOn: "2026-11-01",
     };
-    const resolved = resolveEffectiveTeam("mgr", md3, [
-      permanent,
-      freeHit,
-    ]);
+    const resolved = resolveEffectiveTeam("mgr", md3, [permanent, freeHit]);
     expect(resolved).toMatchObject({
       teamSource: "carry_over",
       squadKind: "permanent",

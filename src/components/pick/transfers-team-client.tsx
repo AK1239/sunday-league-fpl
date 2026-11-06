@@ -196,6 +196,7 @@ export function TransfersTeamClient({
     try {
       const draft = JSON.parse(raw) as LocalTransferDraft;
       if (draft.baseVersion !== initial.teamVersion) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- reads localStorage, which only exists in the browser
         setDraftStaleNotice(true);
         clearLocalDraft(pick.matchday.id);
       }
@@ -213,6 +214,7 @@ export function TransfersTeamClient({
       return;
     }
     if (pick.myTeam?.playerIds.length === 5) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- adopt the server team after router.refresh(); intentional prop-to-state sync
       setSlots(teamToSlots(pick.myTeam.playerIds));
       setCaptainPlayerId(pick.myTeam.captainPlayerId);
       setViceCaptainPlayerId(pick.myTeam.viceCaptainPlayerId);
@@ -274,7 +276,10 @@ export function TransfersTeamClient({
   );
 
   const savedChipCodeOnServer = initial.chips?.activeChipCode ?? null;
-  const savedExtrasOnServer = initial.chips?.savedReservePlayerIds ?? [];
+  const savedExtrasOnServer = useMemo(
+    () => initial.chips?.savedReservePlayerIds ?? [],
+    [initial.chips?.savedReservePlayerIds],
+  );
 
   /** Bench Boost extras; anyone moved into the five drops out automatically. */
   const extraIds = useMemo(
@@ -346,6 +351,7 @@ export function TransfersTeamClient({
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- drop captain/vice who left the lineup; intentional derived-state reset
     setCaptainPlayerId((c) => (c && plannedIds.includes(c) ? c : null));
     setViceCaptainPlayerId((v) => (v && plannedIds.includes(v) ? v : null));
   }, [plannedIds]);
@@ -356,6 +362,7 @@ export function TransfersTeamClient({
       viceCaptainPlayerId &&
       captainPlayerId === viceCaptainPlayerId
     ) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- vice cannot equal captain; intentional derived-state reset
       setViceCaptainPlayerId(null);
     }
   }, [captainPlayerId, viceCaptainPlayerId]);
@@ -445,15 +452,18 @@ export function TransfersTeamClient({
   ]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- leave the captaincy step when there is nothing to confirm
     if (!dirty) setCaptaincyStep(false);
   }, [dirty]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- leave the captaincy step when the lineup is incomplete
     if (!lineupReady) setCaptaincyStep(false);
   }, [lineupReady]);
 
   useEffect(() => {
     if (captaincyReady && captaincyStep) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- leave the captaincy step once captaincy is set
       setCaptaincyStep(false);
     }
   }, [captaincyReady, captaincyStep]);
@@ -671,7 +681,6 @@ export function TransfersTeamClient({
       // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from the URL
       setExtrasOpen(true);
     } else if (card?.status.kind === "available") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from the URL
       handleContinueChipToTeam(card.code);
     }
     router.replace("/pick", { scroll: false });

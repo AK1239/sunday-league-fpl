@@ -14,11 +14,13 @@ const eligible = new Map(
 
 const base = ["p1", "p2", "p3", "p4", "p5"];
 
-function pick(overrides: Partial<{
-  playerIds: string[];
-  captainPlayerId: string;
-  viceCaptainPlayerId: string;
-}> = {}) {
+function pick(
+  overrides: Partial<{
+    playerIds: string[];
+    captainPlayerId: string;
+    viceCaptainPlayerId: string;
+  }> = {},
+) {
   return {
     playerIds: base,
     captainPlayerId: "p1",

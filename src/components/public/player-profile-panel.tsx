@@ -90,7 +90,9 @@ export async function PlayerProfilePanel({ playerId }: { playerId: string }) {
           Recent gameweeks
         </h2>
         {profile.recentMatchdays.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No published scores yet.</p>
+          <p className="text-sm text-muted-foreground">
+            No published scores yet.
+          </p>
         ) : (
           <ul className="surface divide-y divide-border/40 overflow-hidden rounded-2xl">
             {profile.recentMatchdays.map((md) => (

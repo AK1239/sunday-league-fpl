@@ -7,7 +7,9 @@ import {
 describe("openGameweekSundayFromLocal", () => {
   it("targets upcoming Sunday before noon on gameweek day", () => {
     expect(openGameweekSundayFromLocal("2026-11-06", 10, 0)).toBe("2026-11-08");
-    expect(openGameweekSundayFromLocal("2026-11-08", 11, 59)).toBe("2026-11-08");
+    expect(openGameweekSundayFromLocal("2026-11-08", 11, 59)).toBe(
+      "2026-11-08",
+    );
   });
 
   it("rolls to the following Sunday from gameweek Sunday at noon", () => {

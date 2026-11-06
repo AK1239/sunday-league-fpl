@@ -92,10 +92,16 @@ export async function ManagerStandingsPanel({
               <th scope="col" className="px-3 py-3 text-right">
                 Pts
               </th>
-              <th scope="col" className="hidden px-3 py-3 text-right sm:table-cell">
+              <th
+                scope="col"
+                className="hidden px-3 py-3 text-right sm:table-cell"
+              >
                 Last GW
               </th>
-              <th scope="col" className="hidden px-3 py-3 text-right md:table-cell">
+              <th
+                scope="col"
+                className="hidden px-3 py-3 text-right md:table-cell"
+              >
                 Best GW
               </th>
             </tr>

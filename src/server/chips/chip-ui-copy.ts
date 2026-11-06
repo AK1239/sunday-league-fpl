@@ -1,9 +1,7 @@
 import type { ChipCode } from "./registry";
 
 export type ChipPermanencePill =
-  | "Score only"
-  | "Permanent squad"
-  | "This gameweek only";
+  "Score only" | "Permanent squad" | "This gameweek only";
 
 export type ChipUiCopy = {
   effectLine: string;
@@ -23,7 +21,8 @@ export const CHIP_UI_COPY: Record<ChipCode, ChipUiCopy> = {
       "One use per season; one chip per gameweek.",
     ],
     transferNote: "Normal transfer rules apply.",
-    risks: "If your captain doesn't play, Triple Captain is lost with no refund.",
+    risks:
+      "If your captain doesn't play, Triple Captain is lost with no refund.",
   },
   wildcard: {
     effectLine: "Unlimited free transfers — your new squad is permanent.",
@@ -34,7 +33,8 @@ export const CHIP_UI_COPY: Record<ChipCode, ChipUiCopy> = {
       "Free-transfer bank is preserved after the gameweek.",
     ],
     transferNote: "All changes are free; confirm on the Team tab.",
-    risks: "Can't be undone after the deadline. Uses your only Wildcard this season.",
+    risks:
+      "Can't be undone after the deadline. Uses your only Wildcard this season.",
   },
   free_hit: {
     effectLine: "Temporary squad for this gameweek only.",
@@ -45,7 +45,8 @@ export const CHIP_UI_COPY: Record<ChipCode, ChipUiCopy> = {
       "Captain and vice apply to the temporary team only.",
     ],
     transferNote: "No transfer rows; build on the Team tab then confirm.",
-    risks: "Pending permanent changes for this week are discarded when you activate.",
+    risks:
+      "Pending permanent changes for this week are discarded when you activate.",
   },
   bench_boost: {
     effectLine: "Two extra players score for you this gameweek.",
@@ -55,7 +56,8 @@ export const CHIP_UI_COPY: Record<ChipCode, ChipUiCopy> = {
       "Their points count on top of your five (×1).",
       "Extra players can't be captain or vice, and don't carry over.",
     ],
-    transferNote: "Normal transfer rules apply; pick your extras on the Team tab.",
+    transferNote:
+      "Normal transfer rules apply; pick your extras on the Team tab.",
     risks: "Extras only score if they attend — one who misses adds nothing.",
   },
 };

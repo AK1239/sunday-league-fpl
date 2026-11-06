@@ -73,7 +73,12 @@ function Stat({
       <p className="text-[0.65rem] font-medium tracking-wide text-muted-foreground uppercase">
         {label}
       </p>
-      <p className={cn("font-heading text-xl font-semibold tabular-nums", className)}>
+      <p
+        className={cn(
+          "font-heading text-xl font-semibold tabular-nums",
+          className,
+        )}
+      >
         {value}
       </p>
     </div>

@@ -9,7 +9,6 @@ import {
   seasons,
   users,
 } from "@/server/db/schema";
-import type { UserRole } from "@/server/auth/session";
 import {
   resolveEffectiveTeam,
   type MatchdayTimelineEntry,
@@ -231,7 +230,10 @@ export async function getManagerFantasyTeamForViewer(
 
   const storedRow = stored[0];
   let teamVersionForRow = 0;
-  if (storedRow && (storedRow.source === "manual" || storedRow.source === "admin")) {
+  if (
+    storedRow &&
+    (storedRow.source === "manual" || storedRow.source === "admin")
+  ) {
     teamSource = storedRow.source;
     teamVersionForRow = storedRow.version;
     captainPlayerId = storedRow.captainPlayerId;
@@ -254,11 +256,7 @@ export async function getManagerFantasyTeamForViewer(
       number: md.number,
       seasonStartsOn: md.seasonStartsOn,
     };
-    const effective = resolveEffectiveTeam(
-      targetManagerId,
-      target,
-      submitted,
-    );
+    const effective = resolveEffectiveTeam(targetManagerId, target, submitted);
     if (!effective) {
       return {
         visibility: "visible",
@@ -290,7 +288,8 @@ export async function getManagerFantasyTeamForViewer(
       managerDisplayName: manager.displayName,
       matchdayId,
       teamVersion:
-        storedRow && (storedRow.source === "manual" || storedRow.source === "admin")
+        storedRow &&
+        (storedRow.source === "manual" || storedRow.source === "admin")
           ? storedRow.version
           : 0,
       teamSource,
@@ -328,12 +327,7 @@ export async function getManagerFantasyTeamForViewer(
     playerIds,
     squadKind,
     reservePlayerIds,
-    slots: buildSlots(
-      playerIds,
-      captainPlayerId,
-      viceCaptainPlayerId,
-      meta,
-    ),
+    slots: buildSlots(playerIds, captainPlayerId, viceCaptainPlayerId, meta),
   };
 }
 

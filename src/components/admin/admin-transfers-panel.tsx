@@ -202,8 +202,12 @@ export async function AdminTransfersPanel({
                         {row.managerName}
                       </Link>
                     </td>
-                    <td className="px-3 py-2 tabular-nums">{row.matchdayNumber}</td>
-                    <td className="px-3 py-2 tabular-nums">{row.freeAvailable}</td>
+                    <td className="px-3 py-2 tabular-nums">
+                      {row.matchdayNumber}
+                    </td>
+                    <td className="px-3 py-2 tabular-nums">
+                      {row.freeAvailable}
+                    </td>
                     <td className="px-3 py-2 tabular-nums">{row.made}</td>
                     <td className="px-3 py-2 tabular-nums">{row.extra}</td>
                     <td

@@ -47,7 +47,10 @@ async function assertMatchdayEditable(
   const md = rows[0];
   if (!md) throw new MatchEntryError("Matchday not found.", "NOT_FOUND");
   if (md.status === "cancelled") {
-    throw new MatchEntryError("Cancelled matchdays cannot be edited.", "CANCELLED");
+    throw new MatchEntryError(
+      "Cancelled matchdays cannot be edited.",
+      "CANCELLED",
+    );
   }
   return md;
 }
@@ -226,9 +229,9 @@ export async function saveMatchdayAttendanceAdmin(
       .where(eq(matchdayAttendance.matchdayId, matchdayId));
 
     if (unique.length > 0) {
-      await tx.insert(matchdayAttendance).values(
-        unique.map((playerId) => ({ matchdayId, playerId })),
-      );
+      await tx
+        .insert(matchdayAttendance)
+        .values(unique.map((playerId) => ({ matchdayId, playerId })));
     }
 
     await writeAuditLog(tx, {
@@ -258,7 +261,11 @@ async function replaceMatchContents(
   if (!sideA) {
     [sideA] = await tx
       .insert(matchSides)
-      .values({ matchId, side: "A", goalkeeperPlayerId: draft.sideAGoalkeeperId })
+      .values({
+        matchId,
+        side: "A",
+        goalkeeperPlayerId: draft.sideAGoalkeeperId,
+      })
       .returning({ id: matchSides.id, side: matchSides.side });
   } else {
     await tx
@@ -270,7 +277,11 @@ async function replaceMatchContents(
   if (!sideB) {
     [sideB] = await tx
       .insert(matchSides)
-      .values({ matchId, side: "B", goalkeeperPlayerId: draft.sideBGoalkeeperId })
+      .values({
+        matchId,
+        side: "B",
+        goalkeeperPlayerId: draft.sideBGoalkeeperId,
+      })
       .returning({ id: matchSides.id, side: matchSides.side });
   } else {
     await tx
@@ -279,7 +290,9 @@ async function replaceMatchContents(
       .where(eq(matchSides.id, sideB.id));
   }
 
-  await tx.delete(matchParticipants).where(eq(matchParticipants.matchId, matchId));
+  await tx
+    .delete(matchParticipants)
+    .where(eq(matchParticipants.matchId, matchId));
   await tx.delete(goals).where(eq(goals.matchId, matchId));
   await tx.delete(matchIncidents).where(eq(matchIncidents.matchId, matchId));
   await tx.delete(matchMvps).where(eq(matchMvps.matchId, matchId));
@@ -310,7 +323,10 @@ async function replaceMatchContents(
       matchId,
       sideId,
       scorerId: goal.scorerId,
-      assistId: goal.kind === "penalty" || goal.kind === "own_goal" ? null : goal.assistId,
+      assistId:
+        goal.kind === "penalty" || goal.kind === "own_goal"
+          ? null
+          : goal.assistId,
       kind: goal.kind ?? "open_play",
       seq: seq++,
     });
@@ -366,9 +382,9 @@ export async function saveMatchDraftAdmin(
       .delete(matchdayAttendance)
       .where(eq(matchdayAttendance.matchdayId, matchdayId));
     if (uniqueAttendees.length > 0) {
-      await tx.insert(matchdayAttendance).values(
-        uniqueAttendees.map((playerId) => ({ matchdayId, playerId })),
-      );
+      await tx
+        .insert(matchdayAttendance)
+        .values(uniqueAttendees.map((playerId) => ({ matchdayId, playerId })));
     }
 
     let matchId = draft.matchId ?? null;
@@ -379,7 +395,8 @@ export async function saveMatchDraftAdmin(
         .from(matches)
         .where(and(eq(matches.id, matchId), eq(matches.matchdayId, matchdayId)))
         .limit(1);
-      if (!existing[0]) throw new MatchEntryError("Match not found.", "NOT_FOUND");
+      if (!existing[0])
+        throw new MatchEntryError("Match not found.", "NOT_FOUND");
 
       await tx
         .update(matches)
@@ -478,7 +495,9 @@ export async function copyLineupFromPreviousMatchAdmin(
     const target = await tx
       .select({ id: matches.id, matchNo: matches.matchNo })
       .from(matches)
-      .where(and(eq(matches.id, targetMatchId), eq(matches.matchdayId, matchdayId)))
+      .where(
+        and(eq(matches.id, targetMatchId), eq(matches.matchdayId, matchdayId)),
+      )
       .limit(1);
 
     if (!target[0]) throw new MatchEntryError("Match not found.", "NOT_FOUND");
@@ -495,7 +514,10 @@ export async function copyLineupFromPreviousMatchAdmin(
       .limit(1);
 
     if (!previous[0]) {
-      throw new MatchEntryError("No previous match to copy from.", "NO_PREVIOUS");
+      throw new MatchEntryError(
+        "No previous match to copy from.",
+        "NO_PREVIOUS",
+      );
     }
 
     const source = await loadMatchParts(tx, previous[0].id);
@@ -546,7 +568,10 @@ async function loadMatchParts(tx: DbExecutor, matchId: string) {
   const sideB = sides.find((s) => s.side === "B");
 
   const participants = await tx
-    .select({ playerId: matchParticipants.playerId, sideId: matchParticipants.sideId })
+    .select({
+      playerId: matchParticipants.playerId,
+      sideId: matchParticipants.sideId,
+    })
     .from(matchParticipants)
     .where(eq(matchParticipants.matchId, matchId));
 

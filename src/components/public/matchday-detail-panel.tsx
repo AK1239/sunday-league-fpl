@@ -77,7 +77,9 @@ export async function MatchdayDetailPanel({
                       {row.rank}
                     </span>
                     <PlayerAvatar name={row.displayName} size="sm" />
-                    <span className="flex-1 font-medium">{row.displayName}</span>
+                    <span className="flex-1 font-medium">
+                      {row.displayName}
+                    </span>
                     <span className="font-heading text-lg font-bold tabular-nums text-primary">
                       {row.totalPoints}
                     </span>

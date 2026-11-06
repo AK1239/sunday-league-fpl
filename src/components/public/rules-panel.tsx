@@ -55,8 +55,11 @@ export async function RulesPanel() {
           <li>Pick exactly 5 footballers before each gameweek deadline.</li>
           <li>
             Captain scores{" "}
-            <strong className="text-foreground">{rules.captainMultiplier}×</strong>{" "}
-            that player&apos;s gameweek points (including attendance, goals, etc.).
+            <strong className="text-foreground">
+              {rules.captainMultiplier}×
+            </strong>{" "}
+            that player&apos;s gameweek points (including attendance, goals,
+            etc.).
           </li>
           <li>
             Vice-captain gets {rules.captainMultiplier}× only if the captain did

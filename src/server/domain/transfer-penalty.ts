@@ -1,9 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { DbExecutor } from "@/server/db";
-import {
-  fantasyTransfers,
-  managerTransferWindows,
-} from "@/server/db/schema";
+import { fantasyTransfers, managerTransferWindows } from "@/server/db/schema";
 
 export function deriveTransferPenalty(input: {
   transfersMade: number;

@@ -78,7 +78,10 @@ export async function getAdminActivityData(
   const surface = filters.surface ?? "all";
   const actionFilter = filters.actions?.length ? filters.actions : null;
   const roleFilter = surfaceRoleFilter(surface);
-  const pageSize = Math.min(Math.max(filters.pageSize ?? ACTIVITY_PAGE_SIZE, 5), 100);
+  const pageSize = Math.min(
+    Math.max(filters.pageSize ?? ACTIVITY_PAGE_SIZE, 5),
+    100,
+  );
 
   const periodCond = gte(auditLog.at, since);
   const actionCond =

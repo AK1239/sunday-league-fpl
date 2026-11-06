@@ -55,9 +55,13 @@ describe.skipIf(!hasDatabase)("matchday publish & inspector", () => {
       .returning();
     matchdayId = md!.id;
 
-    playerIds = (await db.select({ id: players.id }).from(players).limit(5)).map(
-      (p) => p.id,
-    );
+    playerIds = (
+      await db
+        .select({ id: players.id })
+        .from(players)
+        .where(eq(players.active, true))
+        .limit(5)
+    ).map((p) => p.id);
   });
 
   async function seedValidMatch() {
@@ -125,7 +129,9 @@ describe.skipIf(!hasDatabase)("matchday publish & inspector", () => {
 
     const [{ sum: beforeSum }] = await db
       .select({
-        sum: sql<number>`coalesce(sum(${pointLedger.points}), 0)`.mapWith(Number),
+        sum: sql<number>`coalesce(sum(${pointLedger.points}), 0)`.mapWith(
+          Number,
+        ),
       })
       .from(pointLedger)
       .where(eq(pointLedger.matchdayId, matchdayId));
@@ -162,7 +168,9 @@ describe.skipIf(!hasDatabase)("matchday publish & inspector", () => {
 
     const [{ sum: afterSum }] = await db
       .select({
-        sum: sql<number>`coalesce(sum(${pointLedger.points}), 0)`.mapWith(Number),
+        sum: sql<number>`coalesce(sum(${pointLedger.points}), 0)`.mapWith(
+          Number,
+        ),
       })
       .from(pointLedger)
       .where(eq(pointLedger.matchdayId, matchdayId));

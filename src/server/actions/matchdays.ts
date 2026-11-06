@@ -42,11 +42,17 @@ function mapMatchdayError(error: unknown): ActionFailure | null {
   if (!(error instanceof Error)) return null;
   switch (error.message) {
     case "NO_SETTINGS":
-      return actionFail("NO_SETTINGS", "League settings are missing. Run migrations.");
+      return actionFail(
+        "NO_SETTINGS",
+        "League settings are missing. Run migrations.",
+      );
     case "SEASON_NOT_FOUND":
       return actionFail("NOT_FOUND", "Season not found.");
     case "PLAYED_ON_OUT_OF_SEASON":
-      return actionFail("VALIDATION", "Date must fall within the season range.");
+      return actionFail(
+        "VALIDATION",
+        "Date must fall within the season range.",
+      );
     case "NOT_FOUND":
       return actionFail("NOT_FOUND", "Matchday not found.");
     case "CANCELLED":
@@ -115,7 +121,10 @@ export async function updateMatchdayDeadlineAction(
     revalidatePath("/admin/matchdays");
     return actionOk();
   } catch (error) {
-    return mapMatchdayError(error) ?? actionFail("ERROR", "Could not update deadline.");
+    return (
+      mapMatchdayError(error) ??
+      actionFail("ERROR", "Could not update deadline.")
+    );
   }
 }
 
@@ -134,14 +143,22 @@ export async function postponeMatchdayAction(
   }
 
   try {
-    await postponeMatchdayAdmin(getDb(), session.userId, parsed.data.matchdayId, {
-      playedOn: parsed.data.playedOn,
-      deadlineAtLocal: parsed.data.deadlineAtLocal,
-    });
+    await postponeMatchdayAdmin(
+      getDb(),
+      session.userId,
+      parsed.data.matchdayId,
+      {
+        playedOn: parsed.data.playedOn,
+        deadlineAtLocal: parsed.data.deadlineAtLocal,
+      },
+    );
     revalidatePath("/admin/matchdays");
     return actionOk();
   } catch (error) {
-    return mapMatchdayError(error) ?? actionFail("ERROR", "Could not postpone matchday.");
+    return (
+      mapMatchdayError(error) ??
+      actionFail("ERROR", "Could not postpone matchday.")
+    );
   }
 }
 
@@ -159,7 +176,10 @@ export async function cancelMatchdayAction(
     revalidatePath("/table");
     return actionOk();
   } catch (error) {
-    return mapMatchdayError(error) ?? actionFail("ERROR", "Could not cancel matchday.");
+    return (
+      mapMatchdayError(error) ??
+      actionFail("ERROR", "Could not cancel matchday.")
+    );
   }
 }
 

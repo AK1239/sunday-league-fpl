@@ -69,11 +69,10 @@ describe("resolveBaseSquadPlayerIds", () => {
       ...team(managerId, 3, ["f1", "f2", "f3", "f4", "f5"]),
       squadKind: "free_hit" as const,
     };
-    const base = resolveBaseSquadPlayerIds(
-      managerId,
-      freeHit.matchday,
-      [permanent, freeHit],
-    );
+    const base = resolveBaseSquadPlayerIds(managerId, freeHit.matchday, [
+      permanent,
+      freeHit,
+    ]);
     expect(base).toEqual(["a", "b", "c", "d", "e"]);
   });
 

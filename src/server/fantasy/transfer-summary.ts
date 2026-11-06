@@ -16,11 +16,8 @@ export function summariseTransferWindow(input: {
   unlimited?: boolean;
 }): TransferWindowSummary {
   const { made } = diffSquads(input.baseSquad, input.nextSquad);
-  const extra = input.unlimited
-    ? 0
-    : Math.max(0, made - input.freeAvailable);
-  const transferPenalty =
-    extra === 0 ? 0 : -extra * input.penaltyPerExtra;
+  const extra = input.unlimited ? 0 : Math.max(0, made - input.freeAvailable);
+  const transferPenalty = extra === 0 ? 0 : -extra * input.penaltyPerExtra;
 
   return {
     made,

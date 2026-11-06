@@ -14,10 +14,7 @@ import {
   seasonChips,
   users,
 } from "@/server/db/schema";
-import {
-  getActiveSeasonId,
-  seedPublishedDemoMatchday,
-} from "./seed-fixture";
+import { getActiveSeasonId, seedPublishedDemoMatchday } from "./seed-fixture";
 import { resetDatabase } from "./helpers";
 
 const hasDatabase = !!process.env.DATABASE_URL;

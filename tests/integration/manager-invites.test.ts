@@ -78,13 +78,15 @@ describe.skipIf(!hasDatabase)("manager invites and auth", () => {
   });
 
   it("requireAdmin rejects managers", async () => {
-    await getDb().insert(users).values({
-      email: "mgr@mkate.test",
-      displayName: "Mgr",
-      passwordHash: await hashPassword("test-password-12"),
-      role: "manager",
-      status: "active",
-    });
+    await getDb()
+      .insert(users)
+      .values({
+        email: "mgr@mkate.test",
+        displayName: "Mgr",
+        passwordHash: await hashPassword("test-password-12"),
+        role: "manager",
+        status: "active",
+      });
 
     const { cookies } = await import("next/headers");
     const { createUserSession } = await import("@/server/auth/session");

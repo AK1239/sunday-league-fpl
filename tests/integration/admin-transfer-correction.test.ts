@@ -62,7 +62,10 @@ describe.skipIf(!hasDatabase)("admin transfer correction", () => {
       .set({ transfersStartMatchday: 10 })
       .where(eq(scoringRuleSets.id, rules!.id));
 
-    const allPlayers = await db.select({ id: players.id }).from(players);
+    const allPlayers = await db
+      .select({ id: players.id })
+      .from(players)
+      .where(eq(players.active, true));
     basePlayerIds = allPlayers.slice(0, 5).map((p) => p.id);
     extraPlayerIds = allPlayers.slice(5, 9).map((p) => p.id);
 
@@ -163,7 +166,10 @@ describe.skipIf(!hasDatabase)("admin transfer correction", () => {
     expect(applied).toBe(true);
 
     const voidRows = await db
-      .select({ source: fantasyTransfers.source, status: fantasyTransfers.status })
+      .select({
+        source: fantasyTransfers.source,
+        status: fantasyTransfers.status,
+      })
       .from(fantasyTransfers)
       .where(
         and(

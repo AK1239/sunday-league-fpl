@@ -49,7 +49,10 @@ describe.skipIf(!hasDatabase)("recompute transfer penalty", () => {
       .returning();
     managerId = manager!.id;
 
-    const allPlayers = await db.select({ id: players.id }).from(players);
+    const allPlayers = await db
+      .select({ id: players.id })
+      .from(players)
+      .where(eq(players.active, true));
     const base = allPlayers.slice(0, 5).map((p) => p.id);
     const extras = allPlayers.slice(5, 9).map((p) => p.id);
 
@@ -99,13 +102,7 @@ describe.skipIf(!hasDatabase)("recompute transfer penalty", () => {
       db,
       open!.id,
       {
-        playerIds: [
-          extras[0]!,
-          extras[1]!,
-          extras[2]!,
-          extras[3]!,
-          base[4]!,
-        ],
+        playerIds: [extras[0]!, extras[1]!, extras[2]!, extras[3]!, base[4]!],
         captainPlayerId: extras[0]!,
         viceCaptainPlayerId: extras[1]!,
         expectedVersion: 0,

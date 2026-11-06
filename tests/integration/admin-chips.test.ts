@@ -70,7 +70,10 @@ describe.skipIf(!hasDatabase)("admin chips (phase 8)", () => {
       .set({ transfersStartMatchday: 10 })
       .where(eq(scoringRuleSets.id, season!.ruleSetId));
 
-    const allPlayers = await db.select({ id: players.id }).from(players);
+    const allPlayers = await db
+      .select({ id: players.id })
+      .from(players)
+      .where(eq(players.active, true));
     basePlayerIds = allPlayers.slice(0, 5).map((p) => p.id);
 
     const [prior] = await db

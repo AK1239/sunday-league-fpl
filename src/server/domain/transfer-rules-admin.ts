@@ -7,10 +7,7 @@ import {
   type TransferRuleSetRow,
 } from "@/server/fantasy/transfer-rules";
 
-export type TransferRulesEditMode =
-  | "editable"
-  | "enable_only"
-  | "locked";
+export type TransferRulesEditMode = "editable" | "enable_only" | "locked";
 
 export type EditableTransferRules = {
   ruleSetId: string;
@@ -89,9 +86,7 @@ export async function loadEditableTransferRulesForSeason(
     locked: editMode === "locked",
     editMode,
     minStartGameweek:
-      maxLockedGameweekNumber != null
-        ? maxLockedGameweekNumber + 1
-        : null,
+      maxLockedGameweekNumber != null ? maxLockedGameweekNumber + 1 : null,
   };
 }
 

@@ -105,9 +105,7 @@ async function loadTransferHistory(
   if (transferRows.length === 0) return [];
 
   const playerIds = [
-    ...new Set(
-      transferRows.flatMap((r) => [r.playerOutId, r.playerInId]),
-    ),
+    ...new Set(transferRows.flatMap((r) => [r.playerOutId, r.playerInId])),
   ];
   const nameRows = await db
     .select({
@@ -118,9 +116,7 @@ async function loadTransferHistory(
     .from(players)
     .where(inArray(players.id, playerIds));
   const names = new Map(nameRows.map((p) => [p.id, p.displayName]));
-  const kitKeys = new Map(
-    nameRows.map((p) => [p.id, p.kitKey]),
-  );
+  const kitKeys = new Map(nameRows.map((p) => [p.id, p.kitKey]));
 
   const byMatchday = new Map<string, TransferHistoryEntry>();
 
@@ -190,8 +186,13 @@ export async function getTransferPageData(
     number: pick.matchday.number,
     seasonStartsOn:
       submitted[0]?.matchday.seasonStartsOn ??
-      (await db.select({ startsOn: seasons.startsOn }).from(seasons).where(eq(seasons.id, pick.seasonId)).limit(1))[0]
-        ?.startsOn ??
+      (
+        await db
+          .select({ startsOn: seasons.startsOn })
+          .from(seasons)
+          .where(eq(seasons.id, pick.seasonId))
+          .limit(1)
+      )[0]?.startsOn ??
       "1970-01-01",
   };
 
@@ -207,7 +208,9 @@ export async function getTransferPageData(
   );
 
   const baseIncomplete =
-    basePlayerIds != null && basePlayerIds.length !== 0 && basePlayerIds.length !== 5;
+    basePlayerIds != null &&
+    basePlayerIds.length !== 0 &&
+    basePlayerIds.length !== 5;
 
   if (baseIncomplete) {
     return { mode: "standard", pick, standardReason: "initial_build" };

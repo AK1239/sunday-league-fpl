@@ -102,10 +102,7 @@ export async function saveFantasyTeam(
     matchdayStatus = matchday.status;
 
     if (matchday.status === "cancelled") {
-      throw new FantasyTeamError(
-        "This gameweek was cancelled.",
-        "CANCELLED",
-      );
+      throw new FantasyTeamError("This gameweek was cancelled.", "CANCELLED");
     }
 
     const dbNow = await readDbNow(tx);

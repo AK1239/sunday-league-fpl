@@ -85,19 +85,34 @@ export async function StandingsView({
               <th scope="col" className="px-3 py-3 text-right">
                 Pts
               </th>
-              <th scope="col" className="hidden px-3 py-3 text-right sm:table-cell">
+              <th
+                scope="col"
+                className="hidden px-3 py-3 text-right sm:table-cell"
+              >
                 G
               </th>
-              <th scope="col" className="hidden px-3 py-3 text-right md:table-cell">
+              <th
+                scope="col"
+                className="hidden px-3 py-3 text-right md:table-cell"
+              >
                 A
               </th>
-              <th scope="col" className="hidden px-3 py-3 text-right lg:table-cell">
+              <th
+                scope="col"
+                className="hidden px-3 py-3 text-right lg:table-cell"
+              >
                 Apps
               </th>
-              <th scope="col" className="hidden px-3 py-3 text-right xl:table-cell">
+              <th
+                scope="col"
+                className="hidden px-3 py-3 text-right xl:table-cell"
+              >
                 W
               </th>
-              <th scope="col" className="hidden px-3 py-3 text-right xl:table-cell">
+              <th
+                scope="col"
+                className="hidden px-3 py-3 text-right xl:table-cell"
+              >
                 Avg
               </th>
             </tr>

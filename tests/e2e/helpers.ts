@@ -2,9 +2,7 @@ import { expect, type Page } from "@playwright/test";
 
 export const managerCredentials = {
   email:
-    process.env.E2E_MANAGER_EMAIL ??
-    process.env.ADMIN_EMAIL ??
-    "ci@mkate.test",
+    process.env.E2E_MANAGER_EMAIL ?? process.env.ADMIN_EMAIL ?? "ci@mkate.test",
   password:
     process.env.E2E_MANAGER_PASSWORD ??
     process.env.ADMIN_PASSWORD ??
@@ -36,14 +34,8 @@ export function attachPageDiagnostics(page: Page) {
   });
 
   return async (label: string) => {
-    expect(
-      pageErrors,
-      `${label}: uncaught page errors`,
-    ).toEqual([]);
-    expect(
-      consoleErrors,
-      `${label}: console errors`,
-    ).toEqual([]);
+    expect(pageErrors, `${label}: uncaught page errors`).toEqual([]);
+    expect(consoleErrors, `${label}: console errors`).toEqual([]);
   };
 }
 
@@ -63,7 +55,9 @@ export async function gotoHealthy(page: Page, path: string) {
 export async function loginAsManager(page: Page) {
   await gotoHealthy(page, "/login");
   await page.locator('input[name="email"]').fill(managerCredentials.email);
-  await page.locator('input[name="password"]').fill(managerCredentials.password);
+  await page
+    .locator('input[name="password"]')
+    .fill(managerCredentials.password);
   await page.getByRole("button", { name: /^Sign in$/i }).click();
   await page.waitForURL("**/my", { timeout: 15_000 });
   await assertHealthyPage(page, "/my after login");

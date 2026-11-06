@@ -26,8 +26,7 @@ export type ChipValidationErrorCode =
   | "CHIP_STATE_MISMATCH";
 
 export type ChipValidationResult =
-  | { ok: true }
-  | { ok: false; code: ChipValidationErrorCode; message: string };
+  { ok: true } | { ok: false; code: ChipValidationErrorCode; message: string };
 
 export type ValidateChipInput = {
   chipCode: string | null;
@@ -125,7 +124,11 @@ export function validateChipSubmission(
   }
 
   if (entry.requiresTransferBase) {
-    if (input.isInitialBuild || !input.hasBaseSquad || !input.transferRulesApply) {
+    if (
+      input.isInitialBuild ||
+      !input.hasBaseSquad ||
+      !input.transferRulesApply
+    ) {
       return {
         ok: false,
         code: "CHIP_NOT_APPLICABLE",
@@ -142,7 +145,10 @@ export function validateChipSubmission(
     };
   }
 
-  if (entry.requiresTemporarySquad === false && input.squadKind === "free_hit") {
+  if (
+    entry.requiresTemporarySquad === false &&
+    input.squadKind === "free_hit"
+  ) {
     return {
       ok: false,
       code: "CHIP_STATE_MISMATCH",
@@ -150,7 +156,10 @@ export function validateChipSubmission(
     };
   }
 
-  if (entry.permanence === "permanent_squad" && input.squadKind === "free_hit") {
+  if (
+    entry.permanence === "permanent_squad" &&
+    input.squadKind === "free_hit"
+  ) {
     return {
       ok: false,
       code: "CHIP_STATE_MISMATCH",

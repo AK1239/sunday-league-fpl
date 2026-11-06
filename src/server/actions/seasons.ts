@@ -99,10 +99,7 @@ export async function closeSeasonAction(
       return actionFail("NOT_FOUND", "Season not found.");
     }
     if (error instanceof Error && error.message === "NOT_ACTIVE") {
-      return actionFail(
-        "NOT_ACTIVE",
-        "Only the active season can be closed.",
-      );
+      return actionFail("NOT_ACTIVE", "Only the active season can be closed.");
     }
     throw error;
   }
@@ -115,9 +112,7 @@ const enableChipsSchema = z.object({
 
 export async function enableSeasonChipsAction(
   formData: FormData,
-): Promise<
-  ActionResult<{ availableFromMatchday: number; chipCount: number }>
-> {
+): Promise<ActionResult<{ availableFromMatchday: number; chipCount: number }>> {
   const session = await requireAdmin();
 
   const parsed = enableChipsSchema.safeParse({

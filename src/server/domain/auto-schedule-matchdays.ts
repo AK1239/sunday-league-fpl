@@ -2,10 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import type { AppDb } from "@/server/db";
 import { matchdays, users } from "@/server/db/schema";
-import {
-  createMatchdayAdmin,
-  getActiveSeasonId,
-} from "./matchdays-admin";
+import { createMatchdayAdmin, getActiveSeasonId } from "./matchdays-admin";
 import { getLeagueSettings } from "./league-settings";
 
 /** After this local time on gameweek Sunday, the scheduler targets the following Sunday. */
@@ -130,11 +127,7 @@ export async function ensureAutoScheduledMatchday(
   const adminId = await resolveSystemAdminId(db);
   if (!adminId) return { status: "no_admin" };
 
-  let playedOn = await computeOpenGameweekPlayedOn(
-    db,
-    settings.timezone,
-    now,
-  );
+  let playedOn = await computeOpenGameweekPlayedOn(db, settings.timezone, now);
 
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const existing = await findMatchdayByPlayedOn(db, seasonId, playedOn);

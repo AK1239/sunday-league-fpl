@@ -216,11 +216,7 @@ export async function getMyTeamPageData(
           timeline,
           submitted,
         );
-        if (
-          !initialBuild &&
-          basePlayerIds &&
-          basePlayerIds.length === 5
-        ) {
+        if (!initialBuild && basePlayerIds && basePlayerIds.length === 5) {
           upcomingFreeTransfers = await computeFreeAvailableForMatchday(db, {
             managerId,
             seasonId,
@@ -369,7 +365,11 @@ export async function getMyCaptainPerformance(
   seasonId: string,
 ): Promise<{ seasonBonus: number; gameweeks: CaptainGameweekRow[] }> {
   const published = await db
-    .select({ id: matchdays.id, number: matchdays.number, playedOn: matchdays.playedOn })
+    .select({
+      id: matchdays.id,
+      number: matchdays.number,
+      playedOn: matchdays.playedOn,
+    })
     .from(matchdays)
     .where(
       and(eq(matchdays.seasonId, seasonId), eq(matchdays.status, "published")),
@@ -428,7 +428,11 @@ export async function getMyHistoricalTeams(
   }[]
 > {
   const published = await db
-    .select({ id: matchdays.id, number: matchdays.number, playedOn: matchdays.playedOn })
+    .select({
+      id: matchdays.id,
+      number: matchdays.number,
+      playedOn: matchdays.playedOn,
+    })
     .from(matchdays)
     .where(
       and(eq(matchdays.seasonId, seasonId), eq(matchdays.status, "published")),

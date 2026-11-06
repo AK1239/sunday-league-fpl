@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 import type { AppDb } from "@/server/db";
-import { matchdays, users } from "@/server/db/schema";
+import { users } from "@/server/db/schema";
 import { getActiveSeasonId } from "@/server/domain/matchdays-admin";
 import {
   getManagerTransferAdminDetail,
@@ -41,7 +41,10 @@ export async function getAdminTransfersPageData(
       .select({ id: users.id, displayName: users.displayName })
       .from(users)
       .where(
-        and(eq(users.status, "active"), inArray(users.role, ["manager", "admin"])),
+        and(
+          eq(users.status, "active"),
+          inArray(users.role, ["manager", "admin"]),
+        ),
       )
       .orderBy(asc(users.displayName)),
     loadEditableTransferRulesForSeason(db, seasonId),

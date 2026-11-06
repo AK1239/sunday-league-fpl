@@ -38,7 +38,9 @@ export function CreateMatchdayForm({
           <CalendarDays className="size-5" />
         </span>
         <div>
-          <h2 className="font-heading text-lg font-semibold">Schedule gameweek</h2>
+          <h2 className="font-heading text-lg font-semibold">
+            Schedule gameweek
+          </h2>
           <p className="text-sm text-muted-foreground">
             Default deadline uses league kickoff ({timezone}).
           </p>

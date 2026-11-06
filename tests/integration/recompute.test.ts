@@ -5,10 +5,7 @@ import { getDb } from "@/server/db";
 import { seedDatabase } from "@/server/db/seed";
 import { matchdays, pointLedger } from "@/server/db/schema";
 import { getStandings } from "@/server/queries/standings";
-import {
-  getActiveSeasonId,
-  seedPublishedDemoMatchday,
-} from "./seed-fixture";
+import { getActiveSeasonId, seedPublishedDemoMatchday } from "./seed-fixture";
 import { requireDatabaseUrl, resetDatabase } from "./helpers";
 
 const hasDatabase = !!process.env.DATABASE_URL;

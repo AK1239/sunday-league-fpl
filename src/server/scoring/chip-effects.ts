@@ -1,5 +1,8 @@
 import type { ChipCode } from "@/server/chips/registry";
-import type { ManagerScoringRules, TeamForManagerScoring } from "./manager-types";
+import type {
+  ManagerScoringRules,
+  TeamForManagerScoring,
+} from "./manager-types";
 
 export type ChipScoringInput = {
   code: ChipCode;
@@ -17,7 +20,9 @@ export type SquadPointsOnlyFn = (
   chip: ChipScoringInput | null,
 ) => number;
 
-export function tripleCaptainMultiplier(params: Record<string, unknown>): number {
+export function tripleCaptainMultiplier(
+  params: Record<string, unknown>,
+): number {
   const raw = params.multiplier;
   return typeof raw === "number" && Number.isFinite(raw) ? raw : 3;
 }
@@ -64,6 +69,8 @@ export function computeChipBonus(
   return withChip - without;
 }
 
-export function chipCodeForScoring(chip: ChipScoringInput | null): ChipCode | null {
+export function chipCodeForScoring(
+  chip: ChipScoringInput | null,
+): ChipCode | null {
   return chip?.code ?? null;
 }

@@ -11,8 +11,7 @@ export function CaptainBadge({
   captainMultiplier?: 2 | 3;
 }) {
   const label = role === "captain" ? "Captain" : "Vice";
-  const showTriple =
-    role === "captain" && captainMultiplier === 3;
+  const showTriple = role === "captain" && captainMultiplier === 3;
   return (
     <span
       className={cn(

@@ -34,9 +34,7 @@ export function TransferConfirmSheet({
 }) {
   const [acknowledged, setAcknowledged] = useState(false);
   const penaltyMagnitude = summary.extra > 0 ? -summary.transferPenalty : 0;
-  const pairs = pairTransferSlots(
-    diffSquads(basePlayerIds, plannedPlayerIds),
-  );
+  const pairs = pairTransferSlots(diffSquads(basePlayerIds, plannedPlayerIds));
 
   return (
     <BottomSheet
@@ -46,10 +44,7 @@ export function TransferConfirmSheet({
       description="Review changes before the deadline locks your team."
     >
       <div className="space-y-4 pt-1">
-        <TransferSummaryStrip
-          summary={summary}
-          freeAvailable={freeAvailable}
-        />
+        <TransferSummaryStrip summary={summary} freeAvailable={freeAvailable} />
 
         {pairs.length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -94,8 +89,8 @@ export function TransferConfirmSheet({
                 onChange={(e) => setAcknowledged(e.target.checked)}
               />
               <span>
-                I understand this costs {penaltyMagnitude} points on my
-                gameweek score.
+                I understand this costs {penaltyMagnitude} points on my gameweek
+                score.
               </span>
             </label>
           </div>
@@ -105,13 +100,9 @@ export function TransferConfirmSheet({
           type="button"
           size="lg"
           className={cn("w-full", summary.extra > 0 && "bg-destructive")}
-          disabled={
-            confirming || (summary.extra > 0 && !acknowledged)
-          }
+          disabled={confirming || (summary.extra > 0 && !acknowledged)}
           aria-busy={confirming}
-          onClick={() =>
-            onConfirm(summary.extra > 0 ? penaltyMagnitude : 0)
-          }
+          onClick={() => onConfirm(summary.extra > 0 ? penaltyMagnitude : 0)}
         >
           {confirming
             ? "Saving…"

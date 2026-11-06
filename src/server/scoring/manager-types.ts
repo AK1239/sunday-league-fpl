@@ -5,10 +5,7 @@ export type ManagerScoringRules = ScoringRules & {
 };
 
 export type ManagerScoreLineRole =
-  | "player"
-  | "captain"
-  | "vice_captain"
-  | "reserve";
+  "player" | "captain" | "vice_captain" | "reserve";
 
 export type ScoredLineRole = ManagerScoreLineRole;
 

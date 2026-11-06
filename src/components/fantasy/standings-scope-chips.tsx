@@ -26,11 +26,7 @@ export function StandingsScopeChips({ basePath }: { basePath: string }) {
   }
 
   return (
-    <div
-      className="flex gap-2"
-      role="group"
-      aria-label="Standings scope"
-    >
+    <div className="flex gap-2" role="group" aria-label="Standings scope">
       {(
         [
           ["season", "This season"],

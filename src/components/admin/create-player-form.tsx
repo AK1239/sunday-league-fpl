@@ -18,7 +18,9 @@ export function CreatePlayerForm({ onSuccess }: { onSuccess?: () => void }) {
   const [kit, setKit] = useState<KitKey>("neutral");
   /** Parent often passes `() => setX(...)` which is a new fn each render — must not be a `useEffect` dependency or success runs every render while `state.ok` stays true (infinite refresh). */
   const onSuccessRef = useRef(onSuccess);
-  onSuccessRef.current = onSuccess;
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+  });
 
   const [state, action, pending] = useActionState<
     ActionResult<{ id: string }> | null,

@@ -32,7 +32,9 @@ export function PlayerShirt({
   size?: keyof typeof sizeClasses;
   className?: string;
 }) {
-  const kit = kitOverride ?? (kitKey != null ? kitForPlayerRow(name, kitKey) : kitForPlayer(name));
+  const kit =
+    kitOverride ??
+    (kitKey != null ? kitForPlayerRow(name, kitKey) : kitForPlayer(name));
   const uid = useId().replace(/:/g, "");
   const clip = `shirt-${uid}`;
 

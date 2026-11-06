@@ -3,10 +3,7 @@ import { buildSeasonAwardDrafts } from "@/server/domain/season-awards";
 import type { ManagerStandingRow } from "@/server/queries/manager-standings";
 import type { StandingRow } from "@/server/queries/standings";
 
-function player(
-  id: string,
-  overrides: Partial<StandingRow> = {},
-): StandingRow {
+function player(id: string, overrides: Partial<StandingRow> = {}): StandingRow {
   return {
     playerId: id,
     displayName: id,
@@ -25,10 +22,7 @@ function player(
   };
 }
 
-function manager(
-  id: string,
-  totalPoints: number,
-): ManagerStandingRow {
+function manager(id: string, totalPoints: number): ManagerStandingRow {
   return {
     managerId: id,
     displayName: id,
@@ -75,7 +69,15 @@ describe("buildSeasonAwardDrafts", () => {
   it("skips awards when nobody has positive stats", () => {
     const drafts = buildSeasonAwardDrafts(
       [manager("m1", 0)],
-      [player("p1", { points: 0, goals: 0, assists: 0, appearances: 0, wins: 0 })],
+      [
+        player("p1", {
+          points: 0,
+          goals: 0,
+          assists: 0,
+          appearances: 0,
+          wins: 0,
+        }),
+      ],
       [],
       [],
       [],

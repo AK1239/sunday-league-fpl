@@ -14,14 +14,11 @@ import { actionFail, actionOk, type ActionResult } from "./action-result";
 const rulesSchema = z.object({
   seasonId: z.string().uuid(),
   ruleSetId: z.string().uuid(),
-  transfersStartMatchday: z.preprocess(
-    (v) => {
-      if (v === "" || v === null || v === undefined) return null;
-      const n = Number(v);
-      return Number.isFinite(n) ? n : v;
-    },
-    z.number().int().min(1).nullable(),
-  ),
+  transfersStartMatchday: z.preprocess((v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : v;
+  }, z.number().int().min(1).nullable()),
   freeTransfersPerMatchday: z.coerce.number().int().min(0).max(10),
   maxBankedFreeTransfers: z.coerce.number().int().min(0).max(10),
   extraTransferPenalty: z.coerce.number().int().min(1).max(20),

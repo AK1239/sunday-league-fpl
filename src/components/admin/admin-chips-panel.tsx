@@ -73,7 +73,10 @@ export async function AdminChipsPanel({
       {!data.chipsEnabled ? (
         <p className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
           Chips are not enabled for this season. Use{" "}
-          <Link href="/admin/seasons" className="font-medium text-primary hover:underline">
+          <Link
+            href="/admin/seasons"
+            className="font-medium text-primary hover:underline"
+          >
             Seasons → Enable chips
           </Link>{" "}
           first.
@@ -85,7 +88,12 @@ export async function AdminChipsPanel({
         aria-label="Filter chip usage"
       >
         <FilterLink
-          href={filterHref({ status: undefined, chipCode: undefined, matchdayId: undefined, managerId: undefined })}
+          href={filterHref({
+            status: undefined,
+            chipCode: undefined,
+            matchdayId: undefined,
+            managerId: undefined,
+          })}
           active={!params.status && !params.chipCode && !params.matchdayId}
         >
           All

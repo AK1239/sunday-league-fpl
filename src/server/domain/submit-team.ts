@@ -68,7 +68,10 @@ export type SubmitTeamResult = {
   summary: TransferWindowSummary | null;
 };
 
-function advisoryLockKeys(managerId: string, seasonId: string): [number, number] {
+function advisoryLockKeys(
+  managerId: string,
+  seasonId: string,
+): [number, number] {
   const digest = createHash("sha256")
     .update(`${managerId}:${seasonId}`)
     .digest();
@@ -301,10 +304,7 @@ export async function submitTeam(
     }
 
     if (matchday.status === "cancelled") {
-      throw new FantasyTeamError(
-        "This gameweek was cancelled.",
-        "CANCELLED",
-      );
+      throw new FantasyTeamError("This gameweek was cancelled.", "CANCELLED");
     }
 
     const dbNow = await readDbNow(tx);
@@ -409,7 +409,8 @@ export async function submitTeam(
         isInitialBuild,
         seasonChips: seasonChipsConfig,
         activePlays,
-        reserveEligible: (playerId) => eligibleById.get(playerId)?.active === true,
+        reserveEligible: (playerId) =>
+          eligibleById.get(playerId)?.active === true,
       }),
     );
 
@@ -518,10 +519,7 @@ export async function submitTeam(
     }
 
     if (!basePlayerIds || basePlayerIds.length !== 5) {
-      throw new FantasyTeamError(
-        "Base squad is incomplete.",
-        "VALIDATION",
-      );
+      throw new FantasyTeamError("Base squad is incomplete.", "VALIDATION");
     }
 
     if (isFreeHit) {

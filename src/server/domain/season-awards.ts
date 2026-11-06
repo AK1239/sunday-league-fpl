@@ -78,10 +78,7 @@ export function buildSeasonAwardDrafts(
     });
   }
 
-  const playmaker = topPlayerBy(
-    playerStandingsByAssists,
-    (row) => row.assists,
-  );
+  const playmaker = topPlayerBy(playerStandingsByAssists, (row) => row.assists);
   if (playmaker) {
     drafts.push({
       award: "playmaker",
@@ -90,10 +87,7 @@ export function buildSeasonAwardDrafts(
     });
   }
 
-  const apps = topPlayerBy(
-    playerStandingsByApps,
-    (row) => row.appearances,
-  );
+  const apps = topPlayerBy(playerStandingsByApps, (row) => row.appearances);
   if (apps) {
     drafts.push({
       award: "most_appearances",
@@ -123,10 +117,7 @@ export const AWARD_LABELS: Record<SeasonAwardKind, string> = {
   most_wins: "Most wins",
 };
 
-export function awardValueLabel(
-  award: SeasonAwardKind,
-  value: number,
-): string {
+export function awardValueLabel(award: SeasonAwardKind, value: number): string {
   switch (award) {
     case "manager_champion":
     case "champion":

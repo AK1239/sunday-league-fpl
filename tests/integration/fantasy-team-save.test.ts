@@ -80,9 +80,13 @@ describe.skipIf(!hasDatabase)("fantasy team save", () => {
       .returning();
     matchdayId = md!.id;
 
-    playerIds = (await db.select({ id: players.id }).from(players).limit(5)).map(
-      (p) => p.id,
-    );
+    playerIds = (
+      await db
+        .select({ id: players.id })
+        .from(players)
+        .where(eq(players.active, true))
+        .limit(5)
+    ).map((p) => p.id);
   });
 
   function validPick() {

@@ -66,7 +66,11 @@ export async function getPlayerPublicProfile(
   const row = standings.find((s) => s.playerId === playerId);
 
   const recentPublished = await db
-    .select({ id: matchdays.id, number: matchdays.number, playedOn: matchdays.playedOn })
+    .select({
+      id: matchdays.id,
+      number: matchdays.number,
+      playedOn: matchdays.playedOn,
+    })
     .from(matchdays)
     .where(
       and(eq(matchdays.seasonId, seasonId), eq(matchdays.status, "published")),
@@ -97,9 +101,7 @@ export async function getPlayerPublicProfile(
       )
       .groupBy(pointLedger.matchdayId);
 
-    const pointsByMd = new Map(
-      ledgerRows.map((r) => [r.matchdayId, r.points]),
-    );
+    const pointsByMd = new Map(ledgerRows.map((r) => [r.matchdayId, r.points]));
 
     for (const md of formPublished) {
       form.push(pointsByMd.get(md.id) ?? 0);
@@ -138,7 +140,10 @@ export async function getPlayerPublicProfile(
         count: sql<number>`count(distinct ${fantasyTeams.managerId})::int`,
       })
       .from(fantasyTeamPlayers)
-      .innerJoin(fantasyTeams, eq(fantasyTeamPlayers.fantasyTeamId, fantasyTeams.id))
+      .innerJoin(
+        fantasyTeams,
+        eq(fantasyTeamPlayers.fantasyTeamId, fantasyTeams.id),
+      )
       .where(
         and(
           eq(fantasyTeams.matchdayId, latestMdId),
@@ -185,8 +190,16 @@ export type PublicMatchDetail = {
     matchdayNumber: number;
     playedOn: string;
   };
-  sideA: { playerIds: string[]; playerNames: string[]; goalkeeperName: string | null };
-  sideB: { playerIds: string[]; playerNames: string[]; goalkeeperName: string | null };
+  sideA: {
+    playerIds: string[];
+    playerNames: string[];
+    goalkeeperName: string | null;
+  };
+  sideB: {
+    playerIds: string[];
+    playerNames: string[];
+    goalkeeperName: string | null;
+  };
   goals: {
     side: "A" | "B";
     scorerName: string;
@@ -248,13 +261,16 @@ export async function getPublicMatchDetail(
   const gkNames = new Map<string, string>();
   for (const sid of [sideA, sideB]) {
     if (sid?.goalkeeperPlayerId) {
-      const gk = participants.find((p) => p.playerId === sid.goalkeeperPlayerId);
+      const gk = participants.find(
+        (p) => p.playerId === sid.goalkeeperPlayerId,
+      );
       if (gk) gkNames.set(sid.side, gk.displayName);
     }
   }
 
   function sidePlayers(sideId: string | undefined) {
-    if (!sideId) return { playerIds: [] as string[], playerNames: [] as string[] };
+    if (!sideId)
+      return { playerIds: [] as string[], playerNames: [] as string[] };
     const list = participants.filter((p) => p.sideId === sideId);
     return {
       playerIds: list.map((p) => p.playerId),

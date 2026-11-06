@@ -9,10 +9,7 @@ import {
 const chipsE2e = process.env.E2E_CHIPS === "1";
 
 test.describe("chips UI", () => {
-  test.skip(
-    !chipsE2e,
-    "Set E2E_CHIPS=1 and run pnpm e2e:prepare-chips",
-  );
+  test.skip(!chipsE2e, "Set E2E_CHIPS=1 and run pnpm e2e:prepare-chips");
 
   test("chips tab loads and passes axe", async ({ page }) => {
     const assertDiagnostics = attachPageDiagnostics(page);
@@ -35,7 +32,7 @@ test.describe("chips UI", () => {
     ).toBeVisible();
 
     const results = await new AxeBuilder({ page })
-      .exclude('[data-sonner-toaster]')
+      .exclude("[data-sonner-toaster]")
       .analyze();
     expect(results.violations, "axe on chips tab").toEqual([]);
 
@@ -62,7 +59,7 @@ test.describe("chips UI", () => {
 
     const results = await new AxeBuilder({ page })
       .include('[role="dialog"]')
-      .exclude('[data-sonner-toaster]')
+      .exclude("[data-sonner-toaster]")
       .analyze();
     expect(results.violations, "axe on chip drawer").toEqual([]);
 

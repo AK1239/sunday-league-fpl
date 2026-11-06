@@ -30,7 +30,9 @@ export function isPermanentSubmittedTeam(team: SubmittedFantasyTeam): boolean {
   return submittedSquadKind(team) === "permanent";
 }
 
-function isSubmittedPickSource(source: SubmittedFantasyTeam["source"]): boolean {
+function isSubmittedPickSource(
+  source: SubmittedFantasyTeam["source"],
+): boolean {
   return source === "manual" || source === "admin";
 }
 

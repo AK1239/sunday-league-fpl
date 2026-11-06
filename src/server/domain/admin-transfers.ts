@@ -127,9 +127,7 @@ export async function listTransferActivity(
           unlimited: w.unlimited,
         });
     const extra =
-      w.voidedAt || w.unlimited
-        ? 0
-        : Math.max(0, made - w.freeAvailable);
+      w.voidedAt || w.unlimited ? 0 : Math.max(0, made - w.freeAvailable);
 
     if (input.penalisedOnly && penalty >= 0) continue;
 
@@ -204,9 +202,7 @@ export async function previewTransferWindowRebuild(
       ),
     );
 
-  const windowByMd = new Map(
-    existingWindows.map((w) => [w.matchdayId, w]),
-  );
+  const windowByMd = new Map(existingWindows.map((w) => [w.matchdayId, w]));
 
   const chainInputs: MatchdayBalanceInput[] = [];
   for (const md of matchdayRows) {
@@ -262,10 +258,7 @@ export async function previewTransferWindowRebuild(
       unlimited: window.unlimited,
     });
 
-    if (
-      window.freeAvailable !== freeAfter ||
-      penaltyBefore !== penaltyAfter
-    ) {
+    if (window.freeAvailable !== freeAfter || penaltyBefore !== penaltyAfter) {
       changes.push({
         matchdayId: md.id,
         matchdayNumber: md.number,

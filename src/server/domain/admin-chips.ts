@@ -10,10 +10,7 @@ import {
   users,
 } from "@/server/db/schema";
 import type { ChipCode } from "@/server/chips/registry";
-import {
-  CHIP_REGISTRY,
-  isChipCode,
-} from "@/server/chips/registry";
+import { CHIP_REGISTRY, isChipCode } from "@/server/chips/registry";
 import { isLocked } from "@/server/fantasy/lock";
 import {
   seasonTransferRulesFromRow,
@@ -146,9 +143,7 @@ export async function loadSeasonChipsAdmin(
     enabled: row.enabled,
     availableFromMatchday: row.availableFromMatchday,
     params:
-      row.params &&
-      typeof row.params === "object" &&
-      !Array.isArray(row.params)
+      row.params && typeof row.params === "object" && !Array.isArray(row.params)
         ? (row.params as Record<string, unknown>)
         : {},
   }));
@@ -307,7 +302,10 @@ export async function voidChipPlayAdmin(
       throw new AdminChipsError("Chip play not found.", "NOT_FOUND");
     }
     if (play.status !== "active") {
-      throw new AdminChipsError("Only active chip plays can be voided.", "INVALID");
+      throw new AdminChipsError(
+        "Only active chip plays can be voided.",
+        "INVALID",
+      );
     }
     if (!isChipCode(play.chipCode)) {
       throw new AdminChipsError("Unknown chip on play record.", "CHIP_UNKNOWN");
@@ -460,13 +458,8 @@ export async function forceActivateChipAdmin(
       );
     }
 
-    const usedSameChip = activePlays.find(
-      (p) => p.chipCode === chipCode,
-    );
-    if (
-      usedSameChip &&
-      usedSameChip.matchdayId !== input.matchdayId
-    ) {
+    const usedSameChip = activePlays.find((p) => p.chipCode === chipCode);
+    if (usedSameChip && usedSameChip.matchdayId !== input.matchdayId) {
       throw new AdminChipsError(
         "This chip is already active on another gameweek.",
         "CHIP_ALREADY_USED",

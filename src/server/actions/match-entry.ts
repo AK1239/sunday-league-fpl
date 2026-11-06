@@ -13,7 +13,12 @@ import {
   saveMatchdayAttendanceAdmin,
 } from "@/server/domain/match-entry";
 import type { MatchDraftInput } from "@/server/domain/match-entry-types";
-import { actionFail, actionOk, type ActionFailure, type ActionResult } from "./action-result";
+import {
+  actionFail,
+  actionOk,
+  type ActionFailure,
+  type ActionResult,
+} from "./action-result";
 
 const goalSchema = z.object({
   scorerId: z.string().uuid(),
@@ -71,7 +76,9 @@ export async function saveMatchdayAttendanceAction(
     revalidatePath("/table");
     return actionOk();
   } catch (error) {
-    return mapEntryError(error) ?? actionFail("ERROR", "Could not save attendance.");
+    return (
+      mapEntryError(error) ?? actionFail("ERROR", "Could not save attendance.")
+    );
   }
 }
 
@@ -104,9 +111,7 @@ export async function saveMatchDraftAction(
     revalidatePath("/table");
     return actionOk(result);
   } catch (error) {
-    return (
-      mapEntryError(error) ?? actionFail("ERROR", "Could not save match.")
-    );
+    return mapEntryError(error) ?? actionFail("ERROR", "Could not save match.");
   }
 }
 
@@ -119,7 +124,11 @@ export async function addEmptyMatchAction(
   }
 
   try {
-    const result = await addEmptyMatchAdmin(getDb(), session.userId, matchdayId);
+    const result = await addEmptyMatchAdmin(
+      getDb(),
+      session.userId,
+      matchdayId,
+    );
     revalidatePath(`/admin/matchdays/${matchdayId}/entry`);
     return actionOk(result);
   } catch (error) {
@@ -142,7 +151,9 @@ export async function copyLineupAction(
     revalidatePath(`/admin/matchdays/${matchdayId}/entry`);
     return actionOk();
   } catch (error) {
-    return mapEntryError(error) ?? actionFail("ERROR", "Could not copy lineup.");
+    return (
+      mapEntryError(error) ?? actionFail("ERROR", "Could not copy lineup.")
+    );
   }
 }
 

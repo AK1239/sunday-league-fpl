@@ -138,9 +138,7 @@ export async function getChipPageData(
       };
     } else if (
       entry.requiresTransferBase &&
-      (input.isInitialBuild ||
-        !input.hasBaseSquad ||
-        !input.transferRulesApply)
+      (input.isInitialBuild || !input.hasBaseSquad || !input.transferRulesApply)
     ) {
       status = {
         kind: "unavailable",

@@ -10,7 +10,12 @@ import {
   type SubmitTeamRequest,
 } from "@/server/domain/submit-team";
 import type { TransferWindowSummary } from "@/server/fantasy/transfer-summary";
-import { actionFail, actionOk, type ActionFailure, type ActionResult } from "./action-result";
+import {
+  actionFail,
+  actionOk,
+  type ActionFailure,
+  type ActionResult,
+} from "./action-result";
 
 const submitSchema = z.object({
   playerIds: z.array(z.string().uuid()).length(5),

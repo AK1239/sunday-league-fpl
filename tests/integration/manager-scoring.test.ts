@@ -13,10 +13,7 @@ import {
   users,
 } from "@/server/db/schema";
 import { getManagerStandings } from "@/server/queries/manager-standings";
-import {
-  getActiveSeasonId,
-  seedPublishedDemoMatchday,
-} from "./seed-fixture";
+import { getActiveSeasonId, seedPublishedDemoMatchday } from "./seed-fixture";
 import { resetDatabase } from "./helpers";
 
 const hasDatabase = !!process.env.DATABASE_URL;

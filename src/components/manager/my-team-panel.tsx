@@ -115,9 +115,7 @@ export async function MyTeamPanel() {
             team={data.latestPublished.team}
             lines={latestId ? details?.lines[latestId] : undefined}
             events={latestId ? details?.events[latestId] : undefined}
-            scoreBreakdown={
-              latestId ? details?.scores[latestId] : undefined
-            }
+            scoreBreakdown={latestId ? details?.scores[latestId] : undefined}
             emptyTitle="You sat this one out"
             emptyMessage={`You didn't have a team for GW${data.latestPublished.number}, so no points were scored. Set yours early next time.`}
           />

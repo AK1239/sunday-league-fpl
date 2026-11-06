@@ -108,7 +108,9 @@ export async function HomeHubPanel() {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">No matches recorded.</p>
+            <p className="text-sm text-muted-foreground">
+              No matches recorded.
+            </p>
           )}
         </section>
       ) : null}

@@ -77,7 +77,10 @@ describe("validateChipSubmission", () => {
       const result = validateChipSubmission(
         baseInput({ chipCode: "bench_boost", reservePlayerIds: extras }),
       );
-      expect(result).toMatchObject({ ok: false, code: "CHIP_RESERVE_REQUIRED" });
+      expect(result).toMatchObject({
+        ok: false,
+        code: "CHIP_RESERVE_REQUIRED",
+      });
     }
   });
 
@@ -115,9 +118,7 @@ describe("validateChipSubmission", () => {
 
   it("accepts triple captain with permanent squad", () => {
     expect(
-      validateChipSubmission(
-        baseInput({ chipCode: "triple_captain" }),
-      ),
+      validateChipSubmission(baseInput({ chipCode: "triple_captain" })),
     ).toEqual({ ok: true });
   });
 });

@@ -16,7 +16,8 @@ const OPTIONS: { value: StandingsSort; label: string }[] = [
 export function StandingsSortChips() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const current = (searchParams.get("sort") as StandingsSort | null) ?? "points";
+  const current =
+    (searchParams.get("sort") as StandingsSort | null) ?? "points";
 
   return (
     <div

@@ -14,7 +14,12 @@ import { submitTeam } from "@/server/domain/submit-team";
 import type { FantasyTeamPick } from "@/server/fantasy/validate-team";
 import { getPickTeamData } from "@/server/queries/pick-team-data";
 import { getManagerFantasyTeamForViewer } from "@/server/queries/fantasy-team-view";
-import { actionFail, actionOk, type ActionFailure, type ActionResult } from "./action-result";
+import {
+  actionFail,
+  actionOk,
+  type ActionFailure,
+  type ActionResult,
+} from "./action-result";
 
 const pickSchema = z.object({
   playerIds: z.array(z.string().uuid()).length(5),
@@ -52,7 +57,10 @@ export async function saveFantasyTeamAction(
 
   const parsed = savePickSchema.safeParse(pick);
   if (!parsed.success) {
-    return actionFail("VALIDATION", "Pick exactly 5 players with captain and vice.");
+    return actionFail(
+      "VALIDATION",
+      "Pick exactly 5 players with captain and vice.",
+    );
   }
 
   const { expectedVersion, ...pickRest } = parsed.data;
@@ -94,7 +102,10 @@ export async function overrideFantasyTeamAdminAction(
 
   const parsed = pickSchema.safeParse(pick);
   if (!parsed.success) {
-    return actionFail("VALIDATION", "Pick exactly 5 players with captain and vice.");
+    return actionFail(
+      "VALIDATION",
+      "Pick exactly 5 players with captain and vice.",
+    );
   }
 
   try {

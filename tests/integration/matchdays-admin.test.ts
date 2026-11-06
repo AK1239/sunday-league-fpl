@@ -8,11 +8,13 @@ import {
   createMatchdayAdmin,
   updateMatchdayDeadlineAdmin,
 } from "@/server/domain/matchdays-admin";
-import { managerMatchdayScores, matchdays, seasons, users } from "@/server/db/schema";
 import {
-  getActiveSeasonId,
-  seedPublishedDemoMatchday,
-} from "./seed-fixture";
+  managerMatchdayScores,
+  matchdays,
+  seasons,
+  users,
+} from "@/server/db/schema";
+import { getActiveSeasonId, seedPublishedDemoMatchday } from "./seed-fixture";
 import { resetDatabase } from "./helpers";
 
 const hasDatabase = !!process.env.DATABASE_URL;

@@ -202,7 +202,8 @@ export function scoreMatchday(
         {
           matchId: match.id,
           playerId: incident.playerId,
-          kind: incident.kind === "penalty_saved" ? "penalty_saved" : "handball",
+          kind:
+            incident.kind === "penalty_saved" ? "penalty_saved" : "handball",
           points:
             incident.kind === "penalty_saved"
               ? rules.penaltySavedPts

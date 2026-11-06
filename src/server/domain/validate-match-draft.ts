@@ -5,8 +5,7 @@ import type {
 } from "./match-entry-types";
 
 export type ValidateMatchDraftResult =
-  | { ok: true }
-  | { ok: false; code: string; message: string };
+  { ok: true } | { ok: false; code: string; message: string };
 
 export function validateMatchDraft(
   draft: MatchDraftInput,
@@ -64,20 +63,14 @@ export function validateMatchDraft(
     }
   }
 
-  if (
-    draft.sideAGoalkeeperId &&
-    !sideA.has(draft.sideAGoalkeeperId)
-  ) {
+  if (draft.sideAGoalkeeperId && !sideA.has(draft.sideAGoalkeeperId)) {
     return {
       ok: false,
       code: "GK",
       message: "Side A goalkeeper must be on side A.",
     };
   }
-  if (
-    draft.sideBGoalkeeperId &&
-    !sideB.has(draft.sideBGoalkeeperId)
-  ) {
+  if (draft.sideBGoalkeeperId && !sideB.has(draft.sideBGoalkeeperId)) {
     return {
       ok: false,
       code: "GK",

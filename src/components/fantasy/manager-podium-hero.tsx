@@ -61,7 +61,10 @@ export function ManagerPodiumHero({
                     aria-hidden
                   />
                 ) : null}
-                <PlayerAvatar name={row.displayName} size={first ? "xl" : "lg"} />
+                <PlayerAvatar
+                  name={row.displayName}
+                  size={first ? "xl" : "lg"}
+                />
                 <p className="max-w-full truncate text-center text-sm font-semibold">
                   {row.displayName}
                 </p>

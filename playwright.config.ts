@@ -7,8 +7,7 @@ const e2eEnv = {
     process.env.DATABASE_URL ??
     "postgres://fantasy:fantasy@localhost:5432/fantasy",
   SESSION_SECRET:
-    process.env.SESSION_SECRET ??
-    "ci-session-secret-minimum-32-characters",
+    process.env.SESSION_SECRET ?? "ci-session-secret-minimum-32-characters",
   ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? "ci@mkate.test",
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD ?? "ci-password-12",
   NODE_ENV: "production" as const,

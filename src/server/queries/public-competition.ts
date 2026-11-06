@@ -65,7 +65,9 @@ export type PublicHomeData = {
   playmaker: { playerId: string; displayName: string; assists: number } | null;
 };
 
-export async function getPublicHomeData(db: AppDb): Promise<PublicHomeData | null> {
+export async function getPublicHomeData(
+  db: AppDb,
+): Promise<PublicHomeData | null> {
   await ensureAutoScheduledMatchday(db);
   const seasonId = await getActiveSeasonId(db);
   if (!seasonId) return null;

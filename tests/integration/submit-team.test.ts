@@ -48,7 +48,10 @@ describe.skipIf(!hasDatabase)("submitTeam (transfers on)", () => {
       .set({ transfersStartMatchday: 10 })
       .where(eq(scoringRuleSets.id, rules!.id));
 
-    const allPlayers = await db.select({ id: players.id }).from(players);
+    const allPlayers = await db
+      .select({ id: players.id })
+      .from(players)
+      .where(eq(players.active, true));
     basePlayerIds = allPlayers.slice(0, 5).map((p) => p.id);
     extraPlayerIds = allPlayers.slice(5, 9).map((p) => p.id);
 

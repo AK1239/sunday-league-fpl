@@ -96,4 +96,3 @@ async function doBootstrapTestDatabase(): Promise<string> {
 
   return testUrl;
 }
-

@@ -141,14 +141,12 @@ describe.skipIf(!hasDatabase)("chips schema (0009)", () => {
 
   it("allows one active chip play per manager and matchday", async () => {
     const fx = await seedFixtures();
-    await getDb()
-      .insert(managerChipPlays)
-      .values({
-        seasonId: fx.seasonId,
-        managerId: fx.managerId,
-        matchdayId: fx.matchdayId,
-        chipCode: "bench_boost",
-      });
+    await getDb().insert(managerChipPlays).values({
+      seasonId: fx.seasonId,
+      managerId: fx.managerId,
+      matchdayId: fx.matchdayId,
+      chipCode: "bench_boost",
+    });
     await expectDbReject(
       () =>
         getDb().insert(managerChipPlays).values({

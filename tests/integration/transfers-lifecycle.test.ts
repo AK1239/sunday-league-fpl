@@ -68,7 +68,10 @@ describe.skipIf(!hasDatabase)("transfer lifecycle (phase 5)", () => {
 
   it("voids transfers and pending squads when a gameweek is cancelled (§6.1)", async () => {
     const db = getDb();
-    const playersList = await db.select({ id: players.id }).from(players);
+    const playersList = await db
+      .select({ id: players.id })
+      .from(players)
+      .where(eq(players.active, true));
     const base = playersList.slice(0, 5).map((p) => p.id);
     const extra = playersList[5]!.id;
 
@@ -150,7 +153,10 @@ describe.skipIf(!hasDatabase)("transfer lifecycle (phase 5)", () => {
 
   it("allows a mid-season join as a free initial build (§6.2)", async () => {
     const db = getDb();
-    const playersList = await db.select({ id: players.id }).from(players);
+    const playersList = await db
+      .select({ id: players.id })
+      .from(players)
+      .where(eq(players.active, true));
     const squad = playersList.slice(0, 5).map((p) => p.id);
 
     const [open] = await db
@@ -193,7 +199,10 @@ describe.skipIf(!hasDatabase)("transfer lifecycle (phase 5)", () => {
       .set({ status: "disabled" })
       .where(eq(users.id, managerId));
 
-    const playersList = await db.select({ id: players.id }).from(players);
+    const playersList = await db
+      .select({ id: players.id })
+      .from(players)
+      .where(eq(players.active, true));
     const squad = playersList.slice(0, 5).map((p) => p.id);
 
     const [open] = await db
@@ -225,10 +234,12 @@ describe.skipIf(!hasDatabase)("transfer lifecycle (phase 5)", () => {
 
   it("excludes disabled managers from public standings", async () => {
     const db = getDb();
-    const { recomputeMatchday } = await import(
-      "@/server/domain/recompute-matchday"
-    );
-    const playersList = await db.select({ id: players.id }).from(players);
+    const { recomputeMatchday } =
+      await import("@/server/domain/recompute-matchday");
+    const playersList = await db
+      .select({ id: players.id })
+      .from(players)
+      .where(eq(players.active, true));
     const squad = playersList.slice(0, 5).map((p) => p.id);
 
     const [md] = await db

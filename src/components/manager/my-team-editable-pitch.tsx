@@ -57,6 +57,7 @@ export function MyTeamEditablePitch({
   const router = useRouter();
   const [teamVersion, setTeamVersion] = useState(initialTeamVersion);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- keep the optimistic-lock version in step with the server after refresh
     setTeamVersion(initialTeamVersion);
   }, [initialTeamVersion]);
   const initialRoles = readCaptainIds(initialSlots);
@@ -75,7 +76,11 @@ export function MyTeamEditablePitch({
   const playerIds = slots.map((s) => s.playerId);
 
   const persistRoles = useCallback(
-    async (captain: string, vice: string, nextSlots: FantasyTeamPlayerSlot[]) => {
+    async (
+      captain: string,
+      vice: string,
+      nextSlots: FantasyTeamPlayerSlot[],
+    ) => {
       setSaving(true);
       const result = await saveFantasyTeamAction(matchdayId, {
         playerIds,
@@ -105,7 +110,7 @@ export function MyTeamEditablePitch({
 
   async function makeCaptain() {
     if (!activePlayerId || saving) return;
-    let nextCaptain = activePlayerId;
+    const nextCaptain = activePlayerId;
     let nextVice = viceCaptainPlayerId;
     if (nextVice === nextCaptain) {
       nextVice =
@@ -119,7 +124,7 @@ export function MyTeamEditablePitch({
 
   async function makeVice() {
     if (!activePlayerId || saving) return;
-    let nextVice = activePlayerId;
+    const nextVice = activePlayerId;
     let nextCaptain = captainPlayerId;
     if (nextCaptain === nextVice) {
       nextCaptain =

@@ -8,7 +8,8 @@ export const CHIP_CODES = [
 
 export type ChipCode = (typeof CHIP_CODES)[number];
 
-export type ChipPermanence = "score_only" | "permanent_squad" | "temporary_squad";
+export type ChipPermanence =
+  "score_only" | "permanent_squad" | "temporary_squad";
 
 export type ChipRegistryEntry = {
   code: ChipCode;

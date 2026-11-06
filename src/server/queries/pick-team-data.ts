@@ -132,9 +132,10 @@ async function loadPlayerGameweekStats(
   const appearanceRows = await db
     .select({
       playerId: matchdayAttendance.playerId,
-      appearances: sql<number>`count(distinct ${matchdayAttendance.matchdayId})::int`.as(
-        "appearances",
-      ),
+      appearances:
+        sql<number>`count(distinct ${matchdayAttendance.matchdayId})::int`.as(
+          "appearances",
+        ),
     })
     .from(matchdayAttendance)
     .innerJoin(matchdays, eq(matchdayAttendance.matchdayId, matchdays.id))
@@ -161,9 +162,7 @@ export async function getPickTeamData(
   matchdayId?: string,
 ): Promise<PickTeamData | null> {
   await ensureAutoScheduledMatchday(db);
-  const seasonId =
-    (await getActiveSeasonId(db)) ??
-    null;
+  const seasonId = (await getActiveSeasonId(db)) ?? null;
   if (!seasonId) return null;
 
   const matchday =
@@ -187,7 +186,10 @@ export async function getPickTeamData(
   if (!matchday || matchday.seasonId !== seasonId) return null;
 
   const serverNow = await readDbNow(db);
-  const lockState = { status: matchday.status, deadlineAt: matchday.deadlineAt };
+  const lockState = {
+    status: matchday.status,
+    deadlineAt: matchday.deadlineAt,
+  };
 
   const playerRows = await db
     .select({

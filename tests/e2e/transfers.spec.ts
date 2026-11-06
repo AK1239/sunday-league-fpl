@@ -9,7 +9,10 @@ import {
 const transfersE2e = process.env.E2E_TRANSFERS === "1";
 
 test.describe("transfers UI", () => {
-  test.skip(!transfersE2e, "Set E2E_TRANSFERS=1 and run scripts/e2e-prepare-transfers.ts");
+  test.skip(
+    !transfersE2e,
+    "Set E2E_TRANSFERS=1 and run scripts/e2e-prepare-transfers.ts",
+  );
 
   test("transfers screen loads and passes axe", async ({ page }) => {
     const assertDiagnostics = attachPageDiagnostics(page);
@@ -22,7 +25,7 @@ test.describe("transfers UI", () => {
     ).toBeVisible();
 
     const results = await new AxeBuilder({ page })
-      .exclude('[data-sonner-toaster]')
+      .exclude("[data-sonner-toaster]")
       .analyze();
     expect(results.violations, "axe on /pick").toEqual([]);
 

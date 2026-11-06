@@ -20,9 +20,7 @@ export function resolveBaseSquadPlayerIds(
         isPermanentSubmittedTeam(t) &&
         isMatchdayBefore(t.matchday, targetMatchday),
     )
-    .sort((a, b) =>
-      compareMatchdaysChronologically(b.matchday, a.matchday),
-    )[0];
+    .sort((a, b) => compareMatchdaysChronologically(b.matchday, a.matchday))[0];
 
   return prior?.playerIds ?? null;
 }
@@ -32,5 +30,7 @@ export function hasPriorSubmittedSquadInSeason(
   targetMatchday: MatchdayTimelineEntry,
   submittedTeams: readonly SubmittedFantasyTeam[],
 ): boolean {
-  return resolveBaseSquadPlayerIds(managerId, targetMatchday, submittedTeams) != null;
+  return (
+    resolveBaseSquadPlayerIds(managerId, targetMatchday, submittedTeams) != null
+  );
 }

@@ -36,9 +36,7 @@ export function navActive(pathname: string, item: PrimaryNavItem): boolean {
       if (pathname === "/more") return true;
       return MORE_SITE_NAV.some((link) => {
         if (link.href.startsWith("/my/")) return false;
-        return (
-          pathname === link.href || pathname.startsWith(`${link.href}/`)
-        );
+        return pathname === link.href || pathname.startsWith(`${link.href}/`);
       });
     case "prefix":
       return pathname === item.href || pathname.startsWith(`${item.href}/`);

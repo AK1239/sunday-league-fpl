@@ -46,7 +46,10 @@ async function seedTransferWindowFixture() {
     .set({ transfersStartMatchday: 10 })
     .where(eq(scoringRuleSets.id, rules!.id));
 
-  const allPlayers = await db.select({ id: players.id }).from(players);
+  const allPlayers = await db
+    .select({ id: players.id })
+    .from(players)
+    .where(eq(players.active, true));
   const basePlayerIds = allPlayers.slice(0, 5).map((p) => p.id);
   const extraPlayerIds = allPlayers.slice(5, 10).map((p) => p.id);
 
@@ -125,12 +128,7 @@ describe.skipIf(!hasDatabase)("submitTeam chips (phase 5)", () => {
       chipCode: "wildcard",
     };
 
-    const result = await submitTeam(
-      db,
-      fx.openMatchdayId,
-      pick,
-      fx.managerId,
-    );
+    const result = await submitTeam(db, fx.openMatchdayId, pick, fx.managerId);
     expect(result.summary?.extra).toBe(0);
     expect(result.summary?.made).toBe(3);
 
@@ -211,16 +209,16 @@ describe.skipIf(!hasDatabase)("submitTeam chips (phase 5)", () => {
       chipCode: "triple_captain",
     };
 
-    const first = await submitTeam(
+    const first = await submitTeam(db, fx.openMatchdayId, pick, fx.managerId);
+    const second = await submitTeam(
       db,
       fx.openMatchdayId,
-      pick,
+      {
+        ...pick,
+        expectedVersion: first.version,
+      },
       fx.managerId,
     );
-    const second = await submitTeam(db, fx.openMatchdayId, {
-      ...pick,
-      expectedVersion: first.version,
-    }, fx.managerId);
 
     expect(second.version).toBe(first.version);
     const plays = await db
@@ -242,14 +240,24 @@ describe.skipIf(!hasDatabase)("submitTeam chips (phase 5)", () => {
     };
 
     const results = await Promise.allSettled([
-      submitTeam(db, fx.openMatchdayId, {
-        ...basePick,
-        chipCode: "triple_captain",
-      }, fx.managerId),
-      submitTeam(db, fx.openMatchdayId, {
-        ...basePick,
-        chipCode: "wildcard",
-      }, fx.managerId),
+      submitTeam(
+        db,
+        fx.openMatchdayId,
+        {
+          ...basePick,
+          chipCode: "triple_captain",
+        },
+        fx.managerId,
+      ),
+      submitTeam(
+        db,
+        fx.openMatchdayId,
+        {
+          ...basePick,
+          chipCode: "wildcard",
+        },
+        fx.managerId,
+      ),
     ]);
 
     const fulfilled = results.filter((r) => r.status === "fulfilled");

@@ -123,6 +123,7 @@ export function PickTeamClient({
 
   useEffect(() => {
     if (initial.myTeam?.playerIds.length === 5) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- adopt the server team after router.refresh(); intentional prop-to-state sync
       setSlots(teamToSlots(initial.myTeam.playerIds));
       setCaptainPlayerId(initial.myTeam.captainPlayerId);
       setViceCaptainPlayerId(initial.myTeam.viceCaptainPlayerId);
@@ -232,13 +233,10 @@ export function PickTeamClient({
   async function handleSave() {
     if (!pickForValidation || !canSave) return;
     setSaving(true);
-    const result = await saveFantasyTeamAction(
-      initial.matchday.id,
-      {
-        ...pickForValidation,
-        expectedVersion: teamVersion,
-      },
-    );
+    const result = await saveFantasyTeamAction(initial.matchday.id, {
+      ...pickForValidation,
+      expectedVersion: teamVersion,
+    });
     setSaving(false);
     if (result.ok === false) {
       if (result.code === "CONFLICT") {

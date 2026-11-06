@@ -1,11 +1,6 @@
 import { desc, eq, inArray } from "drizzle-orm";
 import type { AppDb } from "@/server/db";
-import {
-  players,
-  seasonAwards,
-  seasons,
-  users,
-} from "@/server/db/schema";
+import { players, seasonAwards, seasons, users } from "@/server/db/schema";
 import {
   AWARD_LABELS,
   awardValueLabel,
@@ -36,9 +31,7 @@ const AWARD_ORDER: SeasonAwardKind[] = [
   "most_wins",
 ];
 
-export async function getAwardsHall(
-  db: AppDb,
-): Promise<PublicSeasonArchive[]> {
+export async function getAwardsHall(db: AppDb): Promise<PublicSeasonArchive[]> {
   const closed = await db
     .select({
       id: seasons.id,

@@ -1,5 +1,8 @@
 import "dotenv/config";
-import { bootstrapTestDatabase, readDevDatabaseUrl } from "../tests/test-database";
+import {
+  bootstrapTestDatabase,
+  readDevDatabaseUrl,
+} from "../tests/test-database";
 
 async function main() {
   const devUrl = readDevDatabaseUrl();

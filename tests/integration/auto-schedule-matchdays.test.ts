@@ -1,8 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import { eq } from "drizzle-orm";
 import { getDb } from "@/server/db";
 import { seedDatabase } from "@/server/db/seed";
-import { matchdays, seasons, users } from "@/server/db/schema";
+import { matchdays, users } from "@/server/db/schema";
 import { ensureAutoScheduledMatchday } from "@/server/domain/auto-schedule-matchdays";
 import { resetDatabase } from "./helpers";
 

@@ -30,9 +30,13 @@ export async function validateMatchdayReadyToPublish(
   matchdayId: string,
 ): Promise<void> {
   const entry = await loadMatchdayEntry(db, matchdayId);
-  if (!entry) throw new MatchdayPublishError("Matchday not found.", "NOT_FOUND");
+  if (!entry)
+    throw new MatchdayPublishError("Matchday not found.", "NOT_FOUND");
   if (entry.status === "cancelled") {
-    throw new MatchdayPublishError("Cancelled matchdays cannot publish.", "CANCELLED");
+    throw new MatchdayPublishError(
+      "Cancelled matchdays cannot publish.",
+      "CANCELLED",
+    );
   }
   if (entry.status === "published") {
     throw new MatchdayPublishError("Already published.", "ALREADY_PUBLISHED");
@@ -104,7 +108,8 @@ export async function unpublishMatchdayAdmin(
   matchdayId: string,
 ): Promise<void> {
   const before = await getMatchdayRow(db, matchdayId);
-  if (!before) throw new MatchdayPublishError("Matchday not found.", "NOT_FOUND");
+  if (!before)
+    throw new MatchdayPublishError("Matchday not found.", "NOT_FOUND");
   if (before.status !== "published") {
     throw new MatchdayPublishError(
       "Only published matchdays can be unpublished.",
@@ -165,7 +170,10 @@ export async function deleteMatchAdmin(
   const md = await getMatchdayRow(db, matchdayId);
   if (!md) throw new MatchEntryError("Matchday not found.", "NOT_FOUND");
   if (md.status === "cancelled") {
-    throw new MatchEntryError("Cancelled matchdays cannot be edited.", "CANCELLED");
+    throw new MatchEntryError(
+      "Cancelled matchdays cannot be edited.",
+      "CANCELLED",
+    );
   }
 
   const match = await db

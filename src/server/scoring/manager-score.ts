@@ -38,7 +38,11 @@ function buildSquadLines(
   attended: ReadonlySet<string>,
   team: TeamForManagerScoring,
   chip: ChipScoringInput | null,
-): { lines: ScoredManagerLine[]; squadPoints: number; multiplierPlayerId: string | null } {
+): {
+  lines: ScoredManagerLine[];
+  squadPoints: number;
+  multiplierPlayerId: string | null;
+} {
   const multipliedPlayerId = pickMultiplierPlayer(team, attended);
   const lines: ScoredManagerLine[] = team.playerIds.map((playerId) => {
     const basePoints = playerPoints.get(playerId) ?? 0;

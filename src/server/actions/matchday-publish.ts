@@ -12,7 +12,12 @@ import {
   recalculateMatchdayAdmin,
   unpublishMatchdayAdmin,
 } from "@/server/domain/matchday-publish";
-import { actionFail, actionOk, type ActionFailure, type ActionResult } from "./action-result";
+import {
+  actionFail,
+  actionOk,
+  type ActionFailure,
+  type ActionResult,
+} from "./action-result";
 
 function mapPublishError(error: unknown): ActionFailure | null {
   if (error instanceof MatchdayPublishError) {
@@ -43,7 +48,8 @@ export async function publishMatchdayAction(
     return actionOk();
   } catch (error) {
     return (
-      mapPublishError(error) ?? actionFail("ERROR", "Could not publish matchday.")
+      mapPublishError(error) ??
+      actionFail("ERROR", "Could not publish matchday.")
     );
   }
 }

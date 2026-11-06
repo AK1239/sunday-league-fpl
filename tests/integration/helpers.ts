@@ -52,7 +52,10 @@ export async function expectDbReject(
     await run();
     throw new Error("Expected promise to reject");
   } catch (error) {
-    if (error instanceof Error && error.message === "Expected promise to reject") {
+    if (
+      error instanceof Error &&
+      error.message === "Expected promise to reject"
+    ) {
       throw error;
     }
     expect(dbErrorMessage(error)).toMatch(pattern);

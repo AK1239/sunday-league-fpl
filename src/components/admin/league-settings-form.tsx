@@ -42,9 +42,12 @@ export function LeagueSettingsForm({
           <Settings2 className="size-5" />
         </span>
         <div>
-          <h2 className="font-heading text-lg font-semibold">League defaults</h2>
+          <h2 className="font-heading text-lg font-semibold">
+            League defaults
+          </h2>
           <p className="text-sm text-muted-foreground">
-            Used when scheduling new gameweeks (kickoff minus offset = deadline).
+            Used when scheduling new gameweeks (kickoff minus offset =
+            deadline).
           </p>
         </div>
       </div>
@@ -74,7 +77,9 @@ export function LeagueSettingsForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="deadlineOffsetMinutes">Deadline offset (minutes)</Label>
+          <Label htmlFor="deadlineOffsetMinutes">
+            Deadline offset (minutes)
+          </Label>
           <Input
             id="deadlineOffsetMinutes"
             name="deadlineOffsetMinutes"

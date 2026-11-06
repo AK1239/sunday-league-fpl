@@ -27,22 +27,29 @@ test.describe("manager auth and /my routes", () => {
     const assertDiagnostics = attachPageDiagnostics(page);
     await loginAsManager(page);
 
-    const routes: { path: string; heading: RegExp | string; level?: 1 | 2 }[] = [
-      { path: "/my", heading: "My Team", level: 1 },
-      { path: "/my/points", heading: "My Points", level: 1 },
-      { path: "/my/captain", heading: /Captain performance/i, level: 1 },
-      { path: "/my/history", heading: /Gameweek teams/i, level: 1 },
-      {
-        path: "/pick",
-        heading: /Transfers|Pick Team|No gameweek open for picks/i,
-        level: 2,
-      },
-    ];
+    const routes: { path: string; heading: RegExp | string; level?: 1 | 2 }[] =
+      [
+        { path: "/my", heading: "My Team", level: 1 },
+        { path: "/my/points", heading: "My Points", level: 1 },
+        { path: "/my/captain", heading: /Captain performance/i, level: 1 },
+        { path: "/my/history", heading: /Gameweek teams/i, level: 1 },
+        {
+          // The pick page title depends on state: "Build your squad" (first
+          // squad), "Transfers", or an empty state. The level varies too.
+          path: "/pick",
+          heading:
+            /Build your squad|Transfers|Pick Team|No gameweek open for picks/i,
+          level: undefined,
+        },
+      ];
 
-    for (const { path, heading, level = 1 } of routes) {
+    for (const { path, heading, level } of routes) {
       await gotoHealthy(page, path);
       await expect(
-        page.getByRole("heading", { level, name: heading }),
+        page.getByRole(
+          "heading",
+          level ? { level, name: heading } : { name: heading },
+        ),
       ).toBeVisible();
       await assertDiagnostics(path);
     }
