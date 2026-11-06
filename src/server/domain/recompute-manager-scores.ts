@@ -17,11 +17,16 @@ import {
   type MatchdayTimelineEntry,
   type SubmittedFantasyTeam,
 } from "@/server/fantasy/effective-team";
+import type { ChipScoringInput } from "@/server/scoring/chip-effects";
 import {
   scoreManagerWithNoTeam,
   scoreManagers,
 } from "@/server/scoring/manager-score";
 import type { ManagerScoringRules } from "@/server/scoring/manager-types";
+import {
+  loadActiveChipPlaysForMatchday,
+  toChipScoringInput,
+} from "./load-matchday-chips";
 import { loadScoringRulesForMatchday } from "./load-matchday-scoring";
 import { loadTransferPenaltiesForMatchday } from "./transfer-penalty";
 
@@ -187,6 +192,12 @@ export async function rebuildManagerScoresFromMatchday(
       managerIds,
     );
 
+    const chipPlaysByManager = await loadActiveChipPlaysForMatchday(
+      tx,
+      md.id,
+      managerIds,
+    );
+
     const scored = [];
 
     for (const manager of managers) {
@@ -244,6 +255,18 @@ export async function rebuildManagerScoresFromMatchday(
         });
       }
 
+      const chipsByManager = new Map<string, ChipScoringInput>();
+      const play = chipPlaysByManager.get(manager.id);
+      if (play) {
+        const chipInput = toChipScoringInput(
+          play,
+          effective.reservePlayerId,
+        );
+        if (chipInput) {
+          chipsByManager.set(manager.id, chipInput);
+        }
+      }
+
       const [entry] = scoreManagers(
         rules,
         playerPoints,
@@ -258,6 +281,7 @@ export async function rebuildManagerScoresFromMatchday(
           },
         ],
         transferPenalties,
+        chipsByManager,
       );
       scored.push(entry);
     }
