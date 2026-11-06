@@ -58,6 +58,9 @@ export async function MyTeamPanel() {
         }
       : null;
 
+  const hasUpcomingLineup =
+    upcomingTeam?.visibility === "visible" && upcomingTeam.slots.length > 0;
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -87,7 +90,7 @@ export async function MyTeamPanel() {
               {data.upcomingFreeTransfers != null ? "Transfers" : "Pick Team"}
             </Link>
           </div>
-          {upcomingChips ? (
+          {upcomingChips && hasUpcomingLineup ? (
             <MyTeamChips
               matchdayId={data.upcoming.matchdayId}
               chips={upcomingChips}
