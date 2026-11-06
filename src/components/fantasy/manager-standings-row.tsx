@@ -3,15 +3,24 @@ import type { ManagerStandingRow } from "@/server/queries/manager-standings";
 import { PlayerAvatar } from "./player-avatar";
 import { RankDelta } from "./rank-delta";
 
-export function ManagerStandingsRow({ row }: { row: ManagerStandingRow }) {
+export function ManagerStandingsRow({
+  row,
+  showScores = true,
+}: {
+  row: ManagerStandingRow;
+  /** False before the first gameweek is published: show names only. */
+  showScores?: boolean;
+}) {
   return (
     <tr className="group border-b border-border/40 transition-colors last:border-0 hover:bg-primary/5">
       <td className="px-3 py-3 tabular-nums text-muted-foreground">
-        {row.rank}
+        {showScores ? row.rank : "–"}
       </td>
-      <td className="px-2 py-3">
-        <RankDelta delta={row.rankDelta} />
-      </td>
+      {showScores ? (
+        <td className="px-2 py-3">
+          <RankDelta delta={row.rankDelta} />
+        </td>
+      ) : null}
       <td className="px-3 py-3">
         <Link
           href={`/managers/${row.managerId}`}
@@ -23,15 +32,19 @@ export function ManagerStandingsRow({ row }: { row: ManagerStandingRow }) {
           </span>
         </Link>
       </td>
-      <td className="px-3 py-3 text-right font-heading text-base font-semibold tabular-nums text-primary">
-        {row.totalPoints}
-      </td>
-      <td className="hidden px-3 py-3 text-right tabular-nums sm:table-cell">
-        {row.lastGameweekPoints}
-      </td>
-      <td className="hidden px-3 py-3 text-right tabular-nums md:table-cell">
-        {row.bestGameweekPoints}
-      </td>
+      {showScores ? (
+        <>
+          <td className="px-3 py-3 text-right font-heading text-base font-semibold tabular-nums text-primary">
+            {row.totalPoints}
+          </td>
+          <td className="hidden px-3 py-3 text-right tabular-nums sm:table-cell">
+            {row.lastGameweekPoints}
+          </td>
+          <td className="hidden px-3 py-3 text-right tabular-nums md:table-cell">
+            {row.bestGameweekPoints}
+          </td>
+        </>
+      ) : null}
     </tr>
   );
 }

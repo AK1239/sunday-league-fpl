@@ -79,7 +79,12 @@ export async function ManagerStandingsPanel({
 
       <ul className="space-y-2 md:hidden" aria-label="Manager leaderboard">
         {rows.map((row, i) => (
-          <ManagerStandingsCard key={row.managerId} row={row} index={i} />
+          <ManagerStandingsCard
+            key={row.managerId}
+            row={row}
+            index={i}
+            showScores={!noPointsYet}
+          />
         ))}
       </ul>
 
@@ -91,32 +96,42 @@ export async function ManagerStandingsPanel({
               <th scope="col" className="px-3 py-3">
                 #
               </th>
-              <th scope="col" className="px-2 py-3">
-                Δ
-              </th>
+              {noPointsYet ? null : (
+                <th scope="col" className="px-2 py-3">
+                  Δ
+                </th>
+              )}
               <th scope="col" className="px-3 py-3">
                 Manager
               </th>
-              <th scope="col" className="px-3 py-3 text-right">
-                Pts
-              </th>
-              <th
-                scope="col"
-                className="hidden px-3 py-3 text-right sm:table-cell"
-              >
-                Last GW
-              </th>
-              <th
-                scope="col"
-                className="hidden px-3 py-3 text-right md:table-cell"
-              >
-                Best GW
-              </th>
+              {noPointsYet ? null : (
+                <>
+                  <th scope="col" className="px-3 py-3 text-right">
+                    Pts
+                  </th>
+                  <th
+                    scope="col"
+                    className="hidden px-3 py-3 text-right sm:table-cell"
+                  >
+                    Last GW
+                  </th>
+                  <th
+                    scope="col"
+                    className="hidden px-3 py-3 text-right md:table-cell"
+                  >
+                    Best GW
+                  </th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
-              <ManagerStandingsRow key={row.managerId} row={row} />
+              <ManagerStandingsRow
+                key={row.managerId}
+                row={row}
+                showScores={!noPointsYet}
+              />
             ))}
           </tbody>
         </table>

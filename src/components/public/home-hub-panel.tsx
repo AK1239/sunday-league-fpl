@@ -213,14 +213,18 @@ export async function HomeHubPanel() {
                 className="surface flex items-center justify-between rounded-xl px-4 py-3 text-sm"
               >
                 <span>
-                  <span className="mr-2 tabular-nums text-muted-foreground">
-                    #{row.rank}
-                  </span>
+                  {scored.length > 0 ? (
+                    <span className="mr-2 tabular-nums text-muted-foreground">
+                      #{row.rank}
+                    </span>
+                  ) : null}
                   {row.displayName}
                 </span>
-                <span className="font-semibold tabular-nums text-primary">
-                  {row.totalPoints}
-                </span>
+                {scored.length > 0 ? (
+                  <span className="font-semibold tabular-nums text-primary">
+                    {row.totalPoints}
+                  </span>
+                ) : null}
               </Link>
             </li>
           ))}
