@@ -48,7 +48,7 @@ async function readDbNow(db: AppDb): Promise<Date> {
   return row.now instanceof Date ? row.now : new Date(String(row.now));
 }
 
-async function loadSubmittedTeamsForSeason(
+export async function loadSubmittedTeamsForSeason(
   db: AppDb,
   seasonId: string,
 ): Promise<SubmittedFantasyTeam[]> {

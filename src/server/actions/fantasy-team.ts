@@ -9,6 +9,7 @@ import {
   FantasyTeamError,
   saveFantasyTeam,
 } from "@/server/domain/save-fantasy-team";
+import { submitTeam } from "@/server/domain/submit-team";
 import type { FantasyTeamPick } from "@/server/fantasy/validate-team";
 import { getPickTeamData } from "@/server/queries/pick-team-data";
 import { getManagerFantasyTeamForViewer } from "@/server/queries/fantasy-team-view";
@@ -22,7 +23,14 @@ const pickSchema = z.object({
 
 function mapFantasyTeamError(error: unknown): ActionFailure | null {
   if (error instanceof FantasyTeamError) {
-    return actionFail(error.code, error.message);
+    const meta = error.meta;
+    const fieldErrors =
+      meta && typeof meta === "object"
+        ? Object.fromEntries(
+            Object.entries(meta).map(([k, v]) => [k, String(v)]),
+          )
+        : undefined;
+    return actionFail(error.code, error.message, fieldErrors);
   }
   return null;
 }
@@ -42,13 +50,19 @@ export async function saveFantasyTeamAction(
   }
 
   try {
-    const result = await saveFantasyTeam(getDb(), matchdayId, parsed.data, {
-      mode: "manager",
-      managerId: session.userId,
-    });
+    const result = await submitTeam(
+      getDb(),
+      matchdayId,
+      {
+        ...parsed.data,
+        expectedVersion: 0,
+        acknowledgedPenalty: 0,
+      },
+      session.userId,
+    );
     revalidatePath("/pick");
     revalidatePath("/my");
-    return actionOk(result);
+    return actionOk({ teamId: result.teamId });
   } catch (error) {
     return (
       mapFantasyTeamError(error) ?? actionFail("ERROR", "Could not save team.")

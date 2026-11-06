@@ -18,6 +18,7 @@ export class FantasyTeamError extends Error {
   constructor(
     message: string,
     readonly code: string,
+    readonly meta?: Record<string, unknown>,
   ) {
     super(message);
     this.name = "FantasyTeamError";

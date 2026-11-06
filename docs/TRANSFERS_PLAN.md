@@ -584,9 +584,9 @@ Chips (separate future project) plug into the documented hook points in §5.
 - [x] Phase 1: pure domain modules + unit tests (all §3.3 fixtures)
 - [x] Phase 2: migration `0008_transfers.sql`, schema, rule-set columns, backfill
 - [x] Phase 2: deferred "exactly 5 players" constraint trigger
-- [ ] Phase 3: `submit-team` service (lock order, advisory lock, DB time, version, replay)
-- [ ] Phase 3: server actions + error codes
-- [ ] Phase 3: concurrency and atomicity integration tests
+- [x] Phase 3: `submit-team` service (lock order, advisory lock, DB time, version, replay)
+- [x] Phase 3: server actions + error codes
+- [x] Phase 3: concurrency and atomicity integration tests
 - [ ] Phase 4: recompute reads windows; `squad_points` / `transfer_penalty`; fix rank filter
 - [ ] Phase 5: cancel/postpone hooks; disabled-manager handling; mid-season join
 - [ ] Phase 6: transfers UI (pitch, picker banner, summary, confirm, history, locked)
