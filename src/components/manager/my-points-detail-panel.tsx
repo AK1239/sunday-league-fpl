@@ -65,8 +65,12 @@ export async function MyPointsDetailPanel({
                       </span>
                     ) : null}
                   </td>
-                  <td className="px-4 py-2.5 tabular-nums">{line.basePoints}</td>
-                  <td className="px-4 py-2.5 tabular-nums">{line.multiplier}</td>
+                  <td className="px-4 py-2.5 tabular-nums">
+                    {line.basePoints}
+                  </td>
+                  <td className="px-4 py-2.5 tabular-nums">
+                    {line.multiplier}
+                  </td>
                   <td className="px-4 py-2.5 tabular-nums font-semibold">
                     {line.points}
                   </td>

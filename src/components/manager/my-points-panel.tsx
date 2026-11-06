@@ -49,7 +49,9 @@ export async function MyPointsPanel() {
                   <p className="font-heading font-semibold tabular-nums">
                     GW{row.number}
                   </p>
-                  <p className="text-xs text-muted-foreground">{row.playedOn}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {row.playedOn}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold tabular-nums text-primary">

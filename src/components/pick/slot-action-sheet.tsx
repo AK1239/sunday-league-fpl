@@ -1,6 +1,12 @@
 "use client";
 
-import { ArrowLeftRight, Crown, ShieldCheck, Trash2 } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Crown,
+  ShieldCheck,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 import { BottomSheet } from "@/components/pick/bottom-sheet";
 import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { cn } from "@/lib/utils";
@@ -25,6 +31,8 @@ export function SlotActionSheet({
   onMakeVice,
   onRemove,
   onReplace,
+  onViewPlayer,
+  showSquadEditActions = true,
 }: {
   open: boolean;
   onClose: () => void;
@@ -33,8 +41,11 @@ export function SlotActionSheet({
   isVice: boolean;
   onMakeCaptain: () => void;
   onMakeVice: () => void;
-  onRemove: () => void;
-  onReplace: () => void;
+  onRemove?: () => void;
+  onReplace?: () => void;
+  onViewPlayer?: () => void;
+  /** Replace / remove — hidden on read-only views like My Team. */
+  showSquadEditActions?: boolean;
 }) {
   const actions: Action[] = [
     {
@@ -53,21 +64,40 @@ export function SlotActionSheet({
       onSelect: onMakeVice,
       hidden: isVice,
     },
-    {
-      key: "replace",
-      label: "Replace player",
-      hint: "Swap for someone else",
-      icon: <ArrowLeftRight />,
-      onSelect: onReplace,
-    },
-    {
-      key: "remove",
-      label: "Remove from team",
-      hint: "Free up this slot",
-      icon: <Trash2 />,
-      onSelect: onRemove,
-      tone: "danger",
-    },
+    ...(showSquadEditActions && onReplace
+      ? [
+          {
+            key: "replace",
+            label: "Replace player",
+            hint: "Swap for someone else",
+            icon: <ArrowLeftRight />,
+            onSelect: onReplace,
+          } satisfies Action,
+        ]
+      : []),
+    ...(showSquadEditActions && onRemove
+      ? [
+          {
+            key: "remove",
+            label: "Remove from team",
+            hint: "Free up this slot",
+            icon: <Trash2 />,
+            onSelect: onRemove,
+            tone: "danger" as const,
+          } satisfies Action,
+        ]
+      : []),
+    ...(onViewPlayer
+      ? [
+          {
+            key: "view",
+            label: "View player",
+            hint: "Stats and season history",
+            icon: <UserRound />,
+            onSelect: onViewPlayer,
+          } satisfies Action,
+        ]
+      : []),
   ];
 
   const role = isCaptain ? "Captain" : isVice ? "Vice-captain" : "Squad player";

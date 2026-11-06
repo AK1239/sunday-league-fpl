@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/fantasy/page-header";
 import { EmptyState } from "@/components/fantasy/empty-state";
 import { requireUser } from "@/server/auth/require-user";
 import { getDb } from "@/server/db";
-import { getManagerScoreLinesByMatchday } from "@/server/queries/manager-score-lines";
+import { getGameweekDetails } from "@/server/queries/manager-score-lines";
 import {
   getManagerMySeasonId,
   getMyHistoricalTeams,
@@ -25,7 +25,7 @@ export async function MyHistoryPanel() {
 
   const history = await getMyHistoricalTeams(getDb(), user.userId, seasonId);
 
-  const linesByMatchday = await getManagerScoreLinesByMatchday(
+  const details = await getGameweekDetails(
     getDb(),
     user.userId,
     history.map((h) => h.matchdayId),
@@ -53,7 +53,8 @@ export async function MyHistoryPanel() {
                 playedOn={entry.playedOn}
                 totalPoints={entry.totalPoints}
                 team={entry.team}
-                lines={linesByMatchday[entry.matchdayId]}
+                lines={details.lines[entry.matchdayId]}
+                events={details.events[entry.matchdayId]}
               />
             </li>
           ))}

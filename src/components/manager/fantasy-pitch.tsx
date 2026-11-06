@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { CaptainBadge } from "@/components/pick/captain-badge";
@@ -15,10 +17,12 @@ const ROWS = [
 export function FantasyPitch({
   slots,
   lines,
+  onSelectPlayer,
   className,
 }: {
   slots: FantasyTeamPlayerSlot[];
   lines?: Record<string, ManagerLine>;
+  onSelectPlayer?: (playerId: string) => void;
   className?: string;
 }) {
   return (
@@ -69,6 +73,7 @@ export function FantasyPitch({
                   slot={slot}
                   line={lines?.[slot.playerId]}
                   index={index}
+                  onSelect={onSelectPlayer}
                 />
               );
             })}
@@ -83,21 +88,22 @@ function PitchPlayer({
   slot,
   line,
   index,
+  onSelect,
 }: {
   slot: FantasyTeamPlayerSlot;
   line?: ManagerLine;
   index: number;
+  onSelect?: (playerId: string) => void;
 }) {
   const scored = line != null;
   const dnp = scored && !line.attended;
   const boosted = scored && line.multiplier > 1;
 
-  return (
-    <Link
-      href={`/players/${slot.playerId}`}
-      className="group animate-rise flex w-[5.5rem] flex-col items-center outline-none sm:w-24"
-      style={{ "--d": `${index * 90}ms` } as React.CSSProperties}
-    >
+  const wrapperClass =
+    "group animate-rise flex w-[5.5rem] flex-col items-center outline-none sm:w-24";
+  const wrapperStyle = { "--d": `${index * 90}ms` } as React.CSSProperties;
+  const content = (
+    <>
       <div
         className={cn(
           "relative transition-transform duration-300 group-hover:-translate-y-1 group-focus-visible:-translate-y-1",
@@ -144,6 +150,26 @@ function PitchPlayer({
           </p>
         ) : null}
       </div>
+    </>
+  );
+
+  return onSelect ? (
+    <button
+      type="button"
+      onClick={() => onSelect(slot.playerId)}
+      aria-label={`${slot.displayName}${scored ? `, ${line.points} points` : ""}. Show breakdown.`}
+      className={cn(wrapperClass, "cursor-pointer active:scale-95")}
+      style={wrapperStyle}
+    >
+      {content}
+    </button>
+  ) : (
+    <Link
+      href={`/players/${slot.playerId}`}
+      className={wrapperClass}
+      style={wrapperStyle}
+    >
+      {content}
     </Link>
   );
 }

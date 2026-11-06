@@ -15,7 +15,10 @@ export async function MyCaptainPanel() {
   const seasonId = await getManagerMySeasonId(getDb());
   if (!seasonId) {
     return (
-      <EmptyState title="No active season" description="Captain stats need published gameweeks." />
+      <EmptyState
+        title="No active season"
+        description="Captain stats need published gameweeks."
+      />
     );
   }
 

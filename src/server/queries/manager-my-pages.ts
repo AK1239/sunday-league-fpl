@@ -51,6 +51,7 @@ export type MyTeamPageData = {
     number: number;
     playedOn: string;
     deadlineAt: Date;
+    status: "scheduled" | "draft" | "published" | "cancelled";
     team: FantasyTeamView;
   } | null;
   latestPublished: {
@@ -107,6 +108,7 @@ export async function getMyTeamPageData(
       number: upcomingMd.number,
       playedOn: upcomingMd.playedOn,
       deadlineAt: upcomingMd.deadlineAt,
+      status: upcomingMd.status,
       team,
     };
   }

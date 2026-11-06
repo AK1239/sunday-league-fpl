@@ -4,9 +4,10 @@ import { FantasyTeamCard } from "@/components/manager/fantasy-team-card";
 import { PageHeader } from "@/components/fantasy/page-header";
 import { EmptyState } from "@/components/fantasy/empty-state";
 import { GameweekTeam } from "@/components/manager/gameweek-team";
-import { getManagerScoreLinesByMatchday } from "@/server/queries/manager-score-lines";
+import { getGameweekDetails } from "@/server/queries/manager-score-lines";
 import { requireUser } from "@/server/auth/require-user";
 import { getDb } from "@/server/db";
+import { isSelectionOpen } from "@/server/fantasy/lock";
 import { getMyTeamPageData } from "@/server/queries/manager-my-pages";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -25,13 +26,10 @@ export async function MyTeamPanel() {
     );
   }
 
-  const latestLines = data.latestPublished
-    ? (
-        await getManagerScoreLinesByMatchday(getDb(), user.userId, [
-          data.latestPublished.matchdayId,
-        ])
-      )[data.latestPublished.matchdayId]
-    : undefined;
+  const latestId = data.latestPublished?.matchdayId;
+  const details = latestId
+    ? await getGameweekDetails(getDb(), user.userId, [latestId])
+    : null;
 
   return (
     <div className="space-y-8">
@@ -58,6 +56,14 @@ export async function MyTeamPanel() {
           </div>
           <FantasyTeamCard
             team={data.upcoming.team}
+            matchdayId={data.upcoming.matchdayId}
+            picksOpen={isSelectionOpen(
+              {
+                status: data.upcoming.status,
+                deadlineAt: data.upcoming.deadlineAt,
+              },
+              new Date(),
+            )}
             emptyTitle="Your lineup is empty"
             emptyMessage="Pick your five and choose a captain before the deadline — it only takes a minute."
             emptyAction={{ href: "/pick", label: "Pick your team" }}
@@ -73,7 +79,8 @@ export async function MyTeamPanel() {
             playedOn={data.latestPublished.playedOn}
             totalPoints={data.latestPublished.totalPoints}
             team={data.latestPublished.team}
-            lines={latestLines}
+            lines={latestId ? details?.lines[latestId] : undefined}
+            events={latestId ? details?.events[latestId] : undefined}
             emptyTitle="You sat this one out"
             emptyMessage={`You didn't have a team for GW${data.latestPublished.number}, so no points were scored. Set yours early next time.`}
           />

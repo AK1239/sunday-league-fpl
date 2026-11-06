@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/fantasy/page-header";
 import { PlayerAvatar } from "@/components/fantasy/player-avatar";
 import { RankDelta } from "@/components/fantasy/rank-delta";
 import { getDb } from "@/server/db";
-import { getManagerScoreLinesByMatchday } from "@/server/queries/manager-score-lines";
+import { getGameweekDetails } from "@/server/queries/manager-score-lines";
 import {
   getPublicManagerProfile,
   getPublicManagerTeamForGameweek,
@@ -29,7 +29,7 @@ export async function ManagerProfilePanel({
     })),
   );
 
-  const linesByMatchday = await getManagerScoreLinesByMatchday(
+  const details = await getGameweekDetails(
     db,
     managerId,
     profile.gameweeks.map((g) => g.matchdayId),
@@ -37,25 +37,32 @@ export async function ManagerProfilePanel({
 
   return (
     <div className="space-y-8">
-      <Link
-        href="/table"
-        className="text-sm font-medium text-primary hover:underline"
-      >
-        ← Manager table
-      </Link>
+      <header className="space-y-8">
+        <div className="space-y-4">
+          <Link
+            href="/table"
+            className="inline-block text-sm font-medium text-primary hover:underline"
+          >
+            ← Manager table
+          </Link>
+          <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">
+            {profile.seasonName}
+          </p>
+        </div>
 
-      <div className="flex items-center gap-4">
-        <PlayerAvatar name={profile.displayName} size="xl" />
-        <PageHeader
-          eyebrow={profile.seasonName}
-          title={profile.displayName}
-          description={
-            profile.standing
-              ? `#${profile.standing.rank} · ${profile.standing.totalPoints} pts season total`
-              : "No published scores yet"
-          }
-        />
-      </div>
+        <div className="flex items-start gap-4">
+          <PlayerAvatar name={profile.displayName} size="xl" />
+          <PageHeader
+            title={profile.displayName}
+            description={
+              profile.standing
+                ? `#${profile.standing.rank} · ${profile.standing.totalPoints} pts season total`
+                : "No published scores yet"
+            }
+            className="min-w-0 flex-1"
+          />
+        </div>
+      </header>
 
       {profile.standing ? (
         <div className="flex flex-wrap gap-4 text-sm">
@@ -112,7 +119,8 @@ export async function ManagerProfilePanel({
             totalPoints={entry.totalPoints}
             rankAfter={entry.rankAfter}
             team={entry.team}
-            lines={linesByMatchday[entry.matchdayId]}
+            lines={details.lines[entry.matchdayId]}
+            events={details.events[entry.matchdayId]}
             emptyMessage={
               entry.team.visibility === "hidden"
                 ? "Team hidden until deadline."
