@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { AdminGrantFreeTransfersForm } from "@/components/admin/admin-grant-free-transfers-form";
 import { AdminTransferRulesForm } from "@/components/admin/admin-transfer-rules-form";
 import { EmptyState } from "@/components/fantasy/empty-state";
 import { PageHeader } from "@/components/fantasy/page-header";
@@ -55,7 +54,7 @@ export async function AdminTransfersPanel({
       <PageHeader
         eyebrow="Admin"
         title="Transfers"
-        description="Activity, penalties, free-transfer adjustments, and season rules."
+        description="Season transfer rules, activity, and penalties."
       />
 
       {rules ? (
@@ -70,11 +69,6 @@ export async function AdminTransfersPanel({
           minStartGameweek={rules.minStartGameweek}
         />
       ) : null}
-
-      <AdminGrantFreeTransfersForm
-        managers={data.managers}
-        matchdays={data.matchdays}
-      />
 
       <section className="space-y-3">
         <h2 className="font-heading text-lg font-semibold">Filters</h2>
@@ -151,23 +145,24 @@ export async function AdminTransfersPanel({
         </section>
       ) : null}
 
-      {managerDetail ? (
+      {managerDetail && managerDetail.windows.length > 0 ? (
         <section className="space-y-3">
           <h2 className="font-heading text-lg font-semibold">
-            {managerDetail.managerName} · history
+            {managerDetail.managerName} · windows
           </h2>
-          {managerDetail.adjustments.length > 0 ? (
-            <ul className="surface space-y-2 rounded-2xl p-4 text-sm">
-              {managerDetail.adjustments.map((a) => (
-                <li key={a.id}>
-                  GW{a.matchdayNumber}: {a.delta > 0 ? "+" : ""}
-                  {a.delta} — {a.reason}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">No admin adjustments.</p>
-          )}
+          <ul className="surface divide-y divide-border/50 rounded-2xl text-sm">
+            {managerDetail.windows.map((w) => (
+              <li
+                key={w.matchdayId}
+                className="flex justify-between px-4 py-2 tabular-nums"
+              >
+                <span>GW{w.matchdayNumber}</span>
+                <span>
+                  {w.made} made · {w.freeAvailable} free · penalty {w.penalty}
+                </span>
+              </li>
+            ))}
+          </ul>
         </section>
       ) : null}
 

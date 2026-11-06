@@ -33,7 +33,7 @@ describe.skipIf(!hasDatabase)("transfers schema (0008)", () => {
       free_transfers_per_matchday: 2,
       max_banked_free_transfers: 3,
       extra_transfer_penalty: 4,
-      transfers_start_matchday: null,
+      transfers_start_matchday: 1,
     });
   });
 });

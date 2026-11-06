@@ -1,6 +1,6 @@
 /** Season-scoped transfer economy config (from `scoring_rule_sets`). */
 export type SeasonTransferRules = {
-  /** Transfers enabled from this matchday number onward; null = legacy pick-any-five mode. */
+  /** Transfers enabled from this matchday number onward; null = transfers not configured. */
   transfersStartMatchday: number | null;
   grant: number;
   cap: number;

@@ -4,59 +4,12 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/server/auth/require-admin";
 import { getDb } from "@/server/db";
-import { grantFreeTransferAdjustment } from "@/server/domain/admin-transfers";
 import {
   loadEditableTransferRulesForSeason,
   updateTransferRules,
 } from "@/server/domain/transfer-rules-admin";
 import { getActiveSeasonId } from "@/server/domain/matchdays-admin";
 import { actionFail, actionOk, type ActionResult } from "./action-result";
-
-const grantSchema = z.object({
-  managerId: z.string().uuid(),
-  matchdayId: z.string().uuid(),
-  delta: z.coerce.number().int().refine((n) => n !== 0, "Delta must be non-zero"),
-  reason: z.string().trim().min(3).max(500),
-});
-
-export async function grantFreeTransfersAction(
-  formData: FormData,
-): Promise<ActionResult<{ changeCount: number }>> {
-  const admin = await requireAdmin();
-  const parsed = grantSchema.safeParse({
-    managerId: formData.get("managerId"),
-    matchdayId: formData.get("matchdayId"),
-    delta: formData.get("delta"),
-    reason: formData.get("reason"),
-  });
-  if (!parsed.success) {
-    return actionFail("VALIDATION", "Check manager, gameweek, delta, and reason.");
-  }
-
-  try {
-    const result = await grantFreeTransferAdjustment(getDb(), {
-      adminId: admin.userId,
-      ...parsed.data,
-    });
-    revalidatePath("/admin/transfers");
-    revalidatePath("/my");
-    revalidatePath("/pick");
-    return actionOk({ changeCount: result.changes.length });
-  } catch (error) {
-    if (error instanceof Error) {
-      if (error.message === "TRANSFERS_OFF") {
-        return actionFail(
-          "VALIDATION",
-          "Transfers are not enabled for this gameweek.",
-        );
-      }
-      if (error.message === "NOT_FOUND") {
-        return actionFail("NOT_FOUND", "Gameweek not found.");
-      }
-    }
-    return actionFail("ERROR", "Could not grant adjustment.");
-  }
-}
 
 const rulesSchema = z.object({
   seasonId: z.string().uuid(),

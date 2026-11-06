@@ -26,6 +26,7 @@ export async function seedDatabase() {
       assistPts: 3,
       mvpPts: 3,
       cleanSheetPts: 4,
+      transfersStartMatchday: 1,
     })
     .returning();
 

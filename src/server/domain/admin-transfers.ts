@@ -2,7 +2,6 @@ import { and, asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import type { AppDb, DbExecutor } from "@/server/db";
 import {
   fantasyTransfers,
-  managerFreeTransferAdjustments,
   managerTransferWindows,
   matchdays,
   players,
@@ -312,125 +311,9 @@ export async function rebuildTransferWindowsForManager(
   return changes;
 }
 
-export async function grantFreeTransferAdjustment(
-  db: AppDb,
-  input: {
-    adminId: string;
-    managerId: string;
-    matchdayId: string;
-    delta: number;
-    reason: string;
-  },
-): Promise<{ changes: WindowRebuildChange[]; seasonId: string; fromNumber: number }> {
-  if (input.delta === 0) {
-    throw new Error("DELTA_ZERO");
-  }
-  if (input.reason.trim().length < 3) {
-    throw new Error("REASON_REQUIRED");
-  }
-
-  return db.transaction(async (tx) => {
-    const [md] = await tx
-      .select({
-        id: matchdays.id,
-        number: matchdays.number,
-        seasonId: matchdays.seasonId,
-      })
-      .from(matchdays)
-      .where(eq(matchdays.id, input.matchdayId))
-      .limit(1);
-
-    if (!md) throw new Error("NOT_FOUND");
-
-    const editable = await tx
-      .select({
-        transfersStartMatchday: scoringRuleSets.transfersStartMatchday,
-        freeTransfersPerMatchday: scoringRuleSets.freeTransfersPerMatchday,
-        maxBankedFreeTransfers: scoringRuleSets.maxBankedFreeTransfers,
-        extraTransferPenalty: scoringRuleSets.extraTransferPenalty,
-      })
-      .from(seasons)
-      .innerJoin(scoringRuleSets, eq(seasons.ruleSetId, scoringRuleSets.id))
-      .where(eq(seasons.id, md.seasonId))
-      .limit(1);
-
-    const ruleRow = editable[0];
-    if (
-      !ruleRow ||
-      !isTransferModeEnabled(ruleRow.transfersStartMatchday) ||
-      md.number < ruleRow.transfersStartMatchday!
-    ) {
-      throw new Error("TRANSFERS_OFF");
-    }
-
-    const rules = rulesFromEditable({
-      transfersStartMatchday: ruleRow.transfersStartMatchday,
-      freeTransfersPerMatchday: ruleRow.freeTransfersPerMatchday,
-      maxBankedFreeTransfers: ruleRow.maxBankedFreeTransfers,
-      extraTransferPenalty: ruleRow.extraTransferPenalty,
-    });
-
-    const [inserted] = await tx
-      .insert(managerFreeTransferAdjustments)
-      .values({
-        managerId: input.managerId,
-        matchdayId: input.matchdayId,
-        delta: input.delta,
-        reason: input.reason.trim(),
-        createdBy: input.adminId,
-      })
-      .returning({ id: managerFreeTransferAdjustments.id });
-
-    const changes = await rebuildTransferWindowsForManager(tx, {
-      managerId: input.managerId,
-      seasonId: md.seasonId,
-      fromMatchdayNumber: md.number,
-      rules: {
-        grant: rules.grant,
-        cap: rules.cap,
-        penaltyPerExtra: rules.penaltyPerExtra,
-      },
-      transfersStartMatchday: rules.transfersStartMatchday!,
-    });
-
-    await writeAuditLog(tx, {
-      userId: input.adminId,
-      action: "grant_free_transfer_adjustment",
-      entity: "manager_free_transfer_adjustments",
-      entityId: inserted!.id,
-      before: null,
-      after: {
-        managerId: input.managerId,
-        matchdayId: input.matchdayId,
-        delta: input.delta,
-        reason: input.reason.trim(),
-        windowChanges: changes,
-      },
-    });
-
-    if (changes.length > 0) {
-      const earliest = Math.min(...changes.map((c) => c.matchdayNumber));
-      await rebuildManagerScoresFromMatchday(tx, md.seasonId, earliest);
-    }
-
-    return {
-      changes,
-      seasonId: md.seasonId,
-      fromNumber: md.number,
-    };
-  });
-}
-
 export type ManagerTransferAdminDetail = {
   managerId: string;
   managerName: string;
-  adjustments: {
-    id: string;
-    matchdayNumber: number;
-    delta: number;
-    reason: string;
-    createdAt: Date;
-  }[];
   windows: TransferActivityRow[];
 };
 
@@ -446,27 +329,6 @@ export async function getManagerTransferAdminDetail(
     .limit(1);
   if (!manager) return null;
 
-  const adjustmentRows = await db
-    .select({
-      id: managerFreeTransferAdjustments.id,
-      delta: managerFreeTransferAdjustments.delta,
-      reason: managerFreeTransferAdjustments.reason,
-      createdAt: managerFreeTransferAdjustments.createdAt,
-      number: matchdays.number,
-    })
-    .from(managerFreeTransferAdjustments)
-    .innerJoin(
-      matchdays,
-      eq(managerFreeTransferAdjustments.matchdayId, matchdays.id),
-    )
-    .where(
-      and(
-        eq(managerFreeTransferAdjustments.managerId, managerId),
-        eq(matchdays.seasonId, seasonId),
-      ),
-    )
-    .orderBy(desc(managerFreeTransferAdjustments.createdAt));
-
   const activity = await listTransferActivity(db, {
     seasonId,
   });
@@ -475,13 +337,6 @@ export async function getManagerTransferAdminDetail(
   return {
     managerId,
     managerName: manager.displayName,
-    adjustments: adjustmentRows.map((r) => ({
-      id: r.id,
-      matchdayNumber: r.number,
-      delta: r.delta,
-      reason: r.reason,
-      createdAt: r.createdAt,
-    })),
     windows,
   };
 }

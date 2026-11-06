@@ -22,7 +22,7 @@ function rulesHelpText(
 ): string {
   switch (editMode) {
     case "editable":
-      return "Enable transfers from a gameweek number (leave start empty for legacy picks).";
+      return "Set the first gameweek that uses transfer rules. Leave start empty to allow unrestricted picks every week.";
     case "enable_only":
       return minStartGameweek != null
         ? `Earlier gameweeks are already locked. Set start gameweek to ${minStartGameweek} or higher to turn transfers on from the next window (defaults for free/bank/hit stay as shown).`
@@ -96,13 +96,15 @@ export function AdminTransferRulesForm({
             name="transfersStartMatchday"
             type="number"
             min={minStartGameweek ?? 1}
-            placeholder="Off (legacy)"
+            placeholder={
+              minStartGameweek != null ? String(minStartGameweek) : "e.g. 1"
+            }
             defaultValue={transfersStartMatchday ?? ""}
             disabled={!startEditable || pending}
           />
           <p className="text-xs text-muted-foreground">
-            Empty = transfers off. Use the number of the first gameweek that
-            should use transfer rules.
+            Leave empty to keep transfers off. Otherwise use the gameweek number
+            when the transfer bank and −4 hits begin.
           </p>
         </div>
         <div className="space-y-2">

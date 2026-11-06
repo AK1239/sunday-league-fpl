@@ -57,9 +57,26 @@ function clearLocalDraft(matchdayId: string) {
 
 export function PickTeamClient({
   initial,
+  standardReason,
 }: {
   initial: SerializedPickTeamData;
+  standardReason?: "transfers_disabled" | "initial_build";
 }) {
+  const header =
+    standardReason === "initial_build"
+      ? {
+          title: "Build your squad",
+          description: `${initial.matchday.playedOn} · Pick your first five (free, no transfer limits). After this, changes count as transfers.`,
+        }
+      : standardReason === "transfers_disabled"
+        ? {
+            title: "Pick team",
+            description: `${initial.matchday.playedOn} · Transfer rules are not active for this gameweek yet. You can still pick any five.`,
+          }
+        : {
+            title: "Pick team",
+            description: `${initial.matchday.playedOn} · Choose 5 players, captain and vice.`,
+          };
   const router = useRouter();
   const playerById = useMemo(
     () => new Map(initial.players.map((p) => [p.id, p])),
@@ -219,8 +236,8 @@ export function PickTeamClient({
     <div className="space-y-6 pb-28">
       <PageHeader
         eyebrow={`Gameweek ${initial.matchday.number}`}
-        title="Pick Team"
-        description={`${initial.matchday.playedOn} · Choose 5 players, captain and vice.`}
+        title={header.title}
+        description={header.description}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/50 bg-card/40 px-4 py-3">

@@ -5,7 +5,11 @@ import type {
 import { serializePickTeamData } from "@/components/pick/pick-team-types";
 
 export type SerializedTransferPageData =
-  | { mode: "legacy"; pick: ReturnType<typeof serializePickTeamData> }
+  | {
+      mode: "standard";
+      pick: ReturnType<typeof serializePickTeamData>;
+      standardReason: "transfers_disabled" | "initial_build";
+    }
   | {
       mode: "transfers";
       pick: ReturnType<typeof serializePickTeamData>;
@@ -19,8 +23,12 @@ export type SerializedTransferPageData =
 export function serializeTransferPageData(
   data: TransferPageData,
 ): SerializedTransferPageData {
-  if (data.mode === "legacy") {
-    return { mode: "legacy", pick: serializePickTeamData(data.pick) };
+  if (data.mode === "standard") {
+    return {
+      mode: "standard",
+      pick: serializePickTeamData(data.pick),
+      standardReason: data.standardReason,
+    };
   }
   return {
     mode: "transfers",

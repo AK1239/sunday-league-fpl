@@ -35,7 +35,12 @@ export type TransferHistoryEntry = {
 };
 
 export type TransferPageData =
-  | { mode: "legacy"; pick: PickTeamData }
+  | {
+      mode: "standard";
+      pick: PickTeamData;
+      /** Unrestricted squad UI before transfer rules apply or before first squad exists. */
+      standardReason: "transfers_disabled" | "initial_build";
+    }
   | {
       mode: "transfers";
       pick: PickTeamData;
@@ -142,14 +147,18 @@ export async function getTransferPageData(
     .where(eq(seasons.id, pick.seasonId))
     .limit(1);
 
-  if (!ruleRow) return { mode: "legacy", pick };
+  if (!ruleRow) {
+    return { mode: "standard", pick, standardReason: "transfers_disabled" };
+  }
 
   const transferRules = seasonTransferRulesFromRow(ruleRow);
   const transferMode =
     isTransferModeEnabled(transferRules.transfersStartMatchday) &&
     transferRulesApplyToMatchday(transferRules, pick.matchday.number);
 
-  if (!transferMode) return { mode: "legacy", pick };
+  if (!transferMode) {
+    return { mode: "standard", pick, standardReason: "transfers_disabled" };
+  }
 
   const submitted = await loadSubmittedTeamsForSeason(db, pick.seasonId);
   const timeline = {
@@ -175,7 +184,7 @@ export async function getTransferPageData(
   );
 
   if (initialBuild || !basePlayerIds || basePlayerIds.length !== 5) {
-    return { mode: "legacy", pick };
+    return { mode: "standard", pick, standardReason: "initial_build" };
   }
 
   const [teamRow] = await db

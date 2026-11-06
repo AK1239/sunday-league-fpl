@@ -35,7 +35,10 @@ export async function PickTeamPanel() {
       {serialized.mode === "transfers" ? (
         <TransfersTeamClient initial={serialized} />
       ) : (
-        <PickTeamClient initial={serialized.pick} />
+        <PickTeamClient
+          initial={serialized.pick}
+          standardReason={serialized.standardReason}
+        />
       )}
     </div>
   );

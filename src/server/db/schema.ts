@@ -121,7 +121,7 @@ export const scoringRuleSets = pgTable("scoring_rule_sets", {
     .notNull()
     .default(3),
   extraTransferPenalty: smallint("extra_transfer_penalty").notNull().default(4),
-  /** null = legacy whole-squad picks; number = first GW with transfer rules. */
+  /** null = transfers off; number = first GW with transfer rules. */
   transfersStartMatchday: integer("transfers_start_matchday"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
