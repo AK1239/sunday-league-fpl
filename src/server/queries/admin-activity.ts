@@ -46,15 +46,38 @@ export type AdminActivityData = {
   };
 };
 
-function periodStart(days: number): Date {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - days);
-  d.setUTCHours(0, 0, 0, 0);
-  return d;
+/** East Africa Time (UTC+3, no DST) — league default for activity UI. */
+export const ADMIN_ACTIVITY_TIMEZONE = "Africa/Nairobi";
+
+function formatEatYmd(d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: ADMIN_ACTIVITY_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
 }
 
-function dayKeyUtc(d: Date): string {
-  return d.toISOString().slice(0, 10);
+/** Start of a calendar day in EAT (fixed UTC+3), as an instant. */
+function eatDayStartUtc(ymd: string): Date {
+  return new Date(`${ymd}T00:00:00+03:00`);
+}
+
+function addEatCalendarDays(ymd: string, delta: number): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const mid = new Date(Date.UTC(y, m - 1, d + delta, 12, 0, 0, 0));
+  return formatEatYmd(mid);
+}
+
+function periodStartEat(days: number): Date {
+  const today = formatEatYmd(new Date());
+  const startYmd = addEatCalendarDays(today, -days);
+  return eatDayStartUtc(startYmd);
+}
+
+function dayKeyEat(d: Date): string {
+  const at = d instanceof Date ? d : new Date(String(d));
+  return formatEatYmd(at);
 }
 
 function surfaceRoleFilter(
@@ -74,7 +97,7 @@ export async function getAdminActivityData(
   filters: AdminActivityFilters = {},
 ): Promise<AdminActivityData> {
   const days = Math.min(Math.max(filters.days ?? 14, 1), 90);
-  const since = periodStart(days);
+  const since = periodStartEat(days);
   const surface = filters.surface ?? "all";
   const actionFilter = filters.actions?.length ? filters.actions : null;
   const roleFilter = surfaceRoleFilter(surface);
@@ -149,16 +172,14 @@ export async function getAdminActivityData(
   const byDay = new Map<string, number>();
   for (const row of loginRows) {
     const at = row.at instanceof Date ? row.at : new Date(String(row.at));
-    const k = dayKeyUtc(at);
+    const k = dayKeyEat(at);
     byDay.set(k, (byDay.get(k) ?? 0) + 1);
   }
 
   const loginsByDay: { day: string; count: number }[] = [];
+  const todayEat = formatEatYmd(new Date());
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() - i);
-    d.setUTCHours(12, 0, 0, 0);
-    const k = dayKeyUtc(d);
+    const k = addEatCalendarDays(todayEat, -(days - 1 - i));
     loginsByDay.push({ day: k, count: byDay.get(k) ?? 0 });
   }
 

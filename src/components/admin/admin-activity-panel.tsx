@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/fantasy/page-header";
 import { requireAdmin } from "@/server/auth/require-admin";
 import { getDb } from "@/server/db";
 import {
+  ADMIN_ACTIVITY_TIMEZONE,
   getAdminActivityData,
   type ActivityRow,
 } from "@/server/queries/admin-activity";
@@ -28,7 +29,7 @@ type SearchParams = {
 
 function formatWhen(d: Date): string {
   return new Intl.DateTimeFormat("en-GB", {
-    timeZone: "UTC",
+    timeZone: ADMIN_ACTIVITY_TIMEZONE,
     day: "numeric",
     month: "short",
     hour: "2-digit",
@@ -205,7 +206,8 @@ export async function AdminActivityPanel({
               Recent activity
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Newest first. Sign-in events include the IP when available.
+              Newest first. Times are East Africa Time (UTC+3). Sign-in events
+              include the IP when available.
             </p>
           </div>
           {total > 0 ? (
@@ -245,7 +247,7 @@ export async function AdminActivityPanel({
                     <UserCell row={row} />
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {formatWhen(row.at)} UTC · {row.entity}
+                    {formatWhen(row.at)} · {row.entity}
                     {row.ipAddress ? ` · ${row.ipAddress}` : ""}
                   </p>
                 </li>
@@ -430,7 +432,7 @@ function LoginsChart({ data }: { data: { day: string; count: number }[] }) {
             Sign-ins by day
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Successful sign-ins per calendar day (UTC).
+            Successful sign-ins per calendar day (East Africa Time).
           </p>
         </div>
         {!empty ? (
