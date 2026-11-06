@@ -582,8 +582,8 @@ Chips (separate future project) plug into the documented hook points in §5.
 
 - [ ] Approve decisions D1–D10
 - [x] Phase 1: pure domain modules + unit tests (all §3.3 fixtures)
-- [ ] Phase 2: migration `0008_transfers.sql`, schema, rule-set columns, backfill
-- [ ] Phase 2: deferred "exactly 5 players" constraint trigger
+- [x] Phase 2: migration `0008_transfers.sql`, schema, rule-set columns, backfill
+- [x] Phase 2: deferred "exactly 5 players" constraint trigger
 - [ ] Phase 3: `submit-team` service (lock order, advisory lock, DB time, version, replay)
 - [ ] Phase 3: server actions + error codes
 - [ ] Phase 3: concurrency and atomicity integration tests

@@ -50,6 +50,20 @@
       "when": 1793884300000,
       "tag": "0006_manager_scoring",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793884400000,
+      "tag": "0007_season_awards_managers",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793884500000,
+      "tag": "0008_transfers",
+      "breakpoints": true
     }
   ]
 }

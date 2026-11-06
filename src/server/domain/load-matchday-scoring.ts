@@ -34,6 +34,10 @@ export async function loadScoringRulesForMatchday(
       mvpPts: scoringRuleSets.mvpPts,
       cleanSheetPts: scoringRuleSets.cleanSheetPts,
       captainMultiplier: scoringRuleSets.captainMultiplier,
+      transfersStartMatchday: scoringRuleSets.transfersStartMatchday,
+      freeTransfersPerMatchday: scoringRuleSets.freeTransfersPerMatchday,
+      maxBankedFreeTransfers: scoringRuleSets.maxBankedFreeTransfers,
+      extraTransferPenalty: scoringRuleSets.extraTransferPenalty,
     })
     .from(matchdays)
     .innerJoin(seasons, eq(matchdays.seasonId, seasons.id))

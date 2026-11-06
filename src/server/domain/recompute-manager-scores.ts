@@ -263,6 +263,8 @@ export async function rebuildManagerScoresFromMatchday(
         managerId: entry.managerId,
         matchdayId: md.id,
         seasonId,
+        squadPoints: entry.squadPoints,
+        transferPenalty: entry.transferPenalty,
         totalPoints: entry.totalPoints,
         multiplierPlayerId: entry.multiplierPlayerId,
         teamSource: entry.teamSource,

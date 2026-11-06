@@ -6,6 +6,7 @@ import {
   foreignKey,
   index,
   integer,
+  smallint,
   jsonb,
   pgEnum,
   pgTable,
@@ -34,6 +35,16 @@ export const fantasyTeamSourceEnum = pgEnum("fantasy_team_source", [
   "manual",
   "carry_over",
   "admin",
+]);
+
+export const fantasyTransferStatusEnum = pgEnum("fantasy_transfer_status", [
+  "active",
+  "void",
+]);
+
+export const fantasyTransferSourceEnum = pgEnum("fantasy_transfer_source", [
+  "manager",
+  "admin_correction",
 ]);
 
 export const managerScoreLineRoleEnum = pgEnum("manager_score_line_role", [
@@ -103,6 +114,15 @@ export const scoringRuleSets = pgTable("scoring_rule_sets", {
   mvpPts: integer("mvp_pts").notNull(),
   cleanSheetPts: integer("clean_sheet_pts").notNull(),
   captainMultiplier: integer("captain_multiplier").notNull().default(2),
+  freeTransfersPerMatchday: smallint("free_transfers_per_matchday")
+    .notNull()
+    .default(2),
+  maxBankedFreeTransfers: smallint("max_banked_free_transfers")
+    .notNull()
+    .default(3),
+  extraTransferPenalty: smallint("extra_transfer_penalty").notNull().default(4),
+  /** null = legacy whole-squad picks; number = first GW with transfer rules. */
+  transfersStartMatchday: integer("transfers_start_matchday"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -445,6 +465,115 @@ export const fantasyTeamPlayers = pgTable(
   ],
 );
 
+export const fantasyTransfers = pgTable(
+  "fantasy_transfers",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    seasonId: uuid("season_id")
+      .notNull()
+      .references(() => seasons.id, { onDelete: "cascade" }),
+    managerId: uuid("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    matchdayId: uuid("matchday_id")
+      .notNull()
+      .references(() => matchdays.id, { onDelete: "cascade" }),
+    seq: smallint("seq").notNull(),
+    playerOutId: uuid("player_out_id")
+      .notNull()
+      .references(() => players.id),
+    playerInId: uuid("player_in_id")
+      .notNull()
+      .references(() => players.id),
+    status: fantasyTransferStatusEnum("status").notNull().default("active"),
+    source: fantasyTransferSourceEnum("source").notNull().default("manager"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidReason: text("void_reason"),
+    voidedBy: uuid("voided_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+  },
+  (table) => [
+    check(
+      "fantasy_transfers_out_in_distinct",
+      sql`${table.playerOutId} <> ${table.playerInId}`,
+    ),
+    uniqueIndex("fantasy_transfers_manager_matchday_out_active")
+      .on(table.managerId, table.matchdayId, table.playerOutId)
+      .where(sql`${table.status} = 'active'`),
+    uniqueIndex("fantasy_transfers_manager_matchday_in_active")
+      .on(table.managerId, table.matchdayId, table.playerInId)
+      .where(sql`${table.status} = 'active'`),
+    uniqueIndex("fantasy_transfers_manager_matchday_seq_active")
+      .on(table.managerId, table.matchdayId, table.seq)
+      .where(sql`${table.status} = 'active'`),
+    index("fantasy_transfers_matchday_idx").on(table.matchdayId),
+  ],
+);
+
+export const managerTransferWindows = pgTable(
+  "manager_transfer_windows",
+  {
+    managerId: uuid("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    matchdayId: uuid("matchday_id")
+      .notNull()
+      .references(() => matchdays.id, { onDelete: "cascade" }),
+    seasonId: uuid("season_id")
+      .notNull()
+      .references(() => seasons.id, { onDelete: "cascade" }),
+    freeAvailable: smallint("free_available").notNull(),
+    unlimited: boolean("unlimited").notNull().default(false),
+    chipCode: text("chip_code"),
+    penaltyPerExtra: smallint("penalty_per_extra").notNull(),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.managerId, table.matchdayId] }),
+    index("manager_transfer_windows_season_idx").on(table.seasonId),
+  ],
+);
+
+export const managerFreeTransferAdjustments = pgTable(
+  "manager_free_transfer_adjustments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    managerId: uuid("manager_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    matchdayId: uuid("matchday_id")
+      .notNull()
+      .references(() => matchdays.id, { onDelete: "cascade" }),
+    delta: smallint("delta").notNull(),
+    reason: text("reason").notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "manager_free_transfer_adjustments_delta_nonzero",
+      sql`${table.delta} <> 0`,
+    ),
+    index("manager_free_transfer_adjustments_matchday_idx").on(
+      table.matchdayId,
+    ),
+  ],
+);
+
 export const managerScoreLines = pgTable(
   "manager_score_lines",
   {
@@ -490,6 +619,8 @@ export const managerMatchdayScores = pgTable(
     seasonId: uuid("season_id")
       .notNull()
       .references(() => seasons.id),
+    squadPoints: integer("squad_points").notNull().default(0),
+    transferPenalty: integer("transfer_penalty").notNull().default(0),
     totalPoints: integer("total_points").notNull(),
     multiplierPlayerId: uuid("multiplier_player_id").references(
       () => players.id,
@@ -498,6 +629,14 @@ export const managerMatchdayScores = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.managerId, table.matchdayId] }),
+    check(
+      "manager_matchday_scores_total_check",
+      sql`${table.totalPoints} = ${table.squadPoints} + ${table.transferPenalty}`,
+    ),
+    check(
+      "manager_matchday_scores_transfer_penalty_non_positive",
+      sql`${table.transferPenalty} <= 0`,
+    ),
     index("manager_matchday_scores_season_idx").on(table.seasonId),
   ],
 );
