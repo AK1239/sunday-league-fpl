@@ -3,6 +3,7 @@ import type { DbExecutor } from "@/server/db";
 import {
   fantasyTeams,
   fantasyTransfers,
+  managerChipPlays,
   managerTransferWindows,
 } from "@/server/db/schema";
 
@@ -15,6 +16,21 @@ export async function voidTransferFactsForCancelledMatchday(
   voidedBy: string,
 ): Promise<void> {
   const now = sql`now()`;
+
+  await tx
+    .update(managerChipPlays)
+    .set({
+      status: "void",
+      voidedAt: now,
+      voidReason: VOID_REASON,
+      voidedBy,
+    })
+    .where(
+      and(
+        eq(managerChipPlays.matchdayId, matchdayId),
+        eq(managerChipPlays.status, "active"),
+      ),
+    );
 
   await tx
     .update(fantasyTransfers)

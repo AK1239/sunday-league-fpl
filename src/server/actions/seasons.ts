@@ -5,6 +5,10 @@ import { z } from "zod";
 import { getDb } from "@/server/db";
 import { closeSeasonAdmin } from "@/server/domain/close-season";
 import {
+  EnableSeasonChipsError,
+  enableChipsForSeason,
+} from "@/server/domain/enable-season-chips";
+import {
   activateSeasonAdmin,
   createSeasonAdmin,
 } from "@/server/domain/seasons-admin";
@@ -99,6 +103,46 @@ export async function closeSeasonAction(
         "NOT_ACTIVE",
         "Only the active season can be closed.",
       );
+    }
+    throw error;
+  }
+}
+
+const enableChipsSchema = z.object({
+  seasonId: z.string().uuid(),
+  availableFromMatchday: z.coerce.number().int().min(1).optional(),
+});
+
+export async function enableSeasonChipsAction(
+  formData: FormData,
+): Promise<
+  ActionResult<{ availableFromMatchday: number; chipCount: number }>
+> {
+  const session = await requireAdmin();
+
+  const parsed = enableChipsSchema.safeParse({
+    seasonId: formData.get("seasonId"),
+    availableFromMatchday: formData.get("availableFromMatchday") || undefined,
+  });
+
+  if (!parsed.success) {
+    return actionFail("VALIDATION", "Invalid season or gameweek.");
+  }
+
+  try {
+    const result = await enableChipsForSeason(
+      getDb(),
+      session.userId,
+      parsed.data.seasonId,
+      parsed.data.availableFromMatchday != null
+        ? { availableFromMatchday: parsed.data.availableFromMatchday }
+        : undefined,
+    );
+    revalidatePath("/admin/seasons");
+    return actionOk(result);
+  } catch (error) {
+    if (error instanceof EnableSeasonChipsError) {
+      return actionFail(error.code, error.message);
     }
     throw error;
   }
