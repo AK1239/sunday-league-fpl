@@ -46,6 +46,10 @@ export async function RulesPanel() {
             label="Handball that stops a goal"
             value={rules.handballPts}
           />
+          <RuleRow
+            label="Penalty missed (taker)"
+            value={rules.penaltyMissedPts}
+          />
         </ul>
       </section>
 
@@ -62,8 +66,12 @@ export async function RulesPanel() {
             etc.).
           </li>
           <li>
-            Vice-captain gets {rules.captainMultiplier}× only if the captain did
-            not attend that Sunday.
+            Vice-captain scores{" "}
+            <strong className="text-foreground">
+              {rules.viceCaptainMultiplier}×
+            </strong>{" "}
+            that player&apos;s gameweek points when they play (independent of
+            the captain).
           </li>
           <li>
             Miss the deadline and your previous team carries over automatically.

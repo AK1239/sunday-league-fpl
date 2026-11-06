@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { CaptainBadge } from "@/components/pick/captain-badge";
+import { formatMultiplierDisplay } from "@/lib/format-scoring";
 import { cn } from "@/lib/utils";
 import type { FantasyTeamPlayerSlot } from "@/server/queries/fantasy-team-view";
 import type { ManagerLine } from "@/server/queries/manager-score-lines";
@@ -97,7 +98,7 @@ function PitchPlayer({
 }) {
   const scored = line != null;
   const dnp = scored && !line.attended;
-  const boosted = scored && line.multiplier > 1;
+  const boosted = scored && line.multiplier !== 1;
 
   const wrapperClass =
     "group animate-rise flex w-[5.5rem] flex-col items-center outline-none sm:w-24";
@@ -127,7 +128,7 @@ function PitchPlayer({
         ) : null}
         {boosted ? (
           <span className="absolute -bottom-1 -left-2 rounded-full bg-podium-gold px-1.5 py-0.5 text-[10px] leading-none font-extrabold text-black ring-2 ring-black/30">
-            ×{line.multiplier}
+            ×{formatMultiplierDisplay(line.multiplier)}
           </span>
         ) : null}
       </div>

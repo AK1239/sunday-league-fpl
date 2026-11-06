@@ -1,5 +1,6 @@
 import type {
   ComputedPointRow,
+  PointKind,
   ScoreMatch,
   ScoreMatchdayInput,
   ScoringRules,
@@ -197,17 +198,25 @@ export function scoreMatchday(
     }
 
     for (const incident of match.incidents ?? []) {
+      const kind: PointKind =
+        incident.kind === "penalty_saved"
+          ? "penalty_saved"
+          : incident.kind === "penalty_missed"
+            ? "penalty_missed"
+            : "handball";
+      const points =
+        incident.kind === "penalty_saved"
+          ? rules.penaltySavedPts
+          : incident.kind === "penalty_missed"
+            ? rules.penaltyMissedPts
+            : rules.handballPts;
       pushRow(
         rows,
         {
           matchId: match.id,
           playerId: incident.playerId,
-          kind:
-            incident.kind === "penalty_saved" ? "penalty_saved" : "handball",
-          points:
-            incident.kind === "penalty_saved"
-              ? rules.penaltySavedPts
-              : rules.handballPts,
+          kind,
+          points,
           sourceRef: incident.id,
         },
         context,

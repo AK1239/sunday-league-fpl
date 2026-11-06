@@ -17,7 +17,9 @@ const rules: ManagerScoringRules = {
   penaltySavedPts: 5,
   ownGoalPts: -2,
   handballPts: -2,
-  captainMultiplier: 2,
+  penaltyMissedPts: -2,
+  captainMultiplier: 200,
+  viceCaptainMultiplier: 150,
 };
 
 const team: TeamForManagerScoring = {
@@ -37,10 +39,10 @@ describe("scoreManagers", () => {
       ["p4", 0],
       ["p5", 0],
     ]);
-    const attended = new Set(["p1", "p3"]);
+    const attended = new Set(["p1", "p2", "p3"]);
 
     const [result] = scoreManagers(rules, playerPoints, attended, [team]);
-    expect(result.squadPoints).toBe(10 * 2 + 4);
+    expect(result.squadPoints).toBe(10 * 2 + Math.round(4 * 1.5));
     expect(result.transferPenalty).toBe(0);
     expect(result.totalPoints).toBe(result.squadPoints);
     expect(result.multiplierPlayerId).toBe("p1");
@@ -50,11 +52,19 @@ describe("scoreManagers", () => {
       multiplier: 2,
       points: 20,
     });
+    expect(result.captainMultiplierPlayerId).toBe("p1");
+    expect(result.viceCaptainMultiplierPlayerId).toBe("p2");
+    const viceLine = result.lines.find((l) => l.playerId === "p2");
+    expect(viceLine).toMatchObject({
+      basePoints: 4,
+      multiplier: 1.5,
+      points: 6,
+    });
   });
 
-  it("uses vice multiplier when captain did not attend", () => {
+  it("uses vice 1.5× when captain did not attend but vice did", () => {
     const playerPoints = new Map([
-      ["p1", 10],
+      ["p1", 0],
       ["p2", 6],
       ["p3", 0],
       ["p4", 0],
@@ -64,7 +74,9 @@ describe("scoreManagers", () => {
 
     const [result] = scoreManagers(rules, playerPoints, attended, [team]);
     expect(result.multiplierPlayerId).toBe("p2");
-    expect(result.totalPoints).toBe(10 + 6 * 2);
+    expect(result.captainMultiplierPlayerId).toBeNull();
+    expect(result.viceCaptainMultiplierPlayerId).toBe("p2");
+    expect(result.totalPoints).toBe(Math.round(6 * 1.5));
   });
 
   it("applies no multiplier when captain and vice are absent", () => {
@@ -79,6 +91,8 @@ describe("scoreManagers", () => {
 
     const [result] = scoreManagers(rules, playerPoints, attended, [team]);
     expect(result.multiplierPlayerId).toBeNull();
+    expect(result.captainMultiplierPlayerId).toBeNull();
+    expect(result.viceCaptainMultiplierPlayerId).toBeNull();
     expect(result.totalPoints).toBe(10 + 6 + 5);
   });
 
@@ -98,6 +112,8 @@ describe("scoreManagers", () => {
       transferPenalty: 0,
       totalPoints: 0,
       multiplierPlayerId: null,
+      captainMultiplierPlayerId: null,
+      viceCaptainMultiplierPlayerId: null,
       teamSource: "none",
       lines: [],
       chipCode: null,

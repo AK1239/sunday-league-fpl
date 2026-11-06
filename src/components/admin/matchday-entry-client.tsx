@@ -14,6 +14,7 @@ import {
   Target,
   Trash2,
   X,
+  XCircle,
 } from "lucide-react";
 import { PlayerAvatar } from "@/components/fantasy/player-avatar";
 import { SectionHeading } from "@/components/fantasy/section-heading";
@@ -565,7 +566,12 @@ function MatchCardEditor({
   function addIncident(side: "A" | "B", kind: IncidentKindValue) {
     const ids = side === "A" ? match.sideAPlayerIds : match.sideBPlayerIds;
     const gk = side === "A" ? match.sideAGoalkeeperId : match.sideBGoalkeeperId;
-    const playerId = (kind === "penalty_saved" ? gk : null) ?? ids[0];
+    const playerId =
+      kind === "penalty_saved"
+        ? (gk ?? ids[0])
+        : kind === "penalty_missed"
+          ? (ids.find((id) => id !== gk) ?? ids[0])
+          : (ids[0] ?? null);
     if (!playerId) return;
     onChange({
       ...match,
@@ -709,7 +715,10 @@ function MatchCardEditor({
             <section
               key={side}
               aria-label={`Side ${side}`}
-              className={cn("space-y-4 rounded-2xl border p-4", st.panel)}
+              className={cn(
+                "@container space-y-5 rounded-2xl border p-4 sm:p-5",
+                st.panel,
+              )}
             >
               <h4
                 className={cn(
@@ -785,53 +794,79 @@ function MatchCardEditor({
                 </ul>
               )}
 
-              <div className="space-y-2">
-                <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-                  Goals · {sideGoals.length}/{score}
-                </p>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <h5 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                    Goals
+                  </h5>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
+                      sideGoals.length === score
+                        ? "bg-primary/15 text-primary"
+                        : "bg-amber-500/15 text-amber-500",
+                    )}
+                    title="Goals logged / score"
+                  >
+                    {sideGoals.length} / {score}
+                  </span>
+                </div>
                 {sideGoals.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="rounded-xl border border-dashed border-border/60 px-3 py-4 text-center text-sm text-muted-foreground">
                     {score > 0
                       ? "Add players to this side to log who scored."
-                      : "No goals yet — raise the score to add one."}
+                      : "No goals yet. Raise the score to add one."}
                   </p>
                 ) : (
-                  <ul className="space-y-3">
+                  <ul className="divide-y divide-border/40 overflow-hidden rounded-xl border border-border/50 bg-background/30">
                     {sideGoals.map(({ goal, index }, n) => {
                       const kind: GoalKindValue = goal.kind ?? "open_play";
                       const scorerPool = kind === "own_goal" ? otherIds : ids;
                       return (
-                        <li key={index} className="animate-rise space-y-1.5">
-                          <div className="grid grid-cols-[1.5rem_1fr_1fr] items-center gap-2">
-                            <span className="text-center text-xs font-semibold text-muted-foreground tabular-nums">
-                              {n + 1}
-                            </span>
-                            <PlayerSelect
-                              icon={<Target />}
-                              label={
-                                kind === "own_goal"
-                                  ? `Goal ${n + 1} own goal by`
-                                  : `Goal ${n + 1} scorer`
-                              }
-                              value={goal.scorerId}
-                              onChange={(v) =>
-                                updateGoal(index, {
-                                  scorerId: v,
-                                  assistId:
-                                    goal.assistId === v ? null : goal.assistId,
-                                })
-                              }
-                            >
-                              {scorerPool.map((id) => (
-                                <option key={id} value={id}>
-                                  {kind === "own_goal"
-                                    ? `${nameOf(id)} (OG)`
-                                    : nameOf(id)}
-                                </option>
-                              ))}
-                            </PlayerSelect>
+                        <li
+                          key={index}
+                          className="animate-rise grid grid-cols-[1.25rem_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 px-3 py-2.5 @md:grid-cols-[1.25rem_minmax(0,1fr)_minmax(0,1fr)_7.5rem]"
+                        >
+                          <span className="text-center text-xs font-semibold text-muted-foreground tabular-nums">
+                            {n + 1}
+                          </span>
+                          <PlayerSelect
+                            compact
+                            icon={<Target />}
+                            label={
+                              kind === "own_goal"
+                                ? `Goal ${n + 1} own goal by`
+                                : `Goal ${n + 1} scorer`
+                            }
+                            value={goal.scorerId}
+                            onChange={(v) =>
+                              updateGoal(index, {
+                                scorerId: v,
+                                assistId:
+                                  goal.assistId === v ? null : goal.assistId,
+                              })
+                            }
+                          >
+                            {scorerPool.map((id) => (
+                              <option key={id} value={id}>
+                                {kind === "own_goal"
+                                  ? `${nameOf(id)} (OG)`
+                                  : nameOf(id)}
+                              </option>
+                            ))}
+                          </PlayerSelect>
+                          {/* Type: compact select on the first row (narrow) / last column (wide). */}
+                          <div className="@md:order-last">
+                            <GoalKindSelect
+                              label={`Goal ${n + 1} type`}
+                              value={kind}
+                              onChange={(v) => setGoalKind(index, v)}
+                            />
+                          </div>
+                          <div className="col-span-2 col-start-2 @md:col-span-1 @md:col-start-auto">
                             {kind === "open_play" ? (
                               <PlayerSelect
+                                compact
                                 icon={<Footprints />}
                                 label={`Goal ${n + 1} assist`}
                                 value={goal.assistId ?? ""}
@@ -850,36 +885,12 @@ function MatchCardEditor({
                                   ))}
                               </PlayerSelect>
                             ) : (
-                              <p className="flex h-10 items-center rounded-xl border border-dashed border-border/60 px-3 text-xs text-muted-foreground">
+                              <p className="flex h-9 items-center rounded-xl border border-dashed border-border/60 px-3 text-xs text-muted-foreground">
                                 {kind === "penalty"
-                                  ? "Penalty · no assist"
+                                  ? "Penalty: no assist"
                                   : "Counts for the other side"}
                               </p>
                             )}
-                          </div>
-                          <div
-                            role="group"
-                            aria-label={`Goal ${n + 1} type`}
-                            className="flex gap-1.5 pl-8"
-                          >
-                            {GOAL_KIND_OPTIONS.map((o) => (
-                              <button
-                                key={o.value}
-                                type="button"
-                                aria-pressed={kind === o.value}
-                                onClick={() => setGoalKind(index, o.value)}
-                                className={cn(
-                                  "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                                  kind === o.value
-                                    ? o.value === "own_goal"
-                                      ? "border-destructive/50 bg-destructive/15 text-destructive"
-                                      : "border-primary/50 bg-primary/15 text-primary"
-                                    : "border-border/60 text-muted-foreground hover:text-foreground",
-                                )}
-                              >
-                                {o.label}
-                              </button>
-                            ))}
                           </div>
                         </li>
                       );
@@ -888,18 +899,19 @@ function MatchCardEditor({
                 )}
               </div>
 
-              <div className="space-y-2">
-                <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+              <div className="space-y-2.5">
+                <h5 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
                   Incidents
-                </p>
+                </h5>
                 {sideIncidents.length > 0 ? (
-                  <ul className="space-y-2">
+                  <ul className="divide-y divide-border/40 overflow-hidden rounded-xl border border-border/50 bg-background/30">
                     {sideIncidents.map(({ incident, index }) => (
                       <li
                         key={index}
-                        className="animate-rise grid grid-cols-[1fr_auto] items-center gap-2"
+                        className="animate-rise grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5"
                       >
                         <PlayerSelect
+                          compact
                           icon={
                             incident.kind === "penalty_saved" ? (
                               <ShieldAlert />
@@ -927,7 +939,7 @@ function MatchCardEditor({
                           type="button"
                           aria-label="Remove incident"
                           onClick={() => removeIncident(index)}
-                          className="flex size-10 items-center justify-center rounded-xl text-muted-foreground transition-colors outline-none hover:bg-destructive/15 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
+                          className="flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-colors outline-none hover:bg-destructive/15 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           <X className="size-4" aria-hidden />
                         </button>
@@ -942,7 +954,7 @@ function MatchCardEditor({
                     onClick={() => addIncident(side, "penalty_saved")}
                     className="inline-flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors outline-none hover:border-primary/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
                   >
-                    <ShieldAlert className="size-3.5" aria-hidden />
+                    <Plus className="size-3.5" aria-hidden />
                     Penalty saved
                   </button>
                   <button
@@ -951,7 +963,7 @@ function MatchCardEditor({
                     onClick={() => addIncident(side, "handball_blocked")}
                     className="inline-flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors outline-none hover:border-destructive/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
                   >
-                    <Hand className="size-3.5" aria-hidden />
+                    <Plus className="size-3.5" aria-hidden />
                     Handball stopped a goal
                   </button>
                 </div>
@@ -965,7 +977,8 @@ function MatchCardEditor({
 }
 
 type GoalKindValue = "open_play" | "penalty" | "own_goal";
-type IncidentKindValue = "penalty_saved" | "handball_blocked";
+type IncidentKindValue =
+  "penalty_saved" | "handball_blocked" | "penalty_missed";
 
 const GOAL_KIND_OPTIONS: { value: GoalKindValue; label: string }[] = [
   { value: "open_play", label: "Goal" },
@@ -1051,12 +1064,52 @@ function ScoreStepper({
   );
 }
 
+/** Compact goal-type picker; non-standard goals are colour-coded. */
+function GoalKindSelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: GoalKindValue;
+  onChange: (value: GoalKindValue) => void;
+}) {
+  return (
+    <div className="relative">
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value as GoalKindValue)}
+        className={cn(
+          "h-9 w-full appearance-none rounded-xl border bg-background/50 pr-7 pl-3 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+          value === "open_play" &&
+            "border-input text-foreground hover:border-foreground/25",
+          value === "penalty" && "border-primary/50 bg-primary/10 text-primary",
+          value === "own_goal" &&
+            "border-destructive/50 bg-destructive/10 text-destructive",
+        )}
+      >
+        {GOAL_KIND_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown
+        className="pointer-events-none absolute top-1/2 right-2 size-4 -translate-y-1/2 opacity-70"
+        aria-hidden
+      />
+    </div>
+  );
+}
+
 function PlayerSelect({
   icon,
   label,
   value,
   onChange,
   muted,
+  compact,
   children,
 }: {
   icon: React.ReactNode;
@@ -1064,6 +1117,8 @@ function PlayerSelect({
   value: string;
   onChange: (value: string) => void;
   muted?: boolean;
+  /** Shorter control for dense rows. */
+  compact?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -1079,7 +1134,8 @@ function PlayerSelect({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          "h-10 w-full min-w-0 appearance-none rounded-xl border border-input bg-background/50 pr-7 pl-8 text-sm transition-colors outline-none hover:border-foreground/25 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+          compact ? "h-9" : "h-10",
+          "w-full min-w-0 appearance-none rounded-xl border border-input bg-background/50 pr-7 pl-8 text-sm transition-colors outline-none hover:border-foreground/25 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
           muted && "text-muted-foreground",
         )}
       >

@@ -11,7 +11,7 @@ export type GoalDraft = {
 };
 
 export type IncidentDraft = {
-  kind: "penalty_saved" | "handball_blocked";
+  kind: "penalty_saved" | "handball_blocked" | "penalty_missed";
   /** Side of the player involved. */
   side: "A" | "B";
   playerId: string;

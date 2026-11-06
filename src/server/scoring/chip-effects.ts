@@ -27,23 +27,39 @@ export function tripleCaptainMultiplier(
   return typeof raw === "number" && Number.isFinite(raw) ? raw : 3;
 }
 
-/** Captain multiplier when this player is the chosen multiplier player (D8). */
+function scaleHundredths(hundredths: number): number {
+  return hundredths / 100;
+}
+
+/**
+ * Fantasy multiplier for a squad line. Captain and vice each get their own
+ * scale when they attend (no “vice replaces captain” backup).
+ */
 export function multiplierForScoredPlayer(input: {
   playerId: string;
   captainPlayerId: string;
   viceCaptainPlayerId: string;
-  multipliedPlayerId: string | null;
+  attended: boolean;
   rules: ManagerScoringRules;
   chip: ChipScoringInput | null;
 }): number {
-  if (input.multipliedPlayerId !== input.playerId) return 1;
-  if (
-    input.chip?.code === "triple_captain" &&
-    input.playerId === input.captainPlayerId
-  ) {
-    return tripleCaptainMultiplier(input.chip.params);
+  if (!input.attended) return 1;
+
+  if (input.playerId === input.captainPlayerId) {
+    if (
+      input.chip?.code === "triple_captain" &&
+      input.playerId === input.captainPlayerId
+    ) {
+      return tripleCaptainMultiplier(input.chip.params);
+    }
+    return scaleHundredths(input.rules.captainMultiplier);
   }
-  return input.rules.captainMultiplier;
+
+  if (input.playerId === input.viceCaptainPlayerId) {
+    return scaleHundredths(input.rules.viceCaptainMultiplier);
+  }
+
+  return 1;
 }
 
 export function shouldScoreBenchBoostReserve(

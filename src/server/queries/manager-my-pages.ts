@@ -393,7 +393,7 @@ export async function getMyCaptainPerformance(
         and(
           eq(managerScoreLines.managerId, managerId),
           eq(managerScoreLines.matchdayId, md.id),
-          sql`${managerScoreLines.multiplier} > 1`,
+          sql`${managerScoreLines.multiplier} <> 1`,
         ),
       );
 

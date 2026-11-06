@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { max, eq } from "drizzle-orm";
 import { CreateMatchdayForm } from "@/components/admin/create-matchday-form";
-import { MatchdayCard } from "@/components/admin/matchday-card";
+import { MatchdayList } from "@/components/admin/matchday-list";
 import { SectionHeading } from "@/components/fantasy/section-heading";
 import { EmptyState } from "@/components/fantasy/empty-state";
 import { requireAdmin } from "@/server/auth/require-admin";
@@ -75,25 +75,19 @@ export async function AdminMatchdaysPanel() {
             description="Open gameweeks are created automatically for each Sunday (see docs/AUTO_SCHEDULE_MATCHDAYS.md). Use Cancel on a gameweek if football is called off."
           />
         ) : (
-          <ul className="space-y-4">
-            {matchdayList.map((md, i) => (
-              <MatchdayCard
-                key={md.id}
-                index={i}
-                timezone={settings.timezone}
-                matchday={{
-                  id: md.id,
-                  number: md.number,
-                  playedOn: md.playedOn,
-                  deadlineLocal: formatDeadlineForDateTimeLocal(
-                    md.deadlineAt,
-                    settings.timezone,
-                  ),
-                  status: md.status,
-                }}
-              />
-            ))}
-          </ul>
+          <MatchdayList
+            timezone={settings.timezone}
+            items={matchdayList.map((md) => ({
+              id: md.id,
+              number: md.number,
+              playedOn: md.playedOn,
+              deadlineLocal: formatDeadlineForDateTimeLocal(
+                md.deadlineAt,
+                settings.timezone,
+              ),
+              status: md.status,
+            }))}
+          />
         )}
       </section>
     </div>

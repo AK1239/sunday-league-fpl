@@ -89,7 +89,9 @@ export async function MatchDetailPanel({ matchId }: { matchId: string }) {
                 <span className="text-muted-foreground">
                   {incident.kind === "penalty_saved"
                     ? " saved a penalty"
-                    : " handball stopped a goal"}
+                    : incident.kind === "penalty_missed"
+                      ? " missed a penalty"
+                      : " handball stopped a goal"}
                 </span>
               </li>
             ))}

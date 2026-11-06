@@ -14,6 +14,7 @@ const DEFAULT_RULES: ScoringRules = {
   penaltySavedPts: 5,
   ownGoalPts: -2,
   handballPts: -2,
+  penaltyMissedPts: -2,
 };
 
 const BASE: Omit<ScoreMatchdayInput, "matches" | "attendeePlayerIds"> = {
@@ -276,7 +277,7 @@ describe("scoreMatchday", () => {
       ).toEqual(["p1", "p3"]);
     });
 
-    it("penalty saved and handball award / deduct their points", () => {
+    it("penalty saved, penalty missed and handball award / deduct their points", () => {
       const rows = scoreMatchday(DEFAULT_RULES, {
         ...BASE,
         attendeePlayerIds: ["p1", "p2", "p3", "p4"],
@@ -286,7 +287,8 @@ describe("scoreMatchday", () => {
             ...two,
             incidents: [
               { id: "i1", playerId: "p3", kind: "penalty_saved" },
-              { id: "i2", playerId: "p4", kind: "handball_blocked" },
+              { id: "i2", playerId: "p1", kind: "penalty_missed" },
+              { id: "i3", playerId: "p4", kind: "handball_blocked" },
             ],
           }),
         ],
@@ -294,6 +296,10 @@ describe("scoreMatchday", () => {
       expect(rows.find((r) => r.kind === "penalty_saved")).toMatchObject({
         playerId: "p3",
         points: 5,
+      });
+      expect(rows.find((r) => r.kind === "penalty_missed")).toMatchObject({
+        playerId: "p1",
+        points: -2,
       });
       expect(rows.find((r) => r.kind === "handball")).toMatchObject({
         playerId: "p4",

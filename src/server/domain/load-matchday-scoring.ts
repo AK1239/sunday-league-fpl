@@ -38,7 +38,9 @@ export async function loadScoringRulesForMatchday(
       penaltySavedPts: scoringRuleSets.penaltySavedPts,
       ownGoalPts: scoringRuleSets.ownGoalPts,
       handballPts: scoringRuleSets.handballPts,
+      penaltyMissedPts: scoringRuleSets.penaltyMissedPts,
       captainMultiplier: scoringRuleSets.captainMultiplier,
+      viceCaptainMultiplier: scoringRuleSets.viceCaptainMultiplier,
       transfersStartMatchday: scoringRuleSets.transfersStartMatchday,
       freeTransfersPerMatchday: scoringRuleSets.freeTransfersPerMatchday,
       maxBankedFreeTransfers: scoringRuleSets.maxBankedFreeTransfers,
@@ -68,7 +70,9 @@ export async function loadScoringRulesForMatchday(
       penaltySavedPts: row.penaltySavedPts,
       ownGoalPts: row.ownGoalPts,
       handballPts: row.handballPts,
+      penaltyMissedPts: row.penaltyMissedPts,
       captainMultiplier: row.captainMultiplier,
+      viceCaptainMultiplier: row.viceCaptainMultiplier,
     },
   };
 }

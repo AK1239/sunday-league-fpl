@@ -28,7 +28,7 @@ const goalSchema = z.object({
 });
 
 const incidentSchema = z.object({
-  kind: z.enum(["penalty_saved", "handball_blocked"]),
+  kind: z.enum(["penalty_saved", "handball_blocked", "penalty_missed"]),
   side: z.enum(["A", "B"]),
   playerId: z.string().uuid(),
 });

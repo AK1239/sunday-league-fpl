@@ -5,6 +5,7 @@ import { useState } from "react";
 import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { FantasyPitch } from "@/components/manager/fantasy-pitch";
 import { PlayerPointsModal } from "@/components/manager/player-points-modal";
+import { formatMultiplierDisplay } from "@/lib/format-scoring";
 import { cn } from "@/lib/utils";
 import type { FantasyTeamPlayerSlot } from "@/server/queries/fantasy-team-view";
 import type {
@@ -145,9 +146,10 @@ export function GameweekTeamBody({
                           >
                             {line.points}
                           </p>
-                          {line.multiplier > 1 ? (
+                          {line.multiplier !== 1 ? (
                             <p className="text-[0.65rem] text-podium-gold tabular-nums">
-                              {line.basePoints} × {line.multiplier}
+                              {line.basePoints} ×{" "}
+                              {formatMultiplierDisplay(line.multiplier)}
                             </p>
                           ) : null}
                         </div>

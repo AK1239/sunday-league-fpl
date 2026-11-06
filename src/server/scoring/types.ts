@@ -8,10 +8,14 @@ export type PointKind =
   | "clean_sheet"
   | "own_goal"
   | "penalty_saved"
-  | "handball";
+  | "handball"
+  | "penalty_missed";
 
 export type GoalKind = "open_play" | "penalty" | "own_goal";
-export type IncidentKind = "penalty_saved" | "handball_blocked";
+export type IncidentKind =
+  | "penalty_saved"
+  | "handball_blocked"
+  | "penalty_missed";
 
 export type ScoringRules = {
   attendancePts: number;
@@ -27,6 +31,8 @@ export type ScoringRules = {
   ownGoalPts: number;
   /** Handball that stops a goal. */
   handballPts: number;
+  /** Taker misses the penalty (not saved — separate from penalty_saved). */
+  penaltyMissedPts: number;
 };
 
 export type ScoreGoal = {

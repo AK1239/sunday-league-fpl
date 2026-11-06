@@ -1,7 +1,10 @@
 import type { ScoringRules } from "./types";
 
 export type ManagerScoringRules = ScoringRules & {
+  /** Captain × as hundredths on the ledger total (200 = 2×). */
   captainMultiplier: number;
+  /** Vice-captain × as hundredths (150 = 1.5×), applied when they attend. */
+  viceCaptainMultiplier: number;
 };
 
 export type ManagerScoreLineRole =
@@ -24,6 +27,7 @@ export type ScoredManagerLine = {
   playerId: string;
   role: ScoredLineRole;
   basePoints: number;
+  /** Effective fantasy multiplier (may be fractional, e.g. 1.5). */
   multiplier: number;
   points: number;
   attended: boolean;
@@ -38,7 +42,10 @@ export type ScoredManagerMatchday = {
   transferPenalty: number;
   /** squadPoints + transferPenalty (stage 6). */
   totalPoints: number;
+  /** @deprecated Prefer captainMultiplierPlayerId — kept for older UI paths. */
   multiplierPlayerId: string | null;
+  captainMultiplierPlayerId: string | null;
+  viceCaptainMultiplierPlayerId: string | null;
   teamSource: ManagerTeamSource;
   lines: ScoredManagerLine[];
   /** Scoring chip on this matchday (result metadata). */

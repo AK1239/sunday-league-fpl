@@ -18,7 +18,9 @@ const rules: ManagerScoringRules = {
   penaltySavedPts: 5,
   ownGoalPts: -2,
   handballPts: -2,
-  captainMultiplier: 2,
+  penaltyMissedPts: -2,
+  captainMultiplier: 200,
+  viceCaptainMultiplier: 150,
 };
 
 const team: TeamForManagerScoring = {
@@ -54,14 +56,14 @@ describe("chip scoring", () => {
       new Map(),
       chips,
     );
-    expect(result.squadPoints).toBe(10 * 3 + 4);
+    expect(result.squadPoints).toBe(10 * 3 + Math.round(4 * 1.5));
     expect(result.chipBonus).toBe(10);
     expect(result.chipCode).toBe("triple_captain");
   });
 
-  it("triple captain wasted when captain absent — vice gets ×2", () => {
+  it("triple captain wasted when captain absent — vice still gets 1.5×", () => {
     const playerPoints = new Map([
-      ["p1", 10],
+      ["p1", 0],
       ["p2", 8],
       ["p3", 0],
       ["p4", 0],
@@ -82,7 +84,7 @@ describe("chip scoring", () => {
       new Map(),
       new Map([["m1", chip]]),
     );
-    expect(result.squadPoints).toBe(10 + 8 * 2);
+    expect(result.squadPoints).toBe(Math.round(8 * 1.5));
     expect(result.chipBonus).toBe(0);
   });
 
@@ -96,7 +98,7 @@ describe("chip scoring", () => {
       ["p6", 6],
       ["p7", 4],
     ]);
-    const attended = new Set(["p1", "p6", "p7"]);
+    const attended = new Set(["p1", "p2", "p6", "p7"]);
     const chip: ChipScoringInput = {
       code: "bench_boost",
       params: {},

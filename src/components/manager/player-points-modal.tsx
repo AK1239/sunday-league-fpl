@@ -13,10 +13,12 @@ import {
   Star,
   Target,
   Trophy,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { BottomSheet } from "@/components/pick/bottom-sheet";
+import { formatMultiplierDisplay } from "@/lib/format-scoring";
 import { cn } from "@/lib/utils";
 import type { FantasyTeamPlayerSlot } from "@/server/queries/fantasy-team-view";
 import type {
@@ -63,6 +65,12 @@ const KIND_META: Record<
     icon: <Hand />,
     order: 9,
   },
+  penalty_missed: {
+    label: "Penalty missed",
+    plural: "Penalties missed",
+    icon: <XCircle />,
+    order: 10,
+  },
 };
 
 function roleLabel(role: FantasyTeamPlayerSlot["role"]) {
@@ -100,7 +108,7 @@ export function PlayerPointsModal({
     (a, b) => KIND_META[a.kind].order - KIND_META[b.kind].order,
   );
   const base = sorted.reduce((n, e) => n + e.points, 0);
-  const boosted = line != null && line.multiplier > 1;
+  const boosted = line != null && line.multiplier !== 1;
   const dnp = line != null && !line.attended;
   const total = line?.points ?? base;
 
@@ -122,7 +130,7 @@ export function PlayerPointsModal({
             </p>
             {boosted ? (
               <p className="text-xs text-muted-foreground tabular-nums">
-                {line.basePoints} × {line.multiplier}
+                {line.basePoints} × {formatMultiplierDisplay(line.multiplier)}
               </p>
             ) : null}
           </div>
@@ -184,7 +192,7 @@ export function PlayerPointsModal({
                   {slot.role === "captain" ? "Captain" : "Vice-captain"}{" "}
                   multiplier
                   <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                    ×{line.multiplier}
+                    ×{formatMultiplierDisplay(line.multiplier)}
                   </span>
                 </span>
                 <span className="font-heading text-lg font-semibold text-podium-gold tabular-nums">

@@ -6,6 +6,7 @@ import {
   foreignKey,
   index,
   integer,
+  real,
   smallint,
   jsonb,
   pgEnum,
@@ -87,6 +88,7 @@ export const pointKindEnum = pgEnum("point_kind", [
   "own_goal",
   "penalty_saved",
   "handball",
+  "penalty_missed",
 ]);
 
 export const goalKindEnum = pgEnum("goal_kind", [
@@ -98,6 +100,7 @@ export const goalKindEnum = pgEnum("goal_kind", [
 export const matchIncidentKindEnum = pgEnum("match_incident_kind", [
   "penalty_saved",
   "handball_blocked",
+  "penalty_missed",
 ]);
 
 export const seasonAwardEnum = pgEnum("season_award", [
@@ -151,7 +154,12 @@ export const scoringRuleSets = pgTable("scoring_rule_sets", {
   ownGoalPts: integer("own_goal_pts").notNull().default(-2),
   /** Handball that stops a goal. */
   handballPts: integer("handball_pts").notNull().default(-2),
-  captainMultiplier: integer("captain_multiplier").notNull().default(2),
+  /** Missed penalty (not saved by GK) — taker loses these points. */
+  penaltyMissedPts: integer("penalty_missed_pts").notNull().default(-2),
+  /** Captain fantasy multiplier as hundredths (200 = 2×). */
+  captainMultiplier: integer("captain_multiplier").notNull().default(200),
+  /** Vice-captain fantasy multiplier as hundredths (150 = 1.5×). */
+  viceCaptainMultiplier: integer("vice_captain_multiplier").notNull().default(150),
   freeTransfersPerMatchday: smallint("free_transfers_per_matchday")
     .notNull()
     .default(2),
@@ -769,7 +777,7 @@ export const managerScoreLines = pgTable(
       .references(() => players.id),
     role: managerScoreLineRoleEnum("role").notNull(),
     basePoints: integer("base_points").notNull(),
-    multiplier: integer("multiplier").notNull(),
+    multiplier: real("multiplier").notNull(),
     points: integer("points").notNull(),
     attended: boolean("attended").notNull(),
     teamSource: managerMatchdayTeamSourceEnum("team_source").notNull(),
@@ -802,6 +810,14 @@ export const managerMatchdayScores = pgTable(
     multiplierPlayerId: uuid("multiplier_player_id").references(
       () => players.id,
     ),
+    /** Which player had the captain × applied (if they attended). */
+    captainMultiplierPlayerId: uuid("captain_multiplier_player_id").references(
+      () => players.id,
+    ),
+    /** Which player had the vice-captain × applied (if they attended). */
+    viceCaptainMultiplierPlayerId: uuid(
+      "vice_captain_multiplier_player_id",
+    ).references(() => players.id),
     teamSource: managerMatchdayTeamSourceEnum("team_source").notNull(),
     chipCode: text("chip_code"),
     chipBonus: integer("chip_bonus").notNull().default(0),

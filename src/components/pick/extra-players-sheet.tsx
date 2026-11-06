@@ -154,8 +154,7 @@ export function ExtraPlayersSheet({
         ) : (
           list.map((player) => {
             const inStartingXi = startingXiIds.includes(player.id);
-            const selected =
-              !inStartingXi && selectedIds.includes(player.id);
+            const selected = !inStartingXi && selectedIds.includes(player.id);
             const blocked = full && !selected && !inStartingXi;
             const rowDisabled = inStartingXi || blocked;
             return (

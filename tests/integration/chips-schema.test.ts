@@ -29,7 +29,8 @@ async function seedFixtures() {
       assistPts: 3,
       mvpPts: 3,
       cleanSheetPts: 4,
-      captainMultiplier: 2,
+      captainMultiplier: 200,
+      viceCaptainMultiplier: 150,
     })
     .returning();
   const [season] = await db

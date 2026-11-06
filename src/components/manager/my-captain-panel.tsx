@@ -35,13 +35,13 @@ export async function MyCaptainPanel() {
       <PageHeader
         eyebrow="Captaincy"
         title="Captain performance"
-        description={`Extra points from the 2× multiplier this season · ${seasonBonus} pts`}
+        description={`Extra points from captain / vice-captain multipliers this season · ${seasonBonus} pts`}
       />
 
       {withBonus.length === 0 ? (
         <EmptyState
           title="No captain bonus yet"
-          description="When your captain (or vice, if the captain is out) scores with the multiplier, bonus points show here."
+          description="When your captain or vice-captain gets a points multiplier, the extra shows here."
         />
       ) : (
         <ul className="space-y-2">
@@ -60,7 +60,7 @@ export async function MyCaptainPanel() {
                 <p className="text-xs text-muted-foreground">
                   {gw.playedOn}
                   {gw.multiplierPlayerName
-                    ? ` · ${gw.multiplierPlayerName} got 2×`
+                    ? ` · top multiplier: ${gw.multiplierPlayerName}`
                     : null}
                 </p>
               </div>

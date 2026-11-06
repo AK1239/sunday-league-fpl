@@ -209,7 +209,7 @@ export type PublicMatchDetail = {
   incidents: {
     side: "A" | "B";
     playerName: string;
-    kind: "penalty_saved" | "handball_blocked";
+    kind: "penalty_saved" | "handball_blocked" | "penalty_missed";
   }[];
   mvpPlayerName: string | null;
 };
@@ -369,7 +369,11 @@ export type SeasonRulesPublic = {
     penaltySavedPts: number;
     ownGoalPts: number;
     handballPts: number;
+    penaltyMissedPts: number;
+    /** Captain × for display (e.g. 2 = double). */
     captainMultiplier: number;
+    /** Vice-captain × for display (e.g. 1.5). */
+    viceCaptainMultiplier: number;
   };
 };
 
@@ -402,8 +406,24 @@ export async function getActiveSeasonRulesPublic(
     .where(eq(seasons.id, seasonId))
     .limit(1);
 
+  const r = loaded.rules;
   return {
     seasonName: season?.name ?? "Season",
-    rules: loaded.rules,
+    rules: {
+      attendancePts: r.attendancePts,
+      winPts: r.winPts,
+      drawPts: r.drawPts,
+      goalPts: r.goalPts,
+      assistPts: r.assistPts,
+      mvpPts: r.mvpPts,
+      cleanSheetPts: r.cleanSheetPts,
+      penaltyGoalPts: r.penaltyGoalPts,
+      penaltySavedPts: r.penaltySavedPts,
+      ownGoalPts: r.ownGoalPts,
+      handballPts: r.handballPts,
+      penaltyMissedPts: r.penaltyMissedPts,
+      captainMultiplier: r.captainMultiplier / 100,
+      viceCaptainMultiplier: r.viceCaptainMultiplier / 100,
+    },
   };
 }

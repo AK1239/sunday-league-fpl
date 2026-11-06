@@ -124,7 +124,8 @@ function validateIncident(
     return {
       ok: false,
       code: "INCIDENT",
-      message: "Penalty saves and handballs must name a player on that side.",
+      message:
+        "Incidents (penalty save, miss, handball) must name a player on that side.",
     };
   }
   return { ok: true };
