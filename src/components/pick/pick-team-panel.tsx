@@ -33,7 +33,10 @@ export async function PickTeamPanel() {
   return (
     <div className="mx-auto max-w-3xl">
       {serialized.mode === "transfers" ? (
-        <TransfersTeamClient initial={serialized} />
+        <TransfersTeamClient
+          key={`${serialized.pick.matchday.id}-${serialized.teamVersion}`}
+          initial={serialized}
+        />
       ) : (
         <PickTeamClient
           initial={serialized.pick}

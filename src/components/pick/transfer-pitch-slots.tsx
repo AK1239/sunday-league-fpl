@@ -25,6 +25,7 @@ export function TransferPitchSlots({
   onSlotPress,
   onUndoPending,
   showRoleBadges = true,
+  showIncomingBadges = true,
 }: {
   selection: readonly (string | null)[];
   captainPlayerId: string | null;
@@ -36,6 +37,7 @@ export function TransferPitchSlots({
   onSlotPress: (slotIndex: number) => void;
   onUndoPending: (slotIndex: number) => void;
   showRoleBadges?: boolean;
+  showIncomingBadges?: boolean;
 }) {
   return (
     <div
@@ -96,7 +98,7 @@ export function TransferPitchSlots({
                           Out
                         </span>
                       ) : null}
-                      {isIncoming ? (
+                      {showIncomingBadges && isIncoming ? (
                         <span className="absolute -left-1 -top-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-primary-foreground uppercase">
                           In
                         </span>
