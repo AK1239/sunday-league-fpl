@@ -1,7 +1,20 @@
+export type GoalDraftKind = "open_play" | "penalty" | "own_goal";
+
 export type GoalDraft = {
+  /** For an own goal: the player who put it in (on the side OPPOSITE `side`). */
   scorerId: string;
   assistId: string | null;
+  /** Side credited with the goal on the scoreline. */
   side: "A" | "B";
+  /** Defaults to open play. */
+  kind?: GoalDraftKind;
+};
+
+export type IncidentDraft = {
+  kind: "penalty_saved" | "handball_blocked";
+  /** Side of the player involved. */
+  side: "A" | "B";
+  playerId: string;
 };
 
 export type MatchDraftInput = {
@@ -14,6 +27,7 @@ export type MatchDraftInput = {
   sideAGoalkeeperId: string | null;
   sideBGoalkeeperId: string | null;
   goals: GoalDraft[];
+  incidents?: IncidentDraft[];
   mvpPlayerId: string | null;
 };
 
@@ -34,6 +48,7 @@ export type MatchEntryMatch = {
   sideAGoalkeeperId: string | null;
   sideBGoalkeeperId: string | null;
   goals: GoalDraft[];
+  incidents: IncidentDraft[];
   mvpPlayerId: string | null;
 };
 

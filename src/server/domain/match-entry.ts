@@ -2,6 +2,7 @@ import { and, asc, eq, max } from "drizzle-orm";
 import type { AppDb, DbExecutor } from "@/server/db";
 import {
   goals,
+  matchIncidents,
   matchMvps,
   matchParticipants,
   matchSides,
@@ -142,10 +143,21 @@ export async function loadMatchdayEntry(
         scorerId: goals.scorerId,
         assistId: goals.assistId,
         sideId: goals.sideId,
+        kind: goals.kind,
       })
       .from(goals)
       .where(eq(goals.matchId, matchRow.id))
       .orderBy(goals.seq);
+
+    const incidentRows = await db
+      .select({
+        kind: matchIncidents.kind,
+        playerId: matchIncidents.playerId,
+        sideId: matchIncidents.sideId,
+      })
+      .from(matchIncidents)
+      .where(eq(matchIncidents.matchId, matchRow.id))
+      .orderBy(matchIncidents.seq);
 
     const mvpRows = await db
       .select({ playerId: matchMvps.playerId })
@@ -170,6 +182,12 @@ export async function loadMatchdayEntry(
         scorerId: g.scorerId,
         assistId: g.assistId,
         side: g.sideId === sideA?.id ? "A" : "B",
+        kind: g.kind,
+      })),
+      incidents: incidentRows.map((i) => ({
+        kind: i.kind,
+        playerId: i.playerId,
+        side: i.sideId === sideA?.id ? "A" : "B",
       })),
       mvpPlayerId: mvpRows[0]?.playerId ?? null,
     });
@@ -263,6 +281,7 @@ async function replaceMatchContents(
 
   await tx.delete(matchParticipants).where(eq(matchParticipants.matchId, matchId));
   await tx.delete(goals).where(eq(goals.matchId, matchId));
+  await tx.delete(matchIncidents).where(eq(matchIncidents.matchId, matchId));
   await tx.delete(matchMvps).where(eq(matchMvps.matchId, matchId));
 
   if (draft.sideAPlayerIds.length > 0) {
@@ -291,8 +310,20 @@ async function replaceMatchContents(
       matchId,
       sideId,
       scorerId: goal.scorerId,
-      assistId: goal.assistId,
+      assistId: goal.kind === "penalty" || goal.kind === "own_goal" ? null : goal.assistId,
+      kind: goal.kind ?? "open_play",
       seq: seq++,
+    });
+  }
+
+  let incidentSeq = 1;
+  for (const incident of draft.incidents ?? []) {
+    await tx.insert(matchIncidents).values({
+      matchId,
+      sideId: incident.side === "A" ? sideA!.id : sideB!.id,
+      playerId: incident.playerId,
+      kind: incident.kind,
+      seq: incidentSeq++,
     });
   }
 
@@ -479,6 +510,7 @@ export async function copyLineupFromPreviousMatchAdmin(
       sideAGoalkeeperId: source.sideAGoalkeeperId,
       sideBGoalkeeperId: source.sideBGoalkeeperId,
       goals: [],
+      incidents: [],
       mvpPlayerId: null,
     };
 

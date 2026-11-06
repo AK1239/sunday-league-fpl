@@ -10,6 +10,10 @@ const DEFAULT_RULES: ScoringRules = {
   assistPts: 3,
   mvpPts: 3,
   cleanSheetPts: 4,
+  penaltyGoalPts: 3,
+  penaltySavedPts: 5,
+  ownGoalPts: -2,
+  handballPts: -2,
 };
 
 const BASE: Omit<ScoreMatchdayInput, "matches" | "attendeePlayerIds"> = {
@@ -207,5 +211,115 @@ describe("scoreMatchday", () => {
     const assistRow = rows.find((row) => row.kind === "assist");
     expect(goalRow?.sourceRef).toBe("goal-uuid");
     expect(assistRow?.sourceRef).toBe("goal-uuid");
+  });
+
+  describe("penalties, own goals and handballs", () => {
+    const two = {
+      sideA: {
+        side: "A" as const,
+        playerIds: ["p1", "p3"],
+        goalkeeperId: "p3",
+      },
+      sideB: {
+        side: "B" as const,
+        playerIds: ["p2", "p4"],
+        goalkeeperId: null,
+      },
+    };
+
+    it("a penalty goal is worth penaltyGoalPts instead of goalPts, with no assist", () => {
+      const rows = scoreMatchday(DEFAULT_RULES, {
+        ...BASE,
+        attendeePlayerIds: ["p1", "p2", "p3", "p4"],
+        matches: [
+          match({
+            id: "m1",
+            ...two,
+            scoreA: 1,
+            goals: [
+              { id: "g1", scorerId: "p1", assistId: "p3", kind: "penalty" },
+            ],
+          }),
+        ],
+      });
+      const goal = rows.find((r) => r.kind === "goal" && r.playerId === "p1");
+      expect(goal?.points).toBe(3);
+      expect(rows.some((r) => r.kind === "assist")).toBe(false);
+    });
+
+    it("an own goal costs the scorer ownGoalPts and gives nobody goal points", () => {
+      // p4 (side B) puts it in his own net: side A is credited 1-0.
+      const rows = scoreMatchday(DEFAULT_RULES, {
+        ...BASE,
+        attendeePlayerIds: ["p1", "p2", "p3", "p4"],
+        matches: [
+          match({
+            id: "m1",
+            ...two,
+            scoreA: 1,
+            goals: [
+              { id: "g1", scorerId: "p4", assistId: null, kind: "own_goal" },
+            ],
+          }),
+        ],
+      });
+      const og = rows.filter((r) => r.kind === "own_goal");
+      expect(og).toHaveLength(1);
+      expect(og[0]).toMatchObject({ playerId: "p4", points: -2 });
+      expect(rows.some((r) => r.kind === "goal")).toBe(false);
+      // Side A still wins on the scoreline.
+      expect(
+        rows
+          .filter((r) => r.kind === "win")
+          .map((r) => r.playerId)
+          .sort(),
+      ).toEqual(["p1", "p3"]);
+    });
+
+    it("penalty saved and handball award / deduct their points", () => {
+      const rows = scoreMatchday(DEFAULT_RULES, {
+        ...BASE,
+        attendeePlayerIds: ["p1", "p2", "p3", "p4"],
+        matches: [
+          match({
+            id: "m1",
+            ...two,
+            incidents: [
+              { id: "i1", playerId: "p3", kind: "penalty_saved" },
+              { id: "i2", playerId: "p4", kind: "handball_blocked" },
+            ],
+          }),
+        ],
+      });
+      expect(rows.find((r) => r.kind === "penalty_saved")).toMatchObject({
+        playerId: "p3",
+        points: 5,
+      });
+      expect(rows.find((r) => r.kind === "handball")).toMatchObject({
+        playerId: "p4",
+        points: -2,
+      });
+    });
+
+    it("an own goal still breaks the opposing keeper's clean sheet", () => {
+      const rows = scoreMatchday(DEFAULT_RULES, {
+        ...BASE,
+        attendeePlayerIds: ["p1", "p2", "p3", "p4"],
+        matches: [
+          match({
+            id: "m1",
+            ...two,
+            sideB: { side: "B", playerIds: ["p2", "p4"], goalkeeperId: "p4" },
+            scoreA: 1,
+            goals: [
+              { id: "g1", scorerId: "p4", assistId: null, kind: "own_goal" },
+            ],
+          }),
+        ],
+      });
+      expect(
+        rows.some((r) => r.kind === "clean_sheet" && r.playerId === "p4"),
+      ).toBe(false);
+    });
   });
 });

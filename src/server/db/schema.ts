@@ -84,6 +84,20 @@ export const pointKindEnum = pgEnum("point_kind", [
   "assist",
   "mvp",
   "clean_sheet",
+  "own_goal",
+  "penalty_saved",
+  "handball",
+]);
+
+export const goalKindEnum = pgEnum("goal_kind", [
+  "open_play",
+  "penalty",
+  "own_goal",
+]);
+
+export const matchIncidentKindEnum = pgEnum("match_incident_kind", [
+  "penalty_saved",
+  "handball_blocked",
 ]);
 
 export const seasonAwardEnum = pgEnum("season_award", [
@@ -131,6 +145,12 @@ export const scoringRuleSets = pgTable("scoring_rule_sets", {
   assistPts: integer("assist_pts").notNull(),
   mvpPts: integer("mvp_pts").notNull(),
   cleanSheetPts: integer("clean_sheet_pts").notNull(),
+  /** Replaces goalPts for a goal scored from a penalty. */
+  penaltyGoalPts: integer("penalty_goal_pts").notNull().default(3),
+  penaltySavedPts: integer("penalty_saved_pts").notNull().default(5),
+  ownGoalPts: integer("own_goal_pts").notNull().default(-2),
+  /** Handball that stops a goal. */
+  handballPts: integer("handball_pts").notNull().default(-2),
   captainMultiplier: integer("captain_multiplier").notNull().default(2),
   freeTransfersPerMatchday: smallint("free_transfers_per_matchday")
     .notNull()
@@ -260,8 +280,10 @@ export const goals = pgTable(
     sideId: uuid("side_id")
       .notNull()
       .references(() => matchSides.id, { onDelete: "cascade" }),
+    /** For own goals this is the player who put it in (on the OPPOSITE side to `sideId`, the side credited). */
     scorerId: uuid("scorer_id").notNull(),
     assistId: uuid("assist_id"),
+    kind: goalKindEnum("kind").notNull().default("open_play"),
     seq: integer("seq").notNull(),
   },
   (table) => [
@@ -273,7 +295,37 @@ export const goals = pgTable(
       "goals_scorer_assist_distinct",
       sql`${table.assistId} IS NULL OR ${table.scorerId} <> ${table.assistId}`,
     ),
+    check(
+      "goals_assist_only_open_play",
+      sql`${table.kind} = 'open_play' OR ${table.assistId} IS NULL`,
+    ),
     index("goals_match_idx").on(table.matchId),
+  ],
+);
+
+/** Non-goal events: penalty saved (+pts) and handball that stopped a goal (-pts). */
+export const matchIncidents = pgTable(
+  "match_incidents",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    matchId: uuid("match_id")
+      .notNull()
+      .references(() => matches.id, { onDelete: "cascade" }),
+    /** Side of the player involved. */
+    sideId: uuid("side_id")
+      .notNull()
+      .references(() => matchSides.id, { onDelete: "cascade" }),
+    playerId: uuid("player_id").notNull(),
+    kind: matchIncidentKindEnum("kind").notNull(),
+    seq: integer("seq").notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: "match_incidents_participant_fk",
+      columns: [table.matchId, table.playerId],
+      foreignColumns: [matchParticipants.matchId, matchParticipants.playerId],
+    }).onDelete("cascade"),
+    index("match_incidents_match_idx").on(table.matchId),
   ],
 );
 

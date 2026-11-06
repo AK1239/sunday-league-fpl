@@ -19,6 +19,13 @@ const goalSchema = z.object({
   scorerId: z.string().uuid(),
   assistId: z.string().uuid().nullable(),
   side: z.enum(["A", "B"]),
+  kind: z.enum(["open_play", "penalty", "own_goal"]).optional(),
+});
+
+const incidentSchema = z.object({
+  kind: z.enum(["penalty_saved", "handball_blocked"]),
+  side: z.enum(["A", "B"]),
+  playerId: z.string().uuid(),
 });
 
 const matchDraftSchema = z.object({
@@ -31,6 +38,7 @@ const matchDraftSchema = z.object({
   sideAGoalkeeperId: z.string().uuid().nullable(),
   sideBGoalkeeperId: z.string().uuid().nullable(),
   goals: z.array(goalSchema),
+  incidents: z.array(incidentSchema).optional(),
   mvpPlayerId: z.string().uuid().nullable(),
 });
 

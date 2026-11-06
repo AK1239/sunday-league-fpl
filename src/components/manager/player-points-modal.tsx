@@ -5,6 +5,9 @@ import {
   Crown,
   Equal,
   Footprints,
+  Hand,
+  ShieldAlert,
+  Undo2,
   Shirt,
   ShieldCheck,
   Star,
@@ -42,6 +45,24 @@ const KIND_META: Record<
     order: 5,
   },
   mvp: { label: "MVP", icon: <Star />, order: 6 },
+  penalty_saved: {
+    label: "Penalty saved",
+    plural: "Penalties saved",
+    icon: <ShieldAlert />,
+    order: 7,
+  },
+  own_goal: {
+    label: "Own goal",
+    plural: "Own goals",
+    icon: <Undo2 />,
+    order: 8,
+  },
+  handball: {
+    label: "Handball (goal stopped)",
+    plural: "Handballs (goals stopped)",
+    icon: <Hand />,
+    order: 9,
+  },
 };
 
 function roleLabel(role: FantasyTeamPlayerSlot["role"]) {

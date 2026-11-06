@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import type { AppDb } from "@/server/db";
 import {
   goals,
@@ -69,7 +69,13 @@ export async function getStandings(
     .from(goals)
     .innerJoin(matches, eq(goals.matchId, matches.id))
     .innerJoin(matchdays, eq(matches.matchdayId, matchdays.id))
-    .where(publishedMatchdayFilter(seasonId))
+    .where(
+      and(
+        publishedMatchdayFilter(seasonId),
+        // Own goals count for the other team, not the scorer.
+        ne(goals.kind, "own_goal"),
+      ),
+    )
     .groupBy(goals.scorerId)
     .as("goal_totals");
 

@@ -4,6 +4,7 @@ import {
   fantasyTeamPlayers,
   fantasyTeams,
   goals,
+  matchIncidents,
   matchMvps,
   matchdays,
   matches,
@@ -190,6 +191,12 @@ export type PublicMatchDetail = {
     side: "A" | "B";
     scorerName: string;
     assistName: string | null;
+    kind: "open_play" | "penalty" | "own_goal";
+  }[];
+  incidents: {
+    side: "A" | "B";
+    playerName: string;
+    kind: "penalty_saved" | "handball_blocked";
   }[];
   mvpPlayerName: string | null;
 };
@@ -260,12 +267,25 @@ export async function getPublicMatchDetail(
       side: matchSides.side,
       scorerName: players.displayName,
       assistId: goals.assistId,
+      kind: goals.kind,
     })
     .from(goals)
     .innerJoin(matchSides, eq(goals.sideId, matchSides.id))
     .innerJoin(players, eq(goals.scorerId, players.id))
     .where(eq(goals.matchId, matchId))
     .orderBy(asc(goals.seq));
+
+  const incidentRows = await db
+    .select({
+      side: matchSides.side,
+      playerName: players.displayName,
+      kind: matchIncidents.kind,
+    })
+    .from(matchIncidents)
+    .innerJoin(matchSides, eq(matchIncidents.sideId, matchSides.id))
+    .innerJoin(players, eq(matchIncidents.playerId, players.id))
+    .where(eq(matchIncidents.matchId, matchId))
+    .orderBy(asc(matchIncidents.seq));
 
   const assistIds = goalRows
     .map((g) => g.assistId)
@@ -308,6 +328,12 @@ export async function getPublicMatchDetail(
       side: g.side as "A" | "B",
       scorerName: g.scorerName,
       assistName: g.assistId ? (assistNames.get(g.assistId) ?? null) : null,
+      kind: g.kind,
+    })),
+    incidents: incidentRows.map((i) => ({
+      side: i.side as "A" | "B",
+      playerName: i.playerName,
+      kind: i.kind,
     })),
     mvpPlayerName: mvp?.displayName ?? null,
   };
@@ -323,6 +349,10 @@ export type SeasonRulesPublic = {
     assistPts: number;
     mvpPts: number;
     cleanSheetPts: number;
+    penaltyGoalPts: number;
+    penaltySavedPts: number;
+    ownGoalPts: number;
+    handballPts: number;
     captainMultiplier: number;
   };
 };

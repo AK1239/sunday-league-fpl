@@ -151,18 +151,37 @@ export function scoreMatchday(
     }
 
     for (const goal of match.goals) {
+      const kind = goal.kind ?? "open_play";
+
+      if (kind === "own_goal") {
+        // Credited to the opposing side on the scoreline; the scorer loses points.
+        pushRow(
+          rows,
+          {
+            matchId: match.id,
+            playerId: goal.scorerId,
+            kind: "own_goal",
+            points: rules.ownGoalPts,
+            sourceRef: goal.id,
+          },
+          context,
+        );
+        continue;
+      }
+
+      // A penalty goal is worth `penaltyGoalPts` INSTEAD of `goalPts`.
       pushRow(
         rows,
         {
           matchId: match.id,
           playerId: goal.scorerId,
           kind: "goal",
-          points: rules.goalPts,
+          points: kind === "penalty" ? rules.penaltyGoalPts : rules.goalPts,
           sourceRef: goal.id,
         },
         context,
       );
-      if (goal.assistId) {
+      if (goal.assistId && kind === "open_play") {
         pushRow(
           rows,
           {
@@ -175,6 +194,23 @@ export function scoreMatchday(
           context,
         );
       }
+    }
+
+    for (const incident of match.incidents ?? []) {
+      pushRow(
+        rows,
+        {
+          matchId: match.id,
+          playerId: incident.playerId,
+          kind: incident.kind === "penalty_saved" ? "penalty_saved" : "handball",
+          points:
+            incident.kind === "penalty_saved"
+              ? rules.penaltySavedPts
+              : rules.handballPts,
+          sourceRef: incident.id,
+        },
+        context,
+      );
     }
 
     if (match.mvpPlayerId) {

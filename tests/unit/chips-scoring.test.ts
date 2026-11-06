@@ -14,6 +14,10 @@ const rules: ManagerScoringRules = {
   assistPts: 3,
   mvpPts: 3,
   cleanSheetPts: 4,
+  penaltyGoalPts: 3,
+  penaltySavedPts: 5,
+  ownGoalPts: -2,
+  handballPts: -2,
   captainMultiplier: 2,
 };
 

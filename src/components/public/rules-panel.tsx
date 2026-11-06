@@ -36,6 +36,16 @@ export async function RulesPanel() {
           <RuleRow label="Goal" value={rules.goalPts} />
           <RuleRow label="Assist" value={rules.assistPts} />
           <RuleRow label="Clean sheet (GK)" value={rules.cleanSheetPts} />
+          <RuleRow
+            label="Penalty scored (instead of goal)"
+            value={rules.penaltyGoalPts}
+          />
+          <RuleRow label="Penalty saved" value={rules.penaltySavedPts} />
+          <RuleRow label="Own goal" value={rules.ownGoalPts} />
+          <RuleRow
+            label="Handball that stops a goal"
+            value={rules.handballPts}
+          />
         </ul>
       </section>
 
@@ -69,7 +79,14 @@ function RuleRow({ label, value }: { label: string; value: number }) {
   return (
     <li className="flex items-center justify-between rounded-xl bg-muted/30 px-3 py-2">
       <span>{label}</span>
-      <span className="font-semibold tabular-nums text-primary">+{value}</span>
+      <span
+        className={
+          "font-semibold tabular-nums " +
+          (value < 0 ? "text-destructive" : "text-primary")
+        }
+      >
+        {value > 0 ? `+${value}` : value}
+      </span>
     </li>
   );
 }

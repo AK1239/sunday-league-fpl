@@ -10,6 +10,7 @@ import {
   Hand,
   Minus,
   Plus,
+  ShieldAlert,
   Target,
   Trash2,
   X,
@@ -63,6 +64,7 @@ function emptyMatch(matchNo: number, id?: string): MatchEntryMatch {
     sideAGoalkeeperId: null,
     sideBGoalkeeperId: null,
     goals: [],
+    incidents: [],
     mvpPlayerId: null,
   };
 }
@@ -78,6 +80,7 @@ function toDraft(match: MatchEntryMatch): MatchDraftInput {
     sideAGoalkeeperId: match.sideAGoalkeeperId,
     sideBGoalkeeperId: match.sideBGoalkeeperId,
     goals: match.goals,
+    incidents: match.incidents,
     mvpPlayerId: null,
   };
 }
@@ -455,6 +458,8 @@ function MatchCardEditor({
       ? [...current, playerId]
       : current.filter((id) => id !== playerId);
     const patch: Partial<MatchEntryMatch> = { [key]: next };
+    // Penalty saves / handballs belong to a side: drop them if the player moves.
+    patch.incidents = match.incidents.filter((i) => i.playerId !== playerId);
     if (adding) {
       patch[otherKey] = match[otherKey].filter((id) => id !== playerId);
       if (side === "A" && match.sideBGoalkeeperId === playerId) {
@@ -538,6 +543,47 @@ function MatchCardEditor({
     const goals = [...match.goals];
     goals[index] = { ...goals[index]!, ...patch };
     onChange({ ...match, goals });
+  }
+
+  /** Change a goal's type; own goals are scored by the OTHER side's player. */
+  function setGoalKind(index: number, kind: GoalKindValue) {
+    const goal = match.goals[index]!;
+    const scoringIds =
+      goal.side === "A" ? match.sideAPlayerIds : match.sideBPlayerIds;
+    const concedingIds =
+      goal.side === "A" ? match.sideBPlayerIds : match.sideAPlayerIds;
+    const pool = kind === "own_goal" ? concedingIds : scoringIds;
+    updateGoal(index, {
+      kind,
+      scorerId: pool.includes(goal.scorerId)
+        ? goal.scorerId
+        : (pool[0] ?? goal.scorerId),
+      assistId: kind === "open_play" ? goal.assistId : null,
+    });
+  }
+
+  function addIncident(side: "A" | "B", kind: IncidentKindValue) {
+    const ids = side === "A" ? match.sideAPlayerIds : match.sideBPlayerIds;
+    const gk = side === "A" ? match.sideAGoalkeeperId : match.sideBGoalkeeperId;
+    const playerId = (kind === "penalty_saved" ? gk : null) ?? ids[0];
+    if (!playerId) return;
+    onChange({
+      ...match,
+      incidents: [...match.incidents, { kind, side, playerId }],
+    });
+  }
+
+  function updateIncident(index: number, playerId: string) {
+    const incidents = [...match.incidents];
+    incidents[index] = { ...incidents[index]!, playerId };
+    onChange({ ...match, incidents });
+  }
+
+  function removeIncident(index: number) {
+    onChange({
+      ...match,
+      incidents: match.incidents.filter((_, i) => i !== index),
+    });
   }
 
   return (
@@ -653,6 +699,11 @@ function MatchCardEditor({
           const sideGoals = match.goals
             .map((goal, index) => ({ goal, index }))
             .filter((g) => g.goal.side === side);
+          const otherIds =
+            side === "A" ? match.sideBPlayerIds : match.sideAPlayerIds;
+          const sideIncidents = match.incidents
+            .map((incident, index) => ({ incident, index }))
+            .filter((i) => i.incident.side === side);
 
           return (
             <section
@@ -745,55 +796,165 @@ function MatchCardEditor({
                       : "No goals yet — raise the score to add one."}
                   </p>
                 ) : (
+                  <ul className="space-y-3">
+                    {sideGoals.map(({ goal, index }, n) => {
+                      const kind: GoalKindValue = goal.kind ?? "open_play";
+                      const scorerPool = kind === "own_goal" ? otherIds : ids;
+                      return (
+                        <li key={index} className="animate-rise space-y-1.5">
+                          <div className="grid grid-cols-[1.5rem_1fr_1fr] items-center gap-2">
+                            <span className="text-center text-xs font-semibold text-muted-foreground tabular-nums">
+                              {n + 1}
+                            </span>
+                            <PlayerSelect
+                              icon={<Target />}
+                              label={
+                                kind === "own_goal"
+                                  ? `Goal ${n + 1} own goal by`
+                                  : `Goal ${n + 1} scorer`
+                              }
+                              value={goal.scorerId}
+                              onChange={(v) =>
+                                updateGoal(index, {
+                                  scorerId: v,
+                                  assistId:
+                                    goal.assistId === v ? null : goal.assistId,
+                                })
+                              }
+                            >
+                              {scorerPool.map((id) => (
+                                <option key={id} value={id}>
+                                  {kind === "own_goal"
+                                    ? `${nameOf(id)} (OG)`
+                                    : nameOf(id)}
+                                </option>
+                              ))}
+                            </PlayerSelect>
+                            {kind === "open_play" ? (
+                              <PlayerSelect
+                                icon={<Footprints />}
+                                label={`Goal ${n + 1} assist`}
+                                value={goal.assistId ?? ""}
+                                onChange={(v) =>
+                                  updateGoal(index, { assistId: v || null })
+                                }
+                                muted={!goal.assistId}
+                              >
+                                <option value="">No assist</option>
+                                {ids
+                                  .filter((id) => id !== goal.scorerId)
+                                  .map((id) => (
+                                    <option key={id} value={id}>
+                                      {nameOf(id)}
+                                    </option>
+                                  ))}
+                              </PlayerSelect>
+                            ) : (
+                              <p className="flex h-10 items-center rounded-xl border border-dashed border-border/60 px-3 text-xs text-muted-foreground">
+                                {kind === "penalty"
+                                  ? "Penalty · no assist"
+                                  : "Counts for the other side"}
+                              </p>
+                            )}
+                          </div>
+                          <div
+                            role="group"
+                            aria-label={`Goal ${n + 1} type`}
+                            className="flex gap-1.5 pl-8"
+                          >
+                            {GOAL_KIND_OPTIONS.map((o) => (
+                              <button
+                                key={o.value}
+                                type="button"
+                                aria-pressed={kind === o.value}
+                                onClick={() => setGoalKind(index, o.value)}
+                                className={cn(
+                                  "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                  kind === o.value
+                                    ? o.value === "own_goal"
+                                      ? "border-destructive/50 bg-destructive/15 text-destructive"
+                                      : "border-primary/50 bg-primary/15 text-primary"
+                                    : "border-border/60 text-muted-foreground hover:text-foreground",
+                                )}
+                              >
+                                {o.label}
+                              </button>
+                            ))}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+                  Incidents
+                </p>
+                {sideIncidents.length > 0 ? (
                   <ul className="space-y-2">
-                    {sideGoals.map(({ goal, index }, n) => (
+                    {sideIncidents.map(({ incident, index }) => (
                       <li
                         key={index}
-                        className="animate-rise grid grid-cols-[1.5rem_1fr_1fr] items-center gap-2"
+                        className="animate-rise grid grid-cols-[1fr_auto] items-center gap-2"
                       >
-                        <span className="text-center text-xs font-semibold text-muted-foreground tabular-nums">
-                          {n + 1}
-                        </span>
                         <PlayerSelect
-                          icon={<Target />}
-                          label={`Goal ${n + 1} scorer`}
-                          value={goal.scorerId}
-                          onChange={(v) =>
-                            updateGoal(index, {
-                              scorerId: v,
-                              assistId:
-                                goal.assistId === v ? null : goal.assistId,
-                            })
+                          icon={
+                            incident.kind === "penalty_saved" ? (
+                              <ShieldAlert />
+                            ) : (
+                              <Hand />
+                            )
                           }
+                          label={
+                            incident.kind === "penalty_saved"
+                              ? "Penalty saved by"
+                              : "Handball by"
+                          }
+                          value={incident.playerId}
+                          onChange={(v) => updateIncident(index, v)}
                         >
                           {ids.map((id) => (
                             <option key={id} value={id}>
-                              {nameOf(id)}
+                              {incident.kind === "penalty_saved"
+                                ? `${nameOf(id)} · penalty saved`
+                                : `${nameOf(id)} · handball (goal stopped)`}
                             </option>
                           ))}
                         </PlayerSelect>
-                        <PlayerSelect
-                          icon={<Footprints />}
-                          label={`Goal ${n + 1} assist`}
-                          value={goal.assistId ?? ""}
-                          onChange={(v) =>
-                            updateGoal(index, { assistId: v || null })
-                          }
-                          muted={!goal.assistId}
+                        <button
+                          type="button"
+                          aria-label="Remove incident"
+                          onClick={() => removeIncident(index)}
+                          className="flex size-10 items-center justify-center rounded-xl text-muted-foreground transition-colors outline-none hover:bg-destructive/15 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                          <option value="">No assist</option>
-                          {ids
-                            .filter((id) => id !== goal.scorerId)
-                            .map((id) => (
-                              <option key={id} value={id}>
-                                {nameOf(id)}
-                              </option>
-                            ))}
-                        </PlayerSelect>
+                          <X className="size-4" aria-hidden />
+                        </button>
                       </li>
                     ))}
                   </ul>
-                )}
+                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={ids.length === 0}
+                    onClick={() => addIncident(side, "penalty_saved")}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors outline-none hover:border-primary/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                  >
+                    <ShieldAlert className="size-3.5" aria-hidden />
+                    Penalty saved
+                  </button>
+                  <button
+                    type="button"
+                    disabled={ids.length === 0}
+                    onClick={() => addIncident(side, "handball_blocked")}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors outline-none hover:border-destructive/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                  >
+                    <Hand className="size-3.5" aria-hidden />
+                    Handball stopped a goal
+                  </button>
+                </div>
               </div>
             </section>
           );
@@ -802,6 +963,15 @@ function MatchCardEditor({
     </article>
   );
 }
+
+type GoalKindValue = "open_play" | "penalty" | "own_goal";
+type IncidentKindValue = "penalty_saved" | "handball_blocked";
+
+const GOAL_KIND_OPTIONS: { value: GoalKindValue; label: string }[] = [
+  { value: "open_play", label: "Goal" },
+  { value: "penalty", label: "Penalty" },
+  { value: "own_goal", label: "Own goal" },
+];
 
 const SIDE_STYLES = {
   A: {

@@ -1,4 +1,8 @@
-import type { GoalDraft, MatchDraftInput } from "./match-entry-types";
+import type {
+  GoalDraft,
+  IncidentDraft,
+  MatchDraftInput,
+} from "./match-entry-types";
 
 export type ValidateMatchDraftResult =
   | { ok: true }
@@ -97,6 +101,11 @@ export function validateMatchDraft(
     if (!goalCheck.ok) return goalCheck;
   }
 
+  for (const incident of draft.incidents ?? []) {
+    const incidentCheck = validateIncident(incident, sideA, sideB);
+    if (!incidentCheck.ok) return incidentCheck;
+  }
+
   if (hasLineup || draft.scoreA > 0 || draft.scoreB > 0) {
     const goalsA = draft.goals.filter((g) => g.side === "A").length;
     const goalsB = draft.goals.filter((g) => g.side === "B").length;
@@ -112,11 +121,57 @@ export function validateMatchDraft(
   return { ok: true };
 }
 
+function validateIncident(
+  incident: IncidentDraft,
+  sideA: Set<string>,
+  sideB: Set<string>,
+): ValidateMatchDraftResult {
+  const sideSet = incident.side === "A" ? sideA : sideB;
+  if (!sideSet.has(incident.playerId)) {
+    return {
+      ok: false,
+      code: "INCIDENT",
+      message: "Penalty saves and handballs must name a player on that side.",
+    };
+  }
+  return { ok: true };
+}
+
 function validateGoal(
   goal: GoalDraft,
   sideA: Set<string>,
   sideB: Set<string>,
 ): ValidateMatchDraftResult {
+  const kind = goal.kind ?? "open_play";
+
+  if (kind === "own_goal") {
+    // The credited side is `goal.side`; the scorer plays for the other team.
+    const conceding = goal.side === "A" ? sideB : sideA;
+    if (!conceding.has(goal.scorerId)) {
+      return {
+        ok: false,
+        code: "OWN_GOAL",
+        message: "An own goal must be scored by a player on the other side.",
+      };
+    }
+    if (goal.assistId) {
+      return {
+        ok: false,
+        code: "ASSIST",
+        message: "An own goal cannot have an assist.",
+      };
+    }
+    return { ok: true };
+  }
+
+  if (kind === "penalty" && goal.assistId) {
+    return {
+      ok: false,
+      code: "ASSIST",
+      message: "A penalty cannot have an assist.",
+    };
+  }
+
   const sideSet = goal.side === "A" ? sideA : sideB;
   if (!sideSet.has(goal.scorerId)) {
     return {

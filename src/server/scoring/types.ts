@@ -1,5 +1,17 @@
 export type PointKind =
-  "attendance" | "win" | "draw" | "goal" | "assist" | "mvp" | "clean_sheet";
+  | "attendance"
+  | "win"
+  | "draw"
+  | "goal"
+  | "assist"
+  | "mvp"
+  | "clean_sheet"
+  | "own_goal"
+  | "penalty_saved"
+  | "handball";
+
+export type GoalKind = "open_play" | "penalty" | "own_goal";
+export type IncidentKind = "penalty_saved" | "handball_blocked";
 
 export type ScoringRules = {
   attendancePts: number;
@@ -9,12 +21,27 @@ export type ScoringRules = {
   assistPts: number;
   mvpPts: number;
   cleanSheetPts: number;
+  /** Replaces `goalPts` for a penalty goal. */
+  penaltyGoalPts: number;
+  penaltySavedPts: number;
+  ownGoalPts: number;
+  /** Handball that stops a goal. */
+  handballPts: number;
 };
 
 export type ScoreGoal = {
   id: string;
+  /** For own goals: the player who scored it (on the side opposite the credited one). */
   scorerId: string;
   assistId: string | null;
+  /** Defaults to open play. */
+  kind?: GoalKind;
+};
+
+export type ScoreIncident = {
+  id: string;
+  playerId: string;
+  kind: IncidentKind;
 };
 
 export type ScoreSide = {
@@ -30,6 +57,7 @@ export type ScoreMatch = {
   sideA: ScoreSide;
   sideB: ScoreSide;
   goals: ScoreGoal[];
+  incidents?: ScoreIncident[];
   mvpPlayerId: string | null;
 };
 

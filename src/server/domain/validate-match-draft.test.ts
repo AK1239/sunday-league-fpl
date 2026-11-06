@@ -34,9 +34,91 @@ describe("validateMatchDraft", () => {
 
   it("rejects goal count mismatch", () => {
     const result = validateMatchDraft(
-      baseDraft({ scoreA: 2, goals: [{ side: "A", scorerId: "p1", assistId: null }] }),
+      baseDraft({
+        scoreA: 2,
+        goals: [{ side: "A", scorerId: "p1", assistId: null }],
+      }),
       attendees,
     );
     expect(result).toMatchObject({ ok: false, code: "GOAL_COUNT" });
+  });
+
+  describe("penalties, own goals and incidents", () => {
+    it("accepts a penalty goal without an assist", () => {
+      expect(
+        validateMatchDraft(
+          baseDraft({
+            goals: [
+              { side: "A", scorerId: "p1", assistId: null, kind: "penalty" },
+            ],
+          }),
+          attendees,
+        ),
+      ).toEqual({ ok: true });
+    });
+
+    it("rejects an assist on a penalty", () => {
+      expect(
+        validateMatchDraft(
+          baseDraft({
+            goals: [
+              { side: "A", scorerId: "p1", assistId: "p2", kind: "penalty" },
+            ],
+          }),
+          attendees,
+        ),
+      ).toMatchObject({ ok: false, code: "ASSIST" });
+    });
+
+    it("accepts an own goal by a player on the other side, credited to side A", () => {
+      expect(
+        validateMatchDraft(
+          baseDraft({
+            goals: [
+              { side: "A", scorerId: "p4", assistId: null, kind: "own_goal" },
+            ],
+          }),
+          attendees,
+        ),
+      ).toEqual({ ok: true });
+    });
+
+    it("rejects an own goal by a player on the credited side", () => {
+      expect(
+        validateMatchDraft(
+          baseDraft({
+            goals: [
+              { side: "A", scorerId: "p1", assistId: null, kind: "own_goal" },
+            ],
+          }),
+          attendees,
+        ),
+      ).toMatchObject({ ok: false, code: "OWN_GOAL" });
+    });
+
+    it("accepts incidents for players on the named side", () => {
+      expect(
+        validateMatchDraft(
+          baseDraft({
+            incidents: [
+              { kind: "penalty_saved", side: "A", playerId: "p3" },
+              { kind: "handball_blocked", side: "B", playerId: "p5" },
+            ],
+          }),
+          attendees,
+        ),
+      ).toEqual({ ok: true });
+    });
+
+    it("rejects an incident naming a player on the wrong side", () => {
+      expect(
+        validateMatchDraft(
+          baseDraft({
+            incidents: [{ kind: "penalty_saved", side: "A", playerId: "p4" }],
+          }),
+          attendees,
+        ),
+      ).toMatchObject({ ok: false, code: "INCIDENT" });
+    });
   });
 });

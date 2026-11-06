@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import type { DbExecutor } from "@/server/db";
 import {
   goals,
+  matchIncidents,
   matchMvps,
   matchParticipants,
   matchSides,
@@ -33,6 +34,10 @@ export async function loadScoringRulesForMatchday(
       assistPts: scoringRuleSets.assistPts,
       mvpPts: scoringRuleSets.mvpPts,
       cleanSheetPts: scoringRuleSets.cleanSheetPts,
+      penaltyGoalPts: scoringRuleSets.penaltyGoalPts,
+      penaltySavedPts: scoringRuleSets.penaltySavedPts,
+      ownGoalPts: scoringRuleSets.ownGoalPts,
+      handballPts: scoringRuleSets.handballPts,
       captainMultiplier: scoringRuleSets.captainMultiplier,
       transfersStartMatchday: scoringRuleSets.transfersStartMatchday,
       freeTransfersPerMatchday: scoringRuleSets.freeTransfersPerMatchday,
@@ -59,6 +64,10 @@ export async function loadScoringRulesForMatchday(
       assistPts: row.assistPts,
       mvpPts: row.mvpPts,
       cleanSheetPts: row.cleanSheetPts,
+      penaltyGoalPts: row.penaltyGoalPts,
+      penaltySavedPts: row.penaltySavedPts,
+      ownGoalPts: row.ownGoalPts,
+      handballPts: row.handballPts,
       captainMultiplier: row.captainMultiplier,
     },
   };
@@ -121,10 +130,21 @@ export async function loadScoreMatchdayInput(
         id: goals.id,
         scorerId: goals.scorerId,
         assistId: goals.assistId,
+        kind: goals.kind,
       })
       .from(goals)
       .where(eq(goals.matchId, matchRow.id))
       .orderBy(goals.seq);
+
+    const incidentRows = await db
+      .select({
+        id: matchIncidents.id,
+        playerId: matchIncidents.playerId,
+        kind: matchIncidents.kind,
+      })
+      .from(matchIncidents)
+      .where(eq(matchIncidents.matchId, matchRow.id))
+      .orderBy(matchIncidents.seq);
 
     const mvpRows = await db
       .select({ playerId: matchMvps.playerId })
@@ -150,6 +170,12 @@ export async function loadScoreMatchdayInput(
         id: goal.id,
         scorerId: goal.scorerId,
         assistId: goal.assistId,
+        kind: goal.kind,
+      })),
+      incidents: incidentRows.map((row) => ({
+        id: row.id,
+        playerId: row.playerId,
+        kind: row.kind,
       })),
       mvpPlayerId: mvpRows[0]?.playerId ?? null,
     });

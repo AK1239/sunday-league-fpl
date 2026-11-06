@@ -55,6 +55,16 @@ export async function MatchDetailPanel({ matchId }: { matchId: string }) {
                 <span className="text-muted-foreground">Side {goal.side}</span>
                 {" · "}
                 <span className="font-medium">{goal.scorerName}</span>
+                {goal.kind === "penalty" ? (
+                  <span className="ml-1.5 rounded bg-primary/15 px-1.5 py-0.5 text-[0.65rem] font-bold tracking-wide text-primary uppercase">
+                    Pen
+                  </span>
+                ) : null}
+                {goal.kind === "own_goal" ? (
+                  <span className="ml-1.5 rounded bg-destructive/15 px-1.5 py-0.5 text-[0.65rem] font-bold tracking-wide text-destructive uppercase">
+                    Own goal
+                  </span>
+                ) : null}
                 {goal.assistName ? (
                   <span className="text-muted-foreground">
                     {" "}
@@ -67,6 +77,25 @@ export async function MatchDetailPanel({ matchId }: { matchId: string }) {
         )}
       </section>
 
+      {detail.incidents.length > 0 ? (
+        <section>
+          <h2 className="font-heading mb-3 text-lg font-semibold">
+            Other incidents
+          </h2>
+          <ul className="surface space-y-2 rounded-2xl p-4 text-sm">
+            {detail.incidents.map((incident, index) => (
+              <li key={index}>
+                <span className="font-medium">{incident.playerName}</span>
+                <span className="text-muted-foreground">
+                  {incident.kind === "penalty_saved"
+                    ? " saved a penalty"
+                    : " handball stopped a goal"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

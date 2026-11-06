@@ -1,3 +1,4 @@
+import type { PointKind } from "@/server/scoring/types";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { AppDb } from "@/server/db";
 import {
@@ -56,8 +57,7 @@ export async function getManagerScoreLinesByMatchday(
 }
 
 export type PlayerPointEvent = {
-  kind:
-    "attendance" | "win" | "draw" | "goal" | "assist" | "mvp" | "clean_sheet";
+  kind: PointKind;
   count: number;
   points: number;
 };
