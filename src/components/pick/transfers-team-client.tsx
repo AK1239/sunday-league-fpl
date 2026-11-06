@@ -936,7 +936,11 @@ export function TransfersTeamClient({
                       setCaptaincyStep(true);
                       return;
                     }
-                    if (summary.extra > 0) {
+                    // First gameweek free build: save immediately (no review sheet).
+                    // Later weeks: open sheet if there are transfers or a points hit (in/out list + penalty ack).
+                    const needsTransferReview =
+                      !freeBuild && (summary.extra > 0 || summary.made > 0);
+                    if (needsTransferReview) {
                       setConfirmOpen(true);
                       return;
                     }
@@ -948,7 +952,7 @@ export function TransfersTeamClient({
                       Next
                       <ArrowRight aria-hidden />
                     </>
-                  ) : summary.extra > 0 ? (
+                  ) : !freeBuild && (summary.extra > 0 || summary.made > 0) ? (
                     <>
                       Review
                       <ArrowRight aria-hidden />
