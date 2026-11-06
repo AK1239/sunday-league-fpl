@@ -2,14 +2,33 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/server/auth/constants";
 
+function contentSecurityPolicy(isProduction: boolean): string {
+  // React / Next dev tooling needs 'unsafe-eval'; keep production strict.
+  const scriptSrc = isProduction
+    ? "script-src 'self' 'unsafe-inline'"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
+  const connectSrc = isProduction
+    ? "connect-src 'self'"
+    : "connect-src 'self' ws: wss:";
+  return [
+    "default-src 'self'",
+    "img-src 'self' data: blob:",
+    "style-src 'self' 'unsafe-inline'",
+    scriptSrc,
+    connectSrc,
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join("; ");
+}
+
 function securityHeaders(isProduction: boolean): HeadersInit {
   const headers: Record<string, string> = {
     "X-Frame-Options": "DENY",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-    "Content-Security-Policy":
-      "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+    "Content-Security-Policy": contentSecurityPolicy(isProduction),
   };
   if (isProduction) {
     headers["Strict-Transport-Security"] =
