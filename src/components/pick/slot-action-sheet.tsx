@@ -33,6 +33,7 @@ export function SlotActionSheet({
   onReplace,
   onViewPlayer,
   showSquadEditActions = true,
+  showCaptainActions = true,
   transferMode = false,
 }: {
   open: boolean;
@@ -47,30 +48,36 @@ export function SlotActionSheet({
   onViewPlayer?: () => void;
   /** Replace / remove — hidden on read-only views like My Team. */
   showSquadEditActions?: boolean;
+  /** Captain / vice actions (transfer wizard step 2). */
+  showCaptainActions?: boolean;
   /** Transfers screen: transfer out + free captain labels. */
   transferMode?: boolean;
 }) {
   const actions: Action[] = [
-    {
-      key: "captain",
-      label: "Make captain",
-      hint: transferMode
-        ? "Free — your points are multiplied"
-        : "Your points are multiplied",
-      icon: <Crown />,
-      onSelect: onMakeCaptain,
-      hidden: isCaptain,
-    },
-    {
-      key: "vice",
-      label: "Make vice-captain",
-      hint: transferMode
-        ? "Free — steps in if your captain doesn't play"
-        : "Steps in if your captain doesn't play",
-      icon: <ShieldCheck />,
-      onSelect: onMakeVice,
-      hidden: isVice,
-    },
+    ...(showCaptainActions
+      ? [
+          {
+            key: "captain",
+            label: "Make captain",
+            hint: transferMode
+              ? "Free — your points are multiplied"
+              : "Your points are multiplied",
+            icon: <Crown />,
+            onSelect: onMakeCaptain,
+            hidden: isCaptain,
+          } satisfies Action,
+          {
+            key: "vice",
+            label: "Make vice-captain",
+            hint: transferMode
+              ? "Free — steps in if your captain doesn't play"
+              : "Steps in if your captain doesn't play",
+            icon: <ShieldCheck />,
+            onSelect: onMakeVice,
+            hidden: isVice,
+          } satisfies Action,
+        ]
+      : []),
     ...(showSquadEditActions && onReplace
       ? [
           {

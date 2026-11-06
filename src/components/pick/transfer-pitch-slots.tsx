@@ -24,6 +24,7 @@ export function TransferPitchSlots({
   incomingIds,
   onSlotPress,
   onUndoPending,
+  showRoleBadges = true,
 }: {
   selection: readonly (string | null)[];
   captainPlayerId: string | null;
@@ -34,6 +35,7 @@ export function TransferPitchSlots({
   incomingIds: ReadonlySet<string>;
   onSlotPress: (slotIndex: number) => void;
   onUndoPending: (slotIndex: number) => void;
+  showRoleBadges?: boolean;
 }) {
   return (
     <div
@@ -77,13 +79,13 @@ export function TransferPitchSlots({
                   <>
                     <div className="relative">
                       <PlayerShirt name={player.displayName} size="lg" />
-                      {isCaptain ? (
+                      {showRoleBadges && isCaptain ? (
                         <CaptainBadge
                           role="captain"
                           className="absolute -right-1 -bottom-1"
                         />
                       ) : null}
-                      {isVice ? (
+                      {showRoleBadges && isVice ? (
                         <CaptainBadge
                           role="vice_captain"
                           className="absolute -right-1 -top-1"

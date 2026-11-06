@@ -8,15 +8,14 @@ import { diffSquads } from "./transfer-diff";
 const SQUAD_SIZE = 5;
 
 /**
- * Validates a squad submission when transfer rules apply (D5: retain inactive base players).
- * Does not replace legacy `validateFantasyTeam` used while transfers are disabled.
+ * Player changes only — no captain / vice checks (transfer wizard step 1).
  */
-export function validateFantasyTeamTransferPick(
-  pick: FantasyTeamPick,
+export function validateFantasyTeamTransferLineup(
+  playerIds: readonly string[],
   basePlayerIds: readonly string[],
   eligibleById: ReadonlyMap<string, EligiblePlayer>,
 ): ValidateFantasyTeamResult {
-  if (pick.playerIds.length !== SQUAD_SIZE) {
+  if (playerIds.length !== SQUAD_SIZE) {
     return {
       ok: false,
       code: "SQUAD_SIZE",
@@ -24,36 +23,12 @@ export function validateFantasyTeamTransferPick(
     };
   }
 
-  const unique = new Set(pick.playerIds);
+  const unique = new Set(playerIds);
   if (unique.size !== SQUAD_SIZE) {
     return {
       ok: false,
       code: "DUPLICATE_PLAYER",
       message: "Each player can only appear once.",
-    };
-  }
-
-  if (pick.captainPlayerId === pick.viceCaptainPlayerId) {
-    return {
-      ok: false,
-      code: "CAPTAIN_VICE_SAME",
-      message: "Captain and vice-captain must be different players.",
-    };
-  }
-
-  if (!unique.has(pick.captainPlayerId)) {
-    return {
-      ok: false,
-      code: "CAPTAIN_NOT_IN_SQUAD",
-      message: "Captain must be one of the five picked players.",
-    };
-  }
-
-  if (!unique.has(pick.viceCaptainPlayerId)) {
-    return {
-      ok: false,
-      code: "VICE_NOT_IN_SQUAD",
-      message: "Vice-captain must be one of the five picked players.",
     };
   }
 
@@ -66,7 +41,7 @@ export function validateFantasyTeamTransferPick(
     };
   }
 
-  const { in: incoming, out } = diffSquads(basePlayerIds, pick.playerIds);
+  const { in: incoming, out } = diffSquads(basePlayerIds, playerIds);
 
   for (const playerId of out) {
     if (!baseSet.has(playerId)) {
@@ -78,7 +53,7 @@ export function validateFantasyTeamTransferPick(
     }
   }
 
-  for (const playerId of pick.playerIds) {
+  for (const playerId of playerIds) {
     const meta = eligibleById.get(playerId);
     if (!meta) {
       return {
@@ -112,6 +87,51 @@ export function validateFantasyTeamTransferPick(
         message: "Incoming player is already in your squad.",
       };
     }
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Validates a squad submission when transfer rules apply (D5: retain inactive base players).
+ * Does not replace legacy `validateFantasyTeam` used while transfers are disabled.
+ */
+export function validateFantasyTeamTransferPick(
+  pick: FantasyTeamPick,
+  basePlayerIds: readonly string[],
+  eligibleById: ReadonlyMap<string, EligiblePlayer>,
+): ValidateFantasyTeamResult {
+  const lineup = validateFantasyTeamTransferLineup(
+    pick.playerIds,
+    basePlayerIds,
+    eligibleById,
+  );
+  if (!lineup.ok) return lineup;
+
+  const unique = new Set(pick.playerIds);
+
+  if (pick.captainPlayerId === pick.viceCaptainPlayerId) {
+    return {
+      ok: false,
+      code: "CAPTAIN_VICE_SAME",
+      message: "Captain and vice-captain must be different players.",
+    };
+  }
+
+  if (!unique.has(pick.captainPlayerId)) {
+    return {
+      ok: false,
+      code: "CAPTAIN_NOT_IN_SQUAD",
+      message: "Captain must be one of the five picked players.",
+    };
+  }
+
+  if (!unique.has(pick.viceCaptainPlayerId)) {
+    return {
+      ok: false,
+      code: "VICE_NOT_IN_SQUAD",
+      message: "Vice-captain must be one of the five picked players.",
+    };
   }
 
   return { ok: true };

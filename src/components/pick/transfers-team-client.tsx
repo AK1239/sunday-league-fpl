@@ -20,7 +20,10 @@ import {
 import { submitTeamAction } from "@/server/actions/submit-team";
 import { diffSquads } from "@/server/fantasy/transfer-diff";
 import { summariseTransferWindow } from "@/server/fantasy/transfer-summary";
-import { validateFantasyTeamTransferPick } from "@/server/fantasy/validate-transfers";
+import {
+  validateFantasyTeamTransferLineup,
+  validateFantasyTeamTransferPick,
+} from "@/server/fantasy/validate-transfers";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -117,6 +120,9 @@ export function TransfersTeamClient({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [wizardStep, setWizardStep] = useState<"lineup" | "captaincy">(
+    "lineup",
+  );
 
   const readOnly = pick.locked || !pick.selectionOpen;
 
@@ -218,6 +224,85 @@ export function TransfersTeamClient({
     [pick.players],
   );
 
+  useEffect(() => {
+    setCaptainPlayerId((c) =>
+      c && plannedIds.includes(c) ? c : null,
+    );
+    setViceCaptainPlayerId((v) =>
+      v && plannedIds.includes(v) ? v : null,
+    );
+  }, [plannedIds]);
+
+  useEffect(() => {
+    if (
+      captainPlayerId &&
+      viceCaptainPlayerId &&
+      captainPlayerId === viceCaptainPlayerId
+    ) {
+      setViceCaptainPlayerId(null);
+    }
+  }, [captainPlayerId, viceCaptainPlayerId]);
+
+  const canAdvanceLineup = useMemo(() => {
+    if (readOnly || pendingOutSlot != null || plannedIds.length !== 5) {
+      return false;
+    }
+    return validateFantasyTeamTransferLineup(
+      plannedIds,
+      basePlayerIds,
+      eligible,
+    ).ok;
+  }, [readOnly, pendingOutSlot, plannedIds, basePlayerIds, eligible]);
+
+  const lineupBlockedMessage = useMemo(() => {
+    if (readOnly) return null;
+    if (pendingOutSlot != null) {
+      return "Pick a replacement to finish this transfer.";
+    }
+    if (plannedIds.length !== 5) {
+      return "Your squad must have 5 players.";
+    }
+    const result = validateFantasyTeamTransferLineup(
+      plannedIds,
+      basePlayerIds,
+      eligible,
+    );
+    return result.ok ? null : result.message;
+  }, [readOnly, pendingOutSlot, plannedIds, basePlayerIds, eligible]);
+
+  const canAdvanceCaptaincy = useMemo(() => {
+    if (readOnly || !pickForValidation) return false;
+    if (pendingOutSlot != null) return false;
+    if (!captainPlayerId || !viceCaptainPlayerId) return false;
+    if (captainPlayerId === viceCaptainPlayerId) return false;
+    if (!plannedIds.includes(captainPlayerId)) return false;
+    if (!plannedIds.includes(viceCaptainPlayerId)) return false;
+    return true;
+  }, [
+    readOnly,
+    pickForValidation,
+    pendingOutSlot,
+    captainPlayerId,
+    viceCaptainPlayerId,
+    plannedIds,
+  ]);
+
+  const captaincyBlockedMessage = useMemo(() => {
+    if (readOnly || wizardStep !== "captaincy") return null;
+    if (!captainPlayerId || !viceCaptainPlayerId) {
+      return "Tap a player to choose captain and vice-captain.";
+    }
+    if (captainPlayerId === viceCaptainPlayerId) {
+      return "Captain and vice-captain must be different players.";
+    }
+    return null;
+  }, [
+    readOnly,
+    wizardStep,
+    captainPlayerId,
+    viceCaptainPlayerId,
+  ]);
+
   const canConfirm = useMemo(() => {
     if (readOnly || !pickForValidation || pendingOutSlot != null) return false;
     return validateFantasyTeamTransferPick(
@@ -258,21 +343,24 @@ export function TransfersTeamClient({
         next[activeSlot] = playerId;
         return next;
       });
-      if (!captainPlayerId) setCaptainPlayerId(playerId);
-      else if (!viceCaptainPlayerId && playerId !== captainPlayerId) {
-        setViceCaptainPlayerId(playerId);
-      }
     },
-    [activeSlot, captainPlayerId, viceCaptainPlayerId],
+    [activeSlot],
   );
 
   function resetToBase() {
     setSlots(teamToSlots(basePlayerIds));
     setPendingOutSlot(null);
-    if (pick.myTeam) {
-      setCaptainPlayerId(pick.myTeam.captainPlayerId);
-      setViceCaptainPlayerId(pick.myTeam.viceCaptainPlayerId);
-    }
+    setWizardStep("lineup");
+    const cap = pick.myTeam?.captainPlayerId ?? null;
+    const vice = pick.myTeam?.viceCaptainPlayerId ?? null;
+    const inBase = (id: string | null) =>
+      id != null && basePlayerIds.includes(id);
+    setCaptainPlayerId(inBase(cap) ? cap : (basePlayerIds[0] ?? null));
+    setViceCaptainPlayerId(
+      inBase(vice) && vice !== cap
+        ? vice
+        : basePlayerIds.find((id) => id !== basePlayerIds[0]) ?? null,
+    );
   }
 
   async function handleConfirm(acknowledgedPenalty: number) {
@@ -305,6 +393,7 @@ export function TransfersTeamClient({
     clearLocalDraft(pick.matchday.id);
     setTeamVersion(result.data.version);
     setConfirmOpen(false);
+    setWizardStep("lineup");
     router.refresh();
   }
 
@@ -378,7 +467,19 @@ export function TransfersTeamClient({
           {readOnly ? <LockedBanner /> : null}
 
           {!readOnly ? (
-            <div className="flex justify-end">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {wizardStep === "captaincy" ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setWizardStep("lineup")}
+                >
+                  Back to transfers
+                </Button>
+              ) : (
+                <span />
+              )}
               <Button
                 type="button"
                 variant="outline"
@@ -391,6 +492,13 @@ export function TransfersTeamClient({
             </div>
           ) : null}
 
+          {wizardStep === "captaincy" && !readOnly ? (
+            <p className="rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+              Choose a captain and vice-captain from your squad. Tap a player
+              below — these changes are free.
+            </p>
+          ) : null}
+
           <TransferPitchSlots
             selection={slots}
             captainPlayerId={captainPlayerId}
@@ -399,6 +507,7 @@ export function TransfersTeamClient({
             disabled={readOnly}
             pendingOutSlot={pendingOutSlot}
             incomingIds={incomingIds}
+            showRoleBadges={wizardStep === "captaincy"}
             onSlotPress={handleSlotPress}
             onUndoPending={(index) => {
               if (pendingOutSlot === index) setPendingOutSlot(null);
@@ -407,16 +516,42 @@ export function TransfersTeamClient({
 
           {!readOnly ? (
             <div className="glass fixed inset-x-3 bottom-3 z-30 rounded-2xl border border-border/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:static md:rounded-2xl md:border md:bg-card/80">
-              <Button
-                type="button"
-                size="lg"
-                className="w-full"
-                disabled={!canConfirm || confirming}
-                aria-busy={confirming}
-                onClick={() => setConfirmOpen(true)}
-              >
-                Review & confirm
-              </Button>
+              {wizardStep === "lineup" ? (
+                <>
+                  <Button
+                    type="button"
+                    size="lg"
+                    className="w-full"
+                    disabled={!canAdvanceLineup}
+                    onClick={() => setWizardStep("captaincy")}
+                  >
+                    Next
+                  </Button>
+                  {lineupBlockedMessage ? (
+                    <p className="mt-2 text-center text-xs text-muted-foreground">
+                      {lineupBlockedMessage}
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    size="lg"
+                    className="w-full"
+                    disabled={!canConfirm || confirming}
+                    aria-busy={confirming}
+                    onClick={() => setConfirmOpen(true)}
+                  >
+                    Review & confirm
+                  </Button>
+                  {captaincyBlockedMessage ? (
+                    <p className="mt-2 text-center text-xs text-muted-foreground">
+                      {captaincyBlockedMessage}
+                    </p>
+                  ) : null}
+                </>
+              )}
             </div>
           ) : null}
         </>
@@ -446,6 +581,8 @@ export function TransfersTeamClient({
           isCaptain={activePlayerId === captainPlayerId}
           isVice={activePlayerId === viceCaptainPlayerId}
           transferMode
+          showCaptainActions={wizardStep === "captaincy"}
+          showSquadEditActions={wizardStep === "lineup"}
           onMakeCaptain={() => {
             if (activePlayerId) {
               setCaptainPlayerId(activePlayerId);

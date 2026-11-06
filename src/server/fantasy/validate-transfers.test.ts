@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  validateFantasyTeamTransferLineup,
   validateFantasyTeamTransferPick,
   validateInitialFantasyTeamBuild,
 } from "./validate-transfers";
@@ -25,6 +26,18 @@ function pick(overrides: Partial<{
     ...overrides,
   };
 }
+
+describe("validateFantasyTeamTransferLineup", () => {
+  it("ignores captain and vice", () => {
+    expect(
+      validateFantasyTeamTransferLineup(
+        ["p1", "p2", "p3", "p4", "p6"],
+        base,
+        eligible,
+      ),
+    ).toEqual({ ok: true });
+  });
+});
 
 describe("validateFantasyTeamTransferPick", () => {
   it("accepts captain-only change with retained inactive player", () => {
