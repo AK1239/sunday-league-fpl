@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/fantasy/empty-state";
 import { ManagerPodiumHero } from "@/components/fantasy/manager-podium-hero";
 import { ScoreCard } from "@/components/fantasy/score-card";
 import { SectionHeading } from "@/components/fantasy/section-heading";
+import { buttonVariants } from "@/components/ui/button";
 import { LEAGUE_NAME } from "@/lib/league";
 import { getDb } from "@/server/db";
 import { getPublicHomeData } from "@/server/queries/public-competition";
@@ -166,11 +167,36 @@ export async function HomeHubPanel() {
         <SectionHeading
           title="Manager table"
           action={
-            <Link href="/table" className="text-sm font-medium text-primary">
-              View all →
-            </Link>
+            data.managerStandings.length > 0 ? (
+              <Link href="/table" className="text-sm font-medium text-primary">
+                View all →
+              </Link>
+            ) : undefined
           }
         />
+        {data.managerStandings.length === 0 ? (
+          <EmptyState
+            icon={<Trophy />}
+            title="The table is waiting for kick-off"
+            description={
+              data.nextMatchday
+                ? `Scores land once GW${data.nextMatchday.number} is played and published. Lock in your five before then.`
+                : "Manager scores appear once gameweeks are published."
+            }
+            className="py-12"
+            action={
+              data.nextMatchday ? (
+                <Link
+                  href="/pick"
+                  className={buttonVariants({ variant: "default" })}
+                >
+                  Pick your team
+                  <ArrowRight className="size-4" aria-hidden />
+                </Link>
+              ) : undefined
+            }
+          />
+        ) : null}
         <ul className="space-y-2">
           {data.managerStandings.slice(0, 5).map((row) => (
             <li key={row.managerId}>

@@ -35,13 +35,8 @@ export function ManagerPodiumHero({
     Boolean,
   ) as ManagerStandingRow[];
 
-  if (ordered.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Manager scores appear once gameweeks are published.
-      </p>
-    );
-  }
+  // Empty state is handled by the standings section on the page.
+  if (ordered.length === 0) return null;
 
   return (
     <section
