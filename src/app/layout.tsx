@@ -30,6 +30,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+/** Avoid DB/env access during `next build` (e.g. Docker) — routes render on each request instead. */
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
