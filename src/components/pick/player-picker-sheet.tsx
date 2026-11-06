@@ -55,7 +55,6 @@ export function PlayerPickerSheet({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = players.filter((p) => {
-      if (selectedIds.has(p.id)) return false;
       if (!q) return true;
       return (
         p.displayName.toLowerCase().includes(q) ||
@@ -104,7 +103,12 @@ export function PlayerPickerSheet({
     });
 
     return list;
-  }, [players, query, selectedIds, activeSort]);
+  }, [players, query, activeSort]);
+
+  const availableCount = useMemo(
+    () => filtered.filter((p) => !selectedIds.has(p.id)).length,
+    [filtered, selectedIds],
+  );
 
   function close() {
     setQuery("");
@@ -200,60 +204,98 @@ export function PlayerPickerSheet({
         className="pb-2 text-xs font-medium tracking-widest text-muted-foreground uppercase"
         aria-live="polite"
       >
-        {filtered.length} available
+        {availableCount} available
+        {filtered.length !== availableCount ? (
+          <span className="font-normal normal-case text-muted-foreground/80">
+            {" "}
+            · {filtered.length - availableCount} in your squad
+          </span>
+        ) : null}
       </p>
-      <ul className="space-y-2" role="listbox" aria-label="Available players">
+      <ul className="space-y-2" role="listbox" aria-label="Players">
         {filtered.length === 0 ? (
           <li className="py-12 text-center text-sm text-muted-foreground">
             No players match your search.
           </li>
         ) : (
-          filtered.map((player, i) => (
-            <li
-              key={player.id}
-              className="animate-rise"
-              style={
-                { "--d": `${Math.min(i, 8) * 30}ms` } as React.CSSProperties
-              }
-            >
-              <button
-                type="button"
-                role="option"
-                aria-selected={false}
-                className="group flex min-h-16 w-full items-center gap-3 rounded-2xl border border-border/50 bg-card/50 px-3 py-2.5 text-left text-foreground transition-all outline-none hover:border-primary/40 hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
-                onClick={() => {
-                  onSelect(player.id);
-                  close();
-                }}
+          filtered.map((player, i) => {
+            const inSquad = selectedIds.has(player.id);
+            return (
+              <li
+                key={player.id}
+                className="animate-rise"
+                style={
+                  { "--d": `${Math.min(i, 8) * 30}ms` } as React.CSSProperties
+                }
               >
-                <PlayerShirt
-                  name={player.displayName}
-                  kitKey={player.kitKey}
-                  size="md"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">
-                    {player.displayName}
-                  </p>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    <FormPips values={player.form.length ? player.form : [0]} />
-                    <span className="tabular-nums">
-                      Last GW {player.lastGameweekPoints ?? "—"}
-                    </span>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={inSquad}
+                  disabled={inSquad}
+                  title={
+                    inSquad
+                      ? "Already in your squad — transfer out from the pitch to replace"
+                      : undefined
+                  }
+                  className={cn(
+                    "group flex min-h-16 w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    inSquad
+                      ? "cursor-not-allowed border-border/35 bg-card/30 opacity-60 grayscale-[0.35]"
+                      : "border-border/50 bg-card/50 text-foreground hover:border-primary/40 hover:bg-primary/5 active:scale-[0.98]",
+                  )}
+                  onClick={() => {
+                    if (inSquad) return;
+                    onSelect(player.id);
+                    close();
+                  }}
+                >
+                  <PlayerShirt
+                    name={player.displayName}
+                    kitKey={player.kitKey}
+                    size="md"
+                    className={cn(inSquad && "opacity-80")}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={cn(
+                        "truncate text-sm font-semibold",
+                        inSquad && "text-muted-foreground",
+                      )}
+                    >
+                      {player.displayName}
+                    </p>
+                    <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                      <FormPips
+                        values={player.form.length ? player.form : [0]}
+                      />
+                      <span className="tabular-nums">
+                        Last GW {player.lastGameweekPoints ?? "—"}
+                      </span>
+                    </div>
+                    {player.selectedByPercent != null ? (
+                      <SelectedBy percent={player.selectedByPercent} />
+                    ) : null}
                   </div>
-                  {player.selectedByPercent != null ? (
-                    <SelectedBy percent={player.selectedByPercent} />
-                  ) : null}
-                </div>
-                <div className="rounded-xl bg-primary/10 px-2.5 py-1 text-center">
-                  <p className="font-heading text-lg leading-none font-bold text-primary tabular-nums">
-                    {player.expectedPoints}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">xp</p>
-                </div>
-              </button>
-            </li>
-          ))
+                  {inSquad ? (
+                    <span
+                      className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border/60 bg-muted/50 text-muted-foreground"
+                      aria-hidden
+                    >
+                      <X className="size-4" />
+                    </span>
+                  ) : (
+                    <div className="rounded-xl bg-primary/10 px-2.5 py-1 text-center">
+                      <p className="font-heading text-lg leading-none font-bold text-primary tabular-nums">
+                        {player.expectedPoints}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">xp</p>
+                    </div>
+                  )}
+                </button>
+              </li>
+            );
+          })
         )}
       </ul>
     </Drawer>

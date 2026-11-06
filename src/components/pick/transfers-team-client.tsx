@@ -1006,7 +1006,8 @@ export function TransfersTeamClient({
       <ExtraPlayersSheet
         open={extrasOpen}
         onClose={() => setExtrasOpen(false)}
-        players={pick.players.filter((p) => !plannedIds.includes(p.id))}
+        players={pick.players}
+        startingXiIds={plannedIds}
         selectedIds={extraIds}
         onChange={setReservePlayerIds}
         onRemoveChip={readOnly ? undefined : handleCancelChipFromDrawer}

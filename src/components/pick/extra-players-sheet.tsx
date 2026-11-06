@@ -20,14 +20,17 @@ export function ExtraPlayersSheet({
   open,
   onClose,
   players,
+  startingXiIds = [],
   selectedIds,
   onChange,
   onRemoveChip,
 }: {
   open: boolean;
   onClose: () => void;
-  /** Candidates: everyone not already in the five. */
+  /** Full player pool (starting XI may appear as non-selectable rows). */
   players: PickTeamPlayerRow[];
+  /** Players already in the five — shown dimmed; cannot be picked as extras. */
+  startingXiIds?: readonly string[];
   selectedIds: readonly string[];
   onChange: (ids: string[]) => void;
   /** Drops Bench Boost entirely. */
@@ -54,6 +57,7 @@ export function ExtraPlayersSheet({
   }, [players, query]);
 
   function toggle(id: string) {
+    if (startingXiIds.includes(id)) return;
     if (selectedIds.includes(id)) {
       onChange(selectedIds.filter((x) => x !== id));
     } else if (!full) {
@@ -149,20 +153,31 @@ export function ExtraPlayersSheet({
           </li>
         ) : (
           list.map((player) => {
-            const selected = selectedIds.includes(player.id);
-            const blocked = full && !selected;
+            const inStartingXi = startingXiIds.includes(player.id);
+            const selected =
+              !inStartingXi && selectedIds.includes(player.id);
+            const blocked = full && !selected && !inStartingXi;
+            const rowDisabled = inStartingXi || blocked;
             return (
               <li key={player.id}>
                 <button
                   type="button"
                   aria-pressed={selected}
-                  disabled={blocked}
+                  aria-disabled={inStartingXi}
+                  title={
+                    inStartingXi
+                      ? "Already in your starting five — transfer someone out first"
+                      : undefined
+                  }
+                  disabled={rowDisabled}
                   onClick={() => toggle(player.id)}
                   className={cn(
                     "flex min-h-16 w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]",
                     selected
                       ? "border-primary/60 bg-primary/10"
-                      : "border-border/50 bg-card/50 hover:border-primary/40",
+                      : inStartingXi
+                        ? "cursor-not-allowed border-border/35 bg-card/30 opacity-60 grayscale-[0.35]"
+                        : "border-border/50 bg-card/50 hover:border-primary/40",
                     blocked && "opacity-40",
                   )}
                 >
@@ -172,7 +187,12 @@ export function ExtraPlayersSheet({
                     size="md"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">
+                    <p
+                      className={cn(
+                        "truncate text-sm font-semibold",
+                        inStartingXi && "text-muted-foreground",
+                      )}
+                    >
                       {player.displayName}
                     </p>
                     <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
@@ -187,7 +207,14 @@ export function ExtraPlayersSheet({
                       <SelectedBy percent={player.selectedByPercent} />
                     ) : null}
                   </div>
-                  {selected ? (
+                  {inStartingXi ? (
+                    <span
+                      className="flex size-7 items-center justify-center rounded-full border border-border/60 bg-muted/50 text-muted-foreground"
+                      aria-hidden
+                    >
+                      <X className="size-4" aria-hidden />
+                    </span>
+                  ) : selected ? (
                     <span className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
                       <Check className="size-4" aria-hidden />
                     </span>
