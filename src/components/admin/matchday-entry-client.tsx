@@ -3,7 +3,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Copy, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  Copy,
+  Footprints,
+  Hand,
+  Minus,
+  Plus,
+  Target,
+  Trash2,
+  X,
+} from "lucide-react";
 import { PlayerAvatar } from "@/components/fantasy/player-avatar";
 import { SectionHeading } from "@/components/fantasy/section-heading";
 import { appToast, toastActionResult } from "@/lib/app-toast";
@@ -25,8 +35,6 @@ import type {
   MatchEntryMatch,
 } from "@/server/domain/match-entry-types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 function useDebounced<T extends (...args: never[]) => void>(
@@ -437,15 +445,6 @@ function MatchCardEditor({
     onChange({ ...match, ...patch });
   }
 
-  function setScore(side: "A" | "B", value: number) {
-    const score = Math.max(0, value);
-    if (side === "A") {
-      onChange({ ...match, scoreA: score });
-    } else {
-      onChange({ ...match, scoreB: score });
-    }
-  }
-
   function syncGoalsToScore(nextA: number, nextB: number) {
     let goals = [...match.goals];
     const countA = goals.filter((g) => g.side === "A").length;
@@ -491,18 +490,41 @@ function MatchCardEditor({
   }
 
   const attendingPlayers = players.filter((p) => attendeeIds.includes(p.id));
+  const unassigned = attendingPlayers.filter(
+    (p) =>
+      !match.sideAPlayerIds.includes(p.id) &&
+      !match.sideBPlayerIds.includes(p.id),
+  );
+  const isDraw = match.scoreA === match.scoreB;
+  const leading = match.scoreA > match.scoreB ? "A" : "B";
+
+  function nameOf(id: string) {
+    return playerMap.get(id)?.displayName ?? id;
+  }
+
+  function updateGoal(
+    index: number,
+    patch: Partial<MatchEntryMatch["goals"][number]>,
+  ) {
+    const goals = [...match.goals];
+    goals[index] = { ...goals[index]!, ...patch };
+    onChange({ ...match, goals });
+  }
 
   return (
-    <article className="surface space-y-4 rounded-2xl p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-heading text-lg font-semibold tabular-nums">
+    <article className="surface space-y-6 rounded-3xl p-4 sm:p-6">
+      <header className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-heading flex items-center gap-2.5 text-xl font-semibold tabular-nums">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-primary/15 text-sm text-primary">
+            {match.matchNo}
+          </span>
           Match {match.matchNo}
         </h3>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex items-center gap-1.5">
           {onCopyLineup ? (
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={onCopyLineup}
             >
@@ -511,159 +533,363 @@ function MatchCardEditor({
             </Button>
           ) : null}
           {onDelete ? (
-            <Button
+            <button
               type="button"
-              variant="outline"
-              size="sm"
-              className="text-destructive hover:text-destructive"
               onClick={onDelete}
+              aria-label={`Delete match ${match.matchNo}`}
+              title="Delete match"
+              className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors outline-none hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Trash2 className="size-3.5" aria-hidden />
-              Delete
-            </Button>
+              <Trash2 className="size-4" aria-hidden />
+            </button>
           ) : null}
         </div>
-      </div>
+      </header>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* Scoreboard */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl bg-background/40 p-3 sm:gap-6 sm:p-4">
         {(["A", "B"] as const).map((side) => {
-          const ids = side === "A" ? match.sideAPlayerIds : match.sideBPlayerIds;
-          const oppositeIds =
-            side === "A" ? match.sideBPlayerIds : match.sideAPlayerIds;
-          const gkId =
-            side === "A" ? match.sideAGoalkeeperId : match.sideBGoalkeeperId;
-          const sidePlayerOptions = attendingPlayers.filter(
-            (p) => !oppositeIds.includes(p.id),
+          const score = side === "A" ? match.scoreA : match.scoreB;
+          const winning = !isDraw && leading === side;
+          const stepper = (
+            <ScoreStepper
+              side={side}
+              score={score}
+              winning={winning}
+              onChange={(n) => handleScoreChange(side, String(n))}
+            />
           );
-          return (
-            <div key={side} className="space-y-2">
-              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                Side {side}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {sidePlayerOptions.map((player) => {
-                  const onSide = ids.includes(player.id);
-                  return (
-                    <button
-                      key={player.id}
-                      type="button"
-                      onClick={() => toggleSide(side, player.id)}
-                      className={cn(
-                        "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
-                        onSide
-                          ? side === "A"
-                            ? "bg-team-a/20 text-foreground"
-                            : "bg-team-b/20 text-foreground"
-                          : "bg-muted/50 text-muted-foreground",
-                      )}
-                    >
-                      {player.displayName}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Goalkeeper</Label>
-                <select
-                  className="flex h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-                  value={gkId ?? ""}
-                  onChange={(e) => {
-                    const val = e.target.value || null;
-                    onChange({
-                      ...match,
-                      ...(side === "A"
-                        ? { sideAGoalkeeperId: val }
-                        : { sideBGoalkeeperId: val }),
-                    });
-                  }}
-                >
-                  <option value="">None</option>
-                  {ids.map((id) => (
-                    <option key={id} value={id}>
-                      {playerMap.get(id)?.displayName ?? id}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          return side === "A" ? (
+            <div key={side} className="contents">
+              {stepper}
+              <span
+                aria-hidden
+                className="font-heading text-sm font-semibold tracking-widest text-muted-foreground"
+              >
+                VS
+              </span>
+            </div>
+          ) : (
+            <div key={side} className="contents">
+              {stepper}
             </div>
           );
         })}
       </div>
 
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="space-y-1">
-          <Label>Score A</Label>
-          <Input
-            type="number"
-            min={0}
-            className="w-20 tabular-nums"
-            value={match.scoreA}
-            onChange={(e) => handleScoreChange("A", e.target.value)}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label>Score B</Label>
-          <Input
-            type="number"
-            min={0}
-            className="w-20 tabular-nums"
-            value={match.scoreB}
-            onChange={(e) => handleScoreChange("B", e.target.value)}
-          />
-        </div>
-      </div>
-
-      {match.goals.length > 0 ? (
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Goals</p>
-          <ul className="space-y-2 text-sm">
-            {match.goals.map((goal, index) => (
-              <li key={index} className="flex flex-wrap gap-2">
-                <span className="text-muted-foreground">Side {goal.side}</span>
-                <select
-                  className="rounded-lg border border-input bg-background px-2 py-1 text-xs"
-                  value={goal.scorerId}
-                  onChange={(e) => {
-                    const goals = [...match.goals];
-                    goals[index] = { ...goal, scorerId: e.target.value };
-                    onChange({ ...match, goals });
-                  }}
-                >
-                  {(goal.side === "A"
-                    ? match.sideAPlayerIds
-                    : match.sideBPlayerIds
-                  ).map((id) => (
-                    <option key={id} value={id}>
-                      {playerMap.get(id)?.displayName}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="rounded-lg border border-input bg-background px-2 py-1 text-xs"
-                  value={goal.assistId ?? ""}
-                  onChange={(e) => {
-                    const goals = [...match.goals];
-                    goals[index] = {
-                      ...goal,
-                      assistId: e.target.value || null,
-                    };
-                    onChange({ ...match, goals });
-                  }}
-                >
-                  <option value="">No assist</option>
-                  {[...match.sideAPlayerIds, ...match.sideBPlayerIds].map(
-                    (id) => (
-                      <option key={id} value={id}>
-                        {playerMap.get(id)?.displayName}
-                      </option>
-                    ),
-                  )}
-                </select>
+      {/* Unassigned pool */}
+      <section aria-label="Unassigned players" className="space-y-2">
+        <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+          {unassigned.length > 0
+            ? `Unassigned · tap A or B (${unassigned.length})`
+            : "Everyone is assigned"}
+        </p>
+        {unassigned.length > 0 ? (
+          <ul className="flex flex-wrap gap-2">
+            {unassigned.map((player) => (
+              <li
+                key={player.id}
+                className="animate-pop inline-flex items-center gap-1 rounded-full border border-border/60 bg-card/60 py-1 pr-1 pl-3 text-sm"
+              >
+                {player.displayName}
+                {(["A", "B"] as const).map((side) => (
+                  <button
+                    key={side}
+                    type="button"
+                    onClick={() => toggleSide(side, player.id)}
+                    aria-label={`Add ${player.displayName} to side ${side}`}
+                    className={cn(
+                      "flex size-6 items-center justify-center rounded-full text-[0.7rem] font-bold transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-90",
+                      SIDE_STYLES[side].pill,
+                    )}
+                  >
+                    {side}
+                  </button>
+                ))}
               </li>
             ))}
           </ul>
-        </div>
-      ) : null}
+        ) : null}
+      </section>
+
+      {/* Side columns: roster, keeper, goals */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {(["A", "B"] as const).map((side) => {
+          const st = SIDE_STYLES[side];
+          const ids =
+            side === "A" ? match.sideAPlayerIds : match.sideBPlayerIds;
+          const gkId =
+            side === "A" ? match.sideAGoalkeeperId : match.sideBGoalkeeperId;
+          const score = side === "A" ? match.scoreA : match.scoreB;
+          const sideGoals = match.goals
+            .map((goal, index) => ({ goal, index }))
+            .filter((g) => g.goal.side === side);
+
+          return (
+            <section
+              key={side}
+              aria-label={`Side ${side}`}
+              className={cn("space-y-4 rounded-2xl border p-4", st.panel)}
+            >
+              <h4
+                className={cn(
+                  "flex items-center gap-2 text-sm font-semibold tracking-widest uppercase",
+                  st.text,
+                )}
+              >
+                <span
+                  aria-hidden
+                  className={cn("size-2 rounded-full", st.dot)}
+                />
+                Side {side}
+                <span className="font-normal text-muted-foreground normal-case tracking-normal">
+                  · {ids.length} player{ids.length === 1 ? "" : "s"}
+                </span>
+              </h4>
+
+              {ids.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-border/60 px-3 py-4 text-center text-sm text-muted-foreground">
+                  Assign players from the list above.
+                </p>
+              ) : (
+                <ul className="flex flex-wrap gap-2">
+                  {ids.map((id) => {
+                    const isGk = gkId === id;
+                    return (
+                      <li
+                        key={id}
+                        className={cn(
+                          "animate-pop inline-flex items-center gap-0.5 rounded-full border py-0.5 pr-1 pl-3 text-sm font-medium",
+                          st.chip,
+                        )}
+                      >
+                        {nameOf(id)}
+                        <button
+                          type="button"
+                          aria-pressed={isGk}
+                          aria-label={
+                            isGk
+                              ? `${nameOf(id)} is goalkeeper — tap to unset`
+                              : `Make ${nameOf(id)} goalkeeper`
+                          }
+                          title="Goalkeeper"
+                          onClick={() =>
+                            onChange({
+                              ...match,
+                              ...(side === "A"
+                                ? { sideAGoalkeeperId: isGk ? null : id }
+                                : { sideBGoalkeeperId: isGk ? null : id }),
+                            })
+                          }
+                          className={cn(
+                            "ml-1 flex h-6 items-center gap-1 rounded-full px-1.5 text-[0.65rem] font-bold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                            isGk
+                              ? "bg-podium-gold text-black"
+                              : "text-muted-foreground hover:bg-foreground/10 hover:text-foreground",
+                          )}
+                        >
+                          <Hand className="size-3" aria-hidden />
+                          {isGk ? "GK" : null}
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Remove ${nameOf(id)} from side ${side}`}
+                          onClick={() => toggleSide(side, id)}
+                          className="flex size-6 items-center justify-center rounded-full text-muted-foreground transition-colors outline-none hover:bg-destructive/15 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <X className="size-3.5" aria-hidden />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+                  Goals · {sideGoals.length}/{score}
+                </p>
+                {sideGoals.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {score > 0
+                      ? "Add players to this side to log who scored."
+                      : "No goals yet — raise the score to add one."}
+                  </p>
+                ) : (
+                  <ul className="space-y-2">
+                    {sideGoals.map(({ goal, index }, n) => (
+                      <li
+                        key={index}
+                        className="animate-rise grid grid-cols-[1.5rem_1fr_1fr] items-center gap-2"
+                      >
+                        <span className="text-center text-xs font-semibold text-muted-foreground tabular-nums">
+                          {n + 1}
+                        </span>
+                        <PlayerSelect
+                          icon={<Target />}
+                          label={`Goal ${n + 1} scorer`}
+                          value={goal.scorerId}
+                          onChange={(v) =>
+                            updateGoal(index, {
+                              scorerId: v,
+                              assistId:
+                                goal.assistId === v ? null : goal.assistId,
+                            })
+                          }
+                        >
+                          {ids.map((id) => (
+                            <option key={id} value={id}>
+                              {nameOf(id)}
+                            </option>
+                          ))}
+                        </PlayerSelect>
+                        <PlayerSelect
+                          icon={<Footprints />}
+                          label={`Goal ${n + 1} assist`}
+                          value={goal.assistId ?? ""}
+                          onChange={(v) =>
+                            updateGoal(index, { assistId: v || null })
+                          }
+                          muted={!goal.assistId}
+                        >
+                          <option value="">No assist</option>
+                          {ids
+                            .filter((id) => id !== goal.scorerId)
+                            .map((id) => (
+                              <option key={id} value={id}>
+                                {nameOf(id)}
+                              </option>
+                            ))}
+                        </PlayerSelect>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </section>
+          );
+        })}
+      </div>
     </article>
+  );
+}
+
+const SIDE_STYLES = {
+  A: {
+    text: "text-team-a",
+    dot: "bg-team-a",
+    panel: "border-team-a/25 bg-team-a/[0.04]",
+    chip: "border-team-a/35 bg-team-a/15",
+    pill: "bg-team-a/20 text-team-a hover:bg-team-a hover:text-black",
+    ring: "ring-team-a/40",
+  },
+  B: {
+    text: "text-team-b",
+    dot: "bg-team-b",
+    panel: "border-team-b/25 bg-team-b/[0.04]",
+    chip: "border-team-b/35 bg-team-b/15",
+    pill: "bg-team-b/20 text-team-b hover:bg-team-b hover:text-black",
+    ring: "ring-team-b/40",
+  },
+} as const;
+
+function ScoreStepper({
+  side,
+  score,
+  winning,
+  onChange,
+}: {
+  side: "A" | "B";
+  score: number;
+  winning: boolean;
+  onChange: (next: number) => void;
+}) {
+  const st = SIDE_STYLES[side];
+  const btn =
+    "flex size-10 items-center justify-center rounded-xl border border-border/60 bg-card/70 text-foreground transition-all outline-none hover:border-primary/40 hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring active:scale-90 disabled:opacity-40 disabled:hover:border-border/60 disabled:hover:bg-card/70";
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <p
+        className={cn(
+          "text-xs font-semibold tracking-widest uppercase",
+          st.text,
+        )}
+      >
+        Side {side}
+      </p>
+      <div className="flex items-center gap-2 sm:gap-4">
+        <button
+          type="button"
+          className={btn}
+          disabled={score <= 0}
+          aria-label={`Decrease side ${side} score`}
+          onClick={() => onChange(Math.max(0, score - 1))}
+        >
+          <Minus className="size-4" aria-hidden />
+        </button>
+        <output
+          key={score}
+          aria-live="polite"
+          aria-label={`Side ${side} score`}
+          className={cn(
+            "animate-pop font-heading min-w-[1.6ch] text-center text-5xl font-bold tabular-nums transition-colors sm:text-6xl",
+            winning ? st.text : "text-foreground",
+          )}
+        >
+          {score}
+        </output>
+        <button
+          type="button"
+          className={btn}
+          aria-label={`Increase side ${side} score`}
+          onClick={() => onChange(score + 1)}
+        >
+          <Plus className="size-4" aria-hidden />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PlayerSelect({
+  icon,
+  label,
+  value,
+  onChange,
+  muted,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  muted?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative min-w-0">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground [&_svg]:size-3.5"
+      >
+        {icon}
+      </span>
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn(
+          "h-10 w-full min-w-0 appearance-none rounded-xl border border-input bg-background/50 pr-7 pl-8 text-sm transition-colors outline-none hover:border-foreground/25 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+          muted && "text-muted-foreground",
+        )}
+      >
+        {children}
+      </select>
+      <ChevronDown
+        className="pointer-events-none absolute top-1/2 right-2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden
+      />
+    </div>
   );
 }
