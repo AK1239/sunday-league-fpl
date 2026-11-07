@@ -919,6 +919,8 @@ function MatchCardEditor({
                           icon={
                             incident.kind === "penalty_saved" ? (
                               <ShieldAlert />
+                            ) : incident.kind === "penalty_missed" ? (
+                              <XCircle />
                             ) : (
                               <Hand />
                             )
@@ -926,7 +928,9 @@ function MatchCardEditor({
                           label={
                             incident.kind === "penalty_saved"
                               ? "Penalty saved by"
-                              : "Handball by"
+                              : incident.kind === "penalty_missed"
+                                ? "Penalty missed by"
+                                : "Handball by"
                           }
                           value={incident.playerId}
                           onChange={(v) => updateIncident(index, v)}
@@ -935,7 +939,9 @@ function MatchCardEditor({
                             <option key={id} value={id}>
                               {incident.kind === "penalty_saved"
                                 ? `${nameOf(id)} · penalty saved`
-                                : `${nameOf(id)} · handball (goal stopped)`}
+                                : incident.kind === "penalty_missed"
+                                  ? `${nameOf(id)} · penalty missed`
+                                  : `${nameOf(id)} · handball (goal stopped)`}
                             </option>
                           ))}
                         </PlayerSelect>
@@ -960,6 +966,15 @@ function MatchCardEditor({
                   >
                     <Plus className="size-3.5" aria-hidden />
                     Penalty saved
+                  </button>
+                  <button
+                    type="button"
+                    disabled={ids.length === 0}
+                    onClick={() => addIncident(side, "penalty_missed")}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors outline-none hover:border-destructive/40 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                  >
+                    <Plus className="size-3.5" aria-hidden />
+                    Penalty missed
                   </button>
                   <button
                     type="button"
