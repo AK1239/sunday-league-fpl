@@ -1,3 +1,7 @@
+import {
+  isSupportedMatchLineup,
+  MATCH_LINEUP_MAX_PLAYERS_PER_SIDE,
+} from "@/lib/match-lineup";
 import type {
   GoalDraft,
   IncidentDraft,
@@ -44,6 +48,19 @@ export function validateMatchDraft(
         message: "A player cannot be on both sides.",
       };
     }
+  }
+
+  if (
+    !isSupportedMatchLineup(
+      draft.sideAPlayerIds.length,
+      draft.sideBPlayerIds.length,
+    )
+  ) {
+    return {
+      ok: false,
+      code: "LINEUP_SIZE",
+      message: `Each side can have at most ${MATCH_LINEUP_MAX_PLAYERS_PER_SIDE} players.`,
+    };
   }
 
   const allParticipants = [...draft.sideAPlayerIds, ...draft.sideBPlayerIds];

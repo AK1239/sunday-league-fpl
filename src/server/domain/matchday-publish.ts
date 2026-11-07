@@ -60,6 +60,7 @@ export async function validateMatchdayReadyToPublish(
         sideAGoalkeeperId: match.sideAGoalkeeperId,
         sideBGoalkeeperId: match.sideBGoalkeeperId,
         goals: match.goals,
+        incidents: match.incidents,
         mvpPlayerId: match.mvpPlayerId,
       },
       entry.attendeeIds,

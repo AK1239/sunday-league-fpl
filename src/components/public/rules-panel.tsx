@@ -29,6 +29,10 @@ export async function RulesPanel() {
 
       <section className="surface space-y-4 rounded-2xl p-5">
         <h2 className="font-heading text-lg font-semibold">Sunday players</h2>
+        <p className="text-sm text-muted-foreground">
+          Matches are usually around 5-a-side, but lineups can be uneven (5v4,
+          4v4, etc.) — scoring uses whoever actually played each match.
+        </p>
         <ul className="grid gap-2 text-sm sm:grid-cols-2">
           <RuleRow label="Attendance" value={rules.attendancePts} />
           <RuleRow label="Win" value={rules.winPts} />

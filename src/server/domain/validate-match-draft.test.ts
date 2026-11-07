@@ -24,6 +24,40 @@ describe("validateMatchDraft", () => {
     expect(validateMatchDraft(baseDraft(), attendees)).toEqual({ ok: true });
   });
 
+  it("accepts uneven lineups (5v4, 4v4)", () => {
+    expect(
+      validateMatchDraft(
+        baseDraft({
+          sideAPlayerIds: ["p1", "p2", "p3", "p4", "p5"],
+          sideBPlayerIds: ["p6"],
+          scoreA: 1,
+          scoreB: 0,
+          goals: [{ side: "A", scorerId: "p1", assistId: null }],
+        }),
+        attendees,
+      ),
+    ).toEqual({ ok: true });
+
+    expect(
+      validateMatchDraft(
+        baseDraft({
+          sideAPlayerIds: ["p1", "p2", "p3", "p4"],
+          sideBPlayerIds: ["p5", "p6"],
+          sideAGoalkeeperId: null,
+          scoreA: 2,
+          scoreB: 2,
+          goals: [
+            { side: "A", scorerId: "p1", assistId: null },
+            { side: "A", scorerId: "p2", assistId: null },
+            { side: "B", scorerId: "p5", assistId: null },
+            { side: "B", scorerId: "p6", assistId: null },
+          ],
+        }),
+        attendees,
+      ),
+    ).toEqual({ ok: true });
+  });
+
   it("rejects player not in attendance", () => {
     const result = validateMatchDraft(
       baseDraft({ sideAPlayerIds: ["p1", "p2", "p99"] }),

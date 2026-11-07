@@ -358,6 +358,40 @@ describe("scoreMatchday", () => {
     });
   });
 
+  it("scores win points for every player on the smaller side in a 5v4", () => {
+    const rows = scoreMatchday(DEFAULT_RULES, {
+      ...BASE,
+      attendeePlayerIds: ["a1", "a2", "a3", "a4", "a5", "b1", "b2", "b3", "b4"],
+      matches: [
+        match({
+          id: "m1",
+          scoreA: 2,
+          scoreB: 1,
+          sideA: {
+            side: "A",
+            playerIds: ["a1", "a2", "a3", "a4", "a5"],
+            goalkeeperId: null,
+          },
+          sideB: {
+            side: "B",
+            playerIds: ["b1", "b2", "b3", "b4"],
+            goalkeeperId: null,
+          },
+          goals: [
+            { id: "g1", scorerId: "a1", assistId: null },
+            { id: "g2", scorerId: "a2", assistId: null },
+            { id: "g3", scorerId: "b1", assistId: null },
+          ],
+        }),
+      ],
+    });
+    const winsA = rows.filter((r) => r.kind === "win" && r.playerId.startsWith("a"));
+    const winsB = rows.filter((r) => r.kind === "win" && r.playerId.startsWith("b"));
+    expect(winsA).toHaveLength(5);
+    expect(winsB).toHaveLength(0);
+    expect(winsA.every((r) => r.points === DEFAULT_RULES.winPts)).toBe(true);
+  });
+
   it("does not count own goals toward a hat-trick", () => {
     const rows = scoreMatchday(DEFAULT_RULES, {
       ...BASE,

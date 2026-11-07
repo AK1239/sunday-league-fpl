@@ -398,6 +398,10 @@ export function MatchdayEntryClient({
           }
         />
 
+        <p className="text-sm text-muted-foreground">
+          Sides can be uneven (e.g. 5v4 or 4v4). Not everyone who attended has
+          to be in every match.
+        </p>
         {matches.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Add the first match of the day.
