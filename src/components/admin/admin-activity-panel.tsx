@@ -51,6 +51,7 @@ function relativeTime(d: Date): string {
 function afterSummary(after: unknown): string | null {
   if (after == null || typeof after !== "object") return null;
   const o = after as Record<string, unknown>;
+  if (typeof o.path === "string") return o.path;
   if (typeof o.surface === "string") return o.surface;
   if (typeof o.reason === "string") return o.reason.slice(0, 80);
   return null;
@@ -58,6 +59,7 @@ function afterSummary(after: unknown): string | null {
 
 const ACTION_LABELS: Record<string, string> = {
   "auth.login": "Signed in",
+  "auth.visit": "Opened app (session)",
   "auth.logout": "Signed out",
 };
 
@@ -69,7 +71,7 @@ function actionLabel(action: string): string {
 
 type Tone = "login" | "logout" | "other";
 function actionTone(action: string): Tone {
-  if (action === "auth.login") return "login";
+  if (action === "auth.login" || action === "auth.visit") return "login";
   if (action === "auth.logout") return "logout";
   return "other";
 }
@@ -129,7 +131,7 @@ export async function AdminActivityPanel({
       <PageHeader
         eyebrow="Admin"
         title="Activity & usage"
-        description="Sign-ins, sign-outs, and other audited actions. Use filters to focus on managers or admins."
+        description="Sign-ins, return visits with an existing session, sign-outs, and other audited actions."
       />
 
       <div className="flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-x-8 sm:gap-y-5">
@@ -167,7 +169,7 @@ export async function AdminActivityPanel({
 
       <section
         aria-label="Summary"
-        className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+        className="grid grid-cols-2 gap-3 lg:grid-cols-5"
       >
         <StatCard
           icon={<Activity />}
@@ -183,10 +185,16 @@ export async function AdminActivityPanel({
           accent
         />
         <StatCard
+          icon={<Activity />}
+          label="Session visits"
+          value={data.summary.visitsLastPeriod}
+          hint="Opened /my or /pick with cookie"
+        />
+        <StatCard
           icon={<Users />}
-          label="Unique users"
-          value={data.summary.uniqueLoginUsers}
-          hint="Who signed in"
+          label="Active users"
+          value={data.summary.uniqueActiveUsers}
+          hint="Signed in or visited"
         />
         <StatCard
           icon={<LogOut />}
@@ -429,10 +437,10 @@ function LoginsChart({ data }: { data: { day: string; count: number }[] }) {
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <h2 className="font-heading text-xl font-semibold">
-            Sign-ins by day
+            Engagement by day
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Successful sign-ins per calendar day (East Africa Time).
+            Sign-ins plus return visits per calendar day (East Africa Time).
           </p>
         </div>
         {!empty ? (
@@ -471,7 +479,7 @@ function LoginsChart({ data }: { data: { day: string; count: number }[] }) {
           {empty ? (
             <div className="absolute inset-x-0 top-0 flex h-44 items-center justify-center">
               <p className="rounded-full border border-border/60 bg-background/80 px-4 py-1.5 text-sm text-muted-foreground">
-                No sign-ins in this period
+                No sign-ins or visits in this period
               </p>
             </div>
           ) : null}
@@ -502,7 +510,7 @@ function LoginsChart({ data }: { data: { day: string; count: number }[] }) {
                   {row.day.slice(5).replace("-", "/")} · {row.count}
                 </span>
                 <span className="sr-only">
-                  {row.day}: {row.count} sign-ins
+                  {row.day}: {row.count} events
                 </span>
                 {i % every === 0 ? (
                   <span

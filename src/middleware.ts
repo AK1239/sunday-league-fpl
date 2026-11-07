@@ -61,7 +61,14 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  const response = NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  if (pathname.startsWith("/my") || pathname.startsWith("/pick")) {
+    requestHeaders.set("x-activity-path", pathname);
+  }
+
+  const response = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
   for (const [key, value] of Object.entries(securityHeaders(isProduction))) {
     response.headers.set(key, value);
   }

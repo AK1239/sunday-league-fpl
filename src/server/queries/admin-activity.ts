@@ -33,7 +33,9 @@ export type AdminActivityData = {
   summary: {
     totalEvents: number;
     loginsLastPeriod: number;
+    visitsLastPeriod: number;
     uniqueLoginUsers: number;
+    uniqueActiveUsers: number;
     logoutsLastPeriod: number;
   };
   loginsByDay: { day: string; count: number }[];
@@ -150,6 +152,33 @@ export async function getAdminActivityData(
     .leftJoin(users, eq(auditLog.userId, users.id))
     .where(distinctWhere);
 
+  const visitWhereParts = [
+    periodCond,
+    eq(auditLog.action, "auth.visit"),
+    roleFilter,
+  ].filter((x): x is NonNullable<typeof x> => x != null);
+  const visitWhere = and(...visitWhereParts);
+
+  const [visitCountRow] = await db
+    .select({ c: sql<number>`count(*)::int` })
+    .from(auditLog)
+    .leftJoin(users, eq(auditLog.userId, users.id))
+    .where(visitWhere);
+
+  const activeWhereParts = [
+    periodCond,
+    inArray(auditLog.action, ["auth.login", "auth.visit"]),
+    sql`${auditLog.userId} is not null`,
+    roleFilter,
+  ].filter((x): x is NonNullable<typeof x> => x != null);
+  const activeWhere = and(...activeWhereParts);
+
+  const distinctActiveUsers = await db
+    .selectDistinct({ userId: auditLog.userId })
+    .from(auditLog)
+    .leftJoin(users, eq(auditLog.userId, users.id))
+    .where(activeWhere);
+
   const logoutWhereParts = [
     periodCond,
     eq(auditLog.action, "auth.logout"),
@@ -163,14 +192,20 @@ export async function getAdminActivityData(
     .leftJoin(users, eq(auditLog.userId, users.id))
     .where(logoutWhere);
 
-  const loginRows = await db
+  const engagementWhere = and(
+    periodCond,
+    inArray(auditLog.action, ["auth.login", "auth.visit"]),
+    roleFilter,
+  );
+
+  const engagementRows = await db
     .select({ at: auditLog.at })
     .from(auditLog)
     .leftJoin(users, eq(auditLog.userId, users.id))
-    .where(loginWhere);
+    .where(engagementWhere);
 
   const byDay = new Map<string, number>();
-  for (const row of loginRows) {
+  for (const row of engagementRows) {
     const at = row.at instanceof Date ? row.at : new Date(String(row.at));
     const k = dayKeyEat(at);
     byDay.set(k, (byDay.get(k) ?? 0) + 1);
@@ -226,7 +261,10 @@ export async function getAdminActivityData(
     summary: {
       totalEvents: countRow?.c ?? 0,
       loginsLastPeriod: loginCountRow?.c ?? 0,
+      visitsLastPeriod: visitCountRow?.c ?? 0,
       uniqueLoginUsers: distinctLoginUsers.filter((x) => x.userId != null)
+        .length,
+      uniqueActiveUsers: distinctActiveUsers.filter((x) => x.userId != null)
         .length,
       logoutsLastPeriod: logoutCountRow?.c ?? 0,
     },
