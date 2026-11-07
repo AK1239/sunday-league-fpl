@@ -265,6 +265,9 @@ function LineupCard({
                 {t.goals > 0 ? (
                   <StatChip icon={<Goal />} label="Goals" count={t.goals} />
                 ) : null}
+                {t.goals >= 3 ? (
+                  <StatChip icon={<Target />} label="Hat-trick" tone="gold" />
+                ) : null}
                 {t.assists > 0 ? (
                   <StatChip
                     icon={<Footprints />}

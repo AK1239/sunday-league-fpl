@@ -15,6 +15,7 @@ const DEFAULT_RULES: ScoringRules = {
   ownGoalPts: -2,
   handballPts: -2,
   penaltyMissedPts: -2,
+  hatTrickPts: 5,
 };
 
 const BASE: Omit<ScoreMatchdayInput, "matches" | "attendeePlayerIds"> = {
@@ -327,5 +328,55 @@ describe("scoreMatchday", () => {
         rows.some((r) => r.kind === "clean_sheet" && r.playerId === "p4"),
       ).toBe(false);
     });
+  });
+
+  it("awards a hat-trick bonus when a player scores 3+ goals in one match", () => {
+    const rows = scoreMatchday(DEFAULT_RULES, {
+      ...BASE,
+      attendeePlayerIds: ["p1", "p2"],
+      matches: [
+        match({
+          id: "m1",
+          scoreA: 3,
+          scoreB: 0,
+          sideA: { side: "A", playerIds: ["p1"], goalkeeperId: null },
+          sideB: { side: "B", playerIds: ["p2"], goalkeeperId: null },
+          goals: [
+            { id: "g1", scorerId: "p1", assistId: null },
+            { id: "g2", scorerId: "p1", assistId: null },
+            { id: "g3", scorerId: "p1", assistId: null },
+          ],
+        }),
+      ],
+    });
+    expect(rows.filter((r) => r.kind === "goal" && r.playerId === "p1")).toHaveLength(
+      3,
+    );
+    expect(rows.find((r) => r.kind === "hat_trick" && r.playerId === "p1")).toMatchObject({
+      points: 5,
+      matchId: "m1",
+    });
+  });
+
+  it("does not count own goals toward a hat-trick", () => {
+    const rows = scoreMatchday(DEFAULT_RULES, {
+      ...BASE,
+      attendeePlayerIds: ["p1", "p2"],
+      matches: [
+        match({
+          id: "m1",
+          scoreA: 2,
+          scoreB: 0,
+          sideA: { side: "A", playerIds: ["p1"], goalkeeperId: null },
+          sideB: { side: "B", playerIds: ["p2"], goalkeeperId: null },
+          goals: [
+            { id: "g1", scorerId: "p1", assistId: null },
+            { id: "g2", scorerId: "p1", assistId: null },
+            { id: "g3", scorerId: "p2", assistId: null, kind: "own_goal" },
+          ],
+        }),
+      ],
+    });
+    expect(rows.some((r) => r.kind === "hat_trick")).toBe(false);
   });
 });

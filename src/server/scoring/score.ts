@@ -197,6 +197,33 @@ export function scoreMatchday(
       }
     }
 
+    const scoringGoalsByPlayer = new Map<string, number>();
+    for (const goal of match.goals) {
+      const kind = goal.kind ?? "open_play";
+      if (kind === "own_goal") continue;
+      scoringGoalsByPlayer.set(
+        goal.scorerId,
+        (scoringGoalsByPlayer.get(goal.scorerId) ?? 0) + 1,
+      );
+    }
+    if (rules.hatTrickPts !== 0) {
+      for (const [playerId, count] of scoringGoalsByPlayer) {
+        if (count >= 3) {
+          pushRow(
+            rows,
+            {
+              matchId: match.id,
+              playerId,
+              kind: "hat_trick",
+              points: rules.hatTrickPts,
+              sourceRef: match.id,
+            },
+            context,
+          );
+        }
+      }
+    }
+
     for (const incident of match.incidents ?? []) {
       const kind: PointKind =
         incident.kind === "penalty_saved"

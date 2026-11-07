@@ -18,6 +18,7 @@ const rules: ManagerScoringRules = {
   ownGoalPts: -2,
   handballPts: -2,
   penaltyMissedPts: -2,
+  hatTrickPts: 5,
   captainMultiplier: 200,
   viceCaptainMultiplier: 150,
 };

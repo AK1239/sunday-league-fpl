@@ -9,7 +9,8 @@ export type PointKind =
   | "own_goal"
   | "penalty_saved"
   | "handball"
-  | "penalty_missed";
+  | "penalty_missed"
+  | "hat_trick";
 
 export type GoalKind = "open_play" | "penalty" | "own_goal";
 export type IncidentKind =
@@ -31,6 +32,8 @@ export type ScoringRules = {
   handballPts: number;
   /** Taker misses the penalty (not saved — separate from penalty_saved). */
   penaltyMissedPts: number;
+  /** One-off bonus per match when the player scores 3+ goals (excludes own goals). */
+  hatTrickPts: number;
 };
 
 export type ScoreGoal = {

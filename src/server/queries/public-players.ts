@@ -384,6 +384,7 @@ export type SeasonRulesPublic = {
     ownGoalPts: number;
     handballPts: number;
     penaltyMissedPts: number;
+    hatTrickPts: number;
     /** Captain × for display (e.g. 2 = double). */
     captainMultiplier: number;
     /** Vice-captain × for display (e.g. 1.5). */
@@ -436,6 +437,7 @@ export async function getActiveSeasonRulesPublic(
       ownGoalPts: r.ownGoalPts,
       handballPts: r.handballPts,
       penaltyMissedPts: r.penaltyMissedPts,
+      hatTrickPts: r.hatTrickPts,
       captainMultiplier: fantasyMultiplierFromDb(r.captainMultiplier),
       viceCaptainMultiplier: fantasyMultiplierFromDb(r.viceCaptainMultiplier),
     },

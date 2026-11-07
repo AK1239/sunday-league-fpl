@@ -127,6 +127,13 @@
       "when": 1793885200000,
       "tag": "0017_vice_mult_penalty_missed",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793885250000,
+      "tag": "0018_hat_trick",
+      "breakpoints": true
     }
   ]
 }

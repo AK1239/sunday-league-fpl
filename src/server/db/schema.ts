@@ -89,6 +89,7 @@ export const pointKindEnum = pgEnum("point_kind", [
   "penalty_saved",
   "handball",
   "penalty_missed",
+  "hat_trick",
 ]);
 
 export const goalKindEnum = pgEnum("goal_kind", [
@@ -156,6 +157,8 @@ export const scoringRuleSets = pgTable("scoring_rule_sets", {
   handballPts: integer("handball_pts").notNull().default(-2),
   /** Missed penalty (not saved by GK) — taker loses these points. */
   penaltyMissedPts: integer("penalty_missed_pts").notNull().default(-2),
+  /** Bonus when a player scores 3+ goals in one match (open play or penalty). */
+  hatTrickPts: integer("hat_trick_pts").notNull().default(5),
   /** Captain fantasy multiplier as hundredths (200 = 2×). */
   captainMultiplier: integer("captain_multiplier").notNull().default(200),
   /** Vice-captain fantasy multiplier as hundredths (150 = 1.5×). */

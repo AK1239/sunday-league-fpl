@@ -71,6 +71,12 @@ const KIND_META: Record<
     icon: <XCircle />,
     order: 10,
   },
+  hat_trick: {
+    label: "Hat-trick",
+    plural: "Hat-tricks",
+    icon: <Target />,
+    order: 11,
+  },
 };
 
 function roleLabel(role: FantasyTeamPlayerSlot["role"]) {
