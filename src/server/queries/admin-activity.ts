@@ -51,6 +51,17 @@ export type AdminActivityData = {
 /** East Africa Time (UTC+3, no DST) — league default for activity UI. */
 export const ADMIN_ACTIVITY_TIMEZONE = "Africa/Nairobi";
 
+/** Omit these users from admin activity stats/lists (email substring, case-insensitive). */
+export const ADMIN_ACTIVITY_HIDDEN_EMAIL_SUBSTRINGS = ["akil"] as const;
+
+function hiddenActivityUserFilter() {
+  const clauses = ADMIN_ACTIVITY_HIDDEN_EMAIL_SUBSTRINGS.map(
+    (sub) =>
+      sql`lower(coalesce(${users.email}, '')) not like ${`%${sub.toLowerCase()}%`}`,
+  );
+  return or(isNull(auditLog.userId), and(...clauses));
+}
+
 function formatEatYmd(d: Date): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: ADMIN_ACTIVITY_TIMEZONE,
@@ -114,9 +125,14 @@ export async function getAdminActivityData(
       ? inArray(auditLog.action, actionFilter)
       : undefined;
 
-  const listWhereParts = [periodCond, actionCond, roleFilter].filter(
-    (x): x is NonNullable<typeof x> => x != null,
-  );
+  const visibilityFilter = hiddenActivityUserFilter();
+
+  const listWhereParts = [
+    periodCond,
+    actionCond,
+    roleFilter,
+    visibilityFilter,
+  ].filter((x): x is NonNullable<typeof x> => x != null);
   const listWhere = and(...listWhereParts);
 
   const [countRow] = await db
@@ -129,6 +145,7 @@ export async function getAdminActivityData(
     periodCond,
     eq(auditLog.action, "auth.login"),
     roleFilter,
+    visibilityFilter,
   ].filter((x): x is NonNullable<typeof x> => x != null);
   const loginWhere = and(...loginWhereParts);
 
@@ -143,6 +160,7 @@ export async function getAdminActivityData(
     eq(auditLog.action, "auth.login"),
     sql`${auditLog.userId} is not null`,
     roleFilter,
+    visibilityFilter,
   ].filter((x): x is NonNullable<typeof x> => x != null);
   const distinctWhere = and(...distinctWhereParts);
 
@@ -156,6 +174,7 @@ export async function getAdminActivityData(
     periodCond,
     eq(auditLog.action, "auth.visit"),
     roleFilter,
+    visibilityFilter,
   ].filter((x): x is NonNullable<typeof x> => x != null);
   const visitWhere = and(...visitWhereParts);
 
@@ -170,6 +189,7 @@ export async function getAdminActivityData(
     inArray(auditLog.action, ["auth.login", "auth.visit"]),
     sql`${auditLog.userId} is not null`,
     roleFilter,
+    visibilityFilter,
   ].filter((x): x is NonNullable<typeof x> => x != null);
   const activeWhere = and(...activeWhereParts);
 
@@ -183,6 +203,7 @@ export async function getAdminActivityData(
     periodCond,
     eq(auditLog.action, "auth.logout"),
     roleFilter,
+    visibilityFilter,
   ].filter((x): x is NonNullable<typeof x> => x != null);
   const logoutWhere = and(...logoutWhereParts);
 
@@ -196,6 +217,7 @@ export async function getAdminActivityData(
     periodCond,
     inArray(auditLog.action, ["auth.login", "auth.visit"]),
     roleFilter,
+    visibilityFilter,
   );
 
   const engagementRows = await db
