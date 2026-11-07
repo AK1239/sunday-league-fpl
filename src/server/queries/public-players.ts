@@ -194,11 +194,13 @@ export type PublicMatchDetail = {
   sideA: {
     playerIds: string[];
     playerNames: string[];
+    players: { id: string; name: string; kitKey: string | null }[];
     goalkeeperName: string | null;
   };
   sideB: {
     playerIds: string[];
     playerNames: string[];
+    players: { id: string; name: string; kitKey: string | null }[];
     goalkeeperName: string | null;
   };
   goals: {
@@ -254,6 +256,7 @@ export async function getPublicMatchDetail(
       playerId: matchParticipants.playerId,
       sideId: matchParticipants.sideId,
       displayName: players.displayName,
+      kitKey: players.kitKey,
     })
     .from(matchParticipants)
     .innerJoin(players, eq(matchParticipants.playerId, players.id))
@@ -270,12 +273,22 @@ export async function getPublicMatchDetail(
   }
 
   function sidePlayers(sideId: string | undefined) {
-    if (!sideId)
-      return { playerIds: [] as string[], playerNames: [] as string[] };
+    if (!sideId) {
+      return {
+        playerIds: [] as string[],
+        playerNames: [] as string[],
+        players: [] as { id: string; name: string; kitKey: string | null }[],
+      };
+    }
     const list = participants.filter((p) => p.sideId === sideId);
     return {
       playerIds: list.map((p) => p.playerId),
       playerNames: list.map((p) => p.displayName),
+      players: list.map((p) => ({
+        id: p.playerId,
+        name: p.displayName,
+        kitKey: p.kitKey,
+      })),
     };
   }
 

@@ -28,7 +28,8 @@ export function navActive(pathname: string, item: PrimaryNavItem): boolean {
       return (
         pathname === "/my" ||
         pathname === "/my/captain" ||
-        pathname === "/my/history"
+        pathname === "/my/history" ||
+        pathname.startsWith("/my/history/")
       );
     case "my-points":
       return pathname === "/my/points" || pathname.startsWith("/my/points/");

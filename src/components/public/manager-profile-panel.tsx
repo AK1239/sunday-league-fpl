@@ -5,7 +5,6 @@ import { GameweekNavigator } from "@/components/manager/gameweek-navigator";
 import { GameweekTeam } from "@/components/manager/gameweek-team";
 import { PageHeader } from "@/components/fantasy/page-header";
 import { PlayerAvatar } from "@/components/fantasy/player-avatar";
-import { RankDelta } from "@/components/fantasy/rank-delta";
 import { getDb } from "@/server/db";
 import { getGameweekDetails } from "@/server/queries/manager-score-lines";
 import {
@@ -79,51 +78,31 @@ export async function ManagerProfilePanel({
         </div>
       </header>
 
-      {profile.standing ? (
-        <div className="flex flex-wrap gap-4 text-sm">
-          <span className="surface rounded-full px-3 py-1 tabular-nums">
-            Last GW {profile.standing.lastGameweekPoints} pts
-          </span>
-          <span className="surface rounded-full px-3 py-1 tabular-nums">
-            Best GW {profile.standing.bestGameweekPoints} pts
-          </span>
-          <RankDelta delta={profile.standing.rankDelta} />
-        </div>
-      ) : null}
-
-      <section className="space-y-6">
-        <h2 className="font-heading text-xl font-semibold">Historical teams</h2>
-        <p className="text-sm text-muted-foreground">
-          Teams are visible after each gameweek selection deadline.
-        </p>
-        {profile.gameweeks.length === 0 || !current || !team || !details ? (
-          <p className="text-sm text-muted-foreground">
-            No published gameweeks.
-          </p>
-        ) : (
-          <GameweekNavigator
-            items={navItems}
-            currentId={current.matchdayId}
-            basePath={gameweekNavBasePath}
-          >
-            <GameweekTeam
-              number={current.number}
-              playedOn={current.playedOn}
-              totalPoints={current.totalPoints}
-              rankAfter={current.rankAfter}
-              team={team}
-              lines={details.lines[current.matchdayId]}
-              events={details.events[current.matchdayId]}
-              scoreBreakdown={details.scores[current.matchdayId]}
-              emptyMessage={
-                team.visibility === "hidden"
-                  ? "Team hidden until deadline."
-                  : "No team this gameweek."
-              }
-            />
-          </GameweekNavigator>
-        )}
-      </section>
+      {profile.gameweeks.length === 0 || !current || !team || !details ? (
+        <p className="text-sm text-muted-foreground">No published gameweeks.</p>
+      ) : (
+        <GameweekNavigator
+          items={navItems}
+          currentId={current.matchdayId}
+          basePath={gameweekNavBasePath}
+        >
+          <GameweekTeam
+            number={current.number}
+            playedOn={current.playedOn}
+            totalPoints={current.totalPoints}
+            rankAfter={current.rankAfter}
+            team={team}
+            lines={details.lines[current.matchdayId]}
+            events={details.events[current.matchdayId]}
+            scoreBreakdown={details.scores[current.matchdayId]}
+            emptyMessage={
+              team.visibility === "hidden"
+                ? "Team hidden until deadline."
+                : "No team this gameweek."
+            }
+          />
+        </GameweekNavigator>
+      )}
     </div>
   );
 }

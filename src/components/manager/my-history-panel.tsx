@@ -1,4 +1,6 @@
+import { notFound } from "next/navigation";
 import { connection } from "next/server";
+import { GameweekNavigator } from "@/components/manager/gameweek-navigator";
 import { GameweekTeam } from "@/components/manager/gameweek-team";
 import { PageHeader } from "@/components/fantasy/page-header";
 import { EmptyState } from "@/components/fantasy/empty-state";
@@ -10,10 +12,25 @@ import {
   getMyHistoricalTeams,
 } from "@/server/queries/manager-my-pages";
 
-export async function MyHistoryPanel() {
+/** One published gameweek team. Defaults to the latest. */
+export async function MyHistoryPanel({
+  matchdayId,
+}: {
+  matchdayId?: string;
+}) {
   await connection();
   const user = await requireUser();
-  const seasonId = await getManagerMySeasonId(getDb());
+  const db = getDb();
+  const seasonId = await getManagerMySeasonId(db);
+
+  const header = (
+    <PageHeader
+      eyebrow="Archive"
+      title="Gameweek teams"
+      description="Every team you fielded once results were published."
+    />
+  );
+
   if (!seasonId) {
     return (
       <EmptyState
@@ -23,44 +40,53 @@ export async function MyHistoryPanel() {
     );
   }
 
-  const history = await getMyHistoricalTeams(getDb(), user.userId, seasonId);
+  const history = await getMyHistoricalTeams(db, user.userId, seasonId);
 
-  const details = await getGameweekDetails(
-    getDb(),
-    user.userId,
-    history.map((h) => h.matchdayId),
-  );
-
-  return (
-    <div className="space-y-8">
-      <PageHeader
-        eyebrow="Archive"
-        title="Gameweek teams"
-        description="Every team you fielded once results were published."
-      />
-
-      {history.length === 0 ? (
+  if (history.length === 0) {
+    return (
+      <div className="space-y-8">
+        {header}
         <EmptyState
           title="No history yet"
           description="Published gameweeks will appear here with the squad you scored with."
         />
-      ) : (
-        <ul className="space-y-6">
-          {history.map((entry) => (
-            <li key={entry.matchdayId}>
-              <GameweekTeam
-                number={entry.number}
-                playedOn={entry.playedOn}
-                totalPoints={entry.totalPoints}
-                team={entry.team}
-                lines={details.lines[entry.matchdayId]}
-                events={details.events[entry.matchdayId]}
-                scoreBreakdown={details.scores[entry.matchdayId]}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      </div>
+    );
+  }
+
+  const current = matchdayId
+    ? history.find((h) => h.matchdayId === matchdayId)
+    : history[0];
+  if (!current) notFound();
+
+  const details = await getGameweekDetails(db, user.userId, [
+    current.matchdayId,
+  ]);
+
+  const items = [...history].reverse().map((h) => ({
+    matchdayId: h.matchdayId,
+    number: h.number,
+    totalPoints: h.totalPoints,
+  }));
+
+  return (
+    <div className="space-y-6">
+      {header}
+      <GameweekNavigator
+        items={items}
+        currentId={current.matchdayId}
+        basePath="/my/history"
+      >
+        <GameweekTeam
+          number={current.number}
+          playedOn={current.playedOn}
+          totalPoints={current.totalPoints}
+          team={current.team}
+          lines={details.lines[current.matchdayId]}
+          events={details.events[current.matchdayId]}
+          scoreBreakdown={details.scores[current.matchdayId]}
+        />
+      </GameweekNavigator>
     </div>
   );
 }

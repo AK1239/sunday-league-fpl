@@ -37,7 +37,7 @@ export async function RulesPanel() {
           <RuleRow label="Assist" value={rules.assistPts} />
           <RuleRow label="Clean sheet (GK)" value={rules.cleanSheetPts} />
           <RuleRow
-            label="Penalty scored (instead of goal)"
+            label="Penalty scored"
             value={rules.penaltyGoalPts}
           />
           <RuleRow label="Penalty saved" value={rules.penaltySavedPts} />
