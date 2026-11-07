@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 export type GameweekNavItem = {
@@ -12,7 +12,7 @@ export type GameweekNavItem = {
   totalPoints: number;
 };
 
-const hrefFor = (id: string) => `/my/points/${id}`;
+const DEFAULT_BASE_PATH = "/my/points";
 
 /**
  * Prev / next arrows + a scrollable gameweek strip. Also wires ←/→ keys and
@@ -21,13 +21,20 @@ const hrefFor = (id: string) => `/my/points/${id}`;
 export function GameweekNavigator({
   items,
   currentId,
+  basePath = DEFAULT_BASE_PATH,
   children,
 }: {
   items: GameweekNavItem[];
   currentId: string;
+  /** Link prefix; target URL is `${basePath}/${matchdayId}`. Defaults to My Points. */
+  basePath?: string;
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const hrefFor = useCallback(
+    (matchdayId: string) => `${basePath}/${matchdayId}`,
+    [basePath],
+  );
   const index = items.findIndex((i) => i.matchdayId === currentId);
   const prev = index > 0 ? items[index - 1] : null;
   const next = index >= 0 && index < items.length - 1 ? items[index + 1] : null;
@@ -53,7 +60,7 @@ export function GameweekNavigator({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [prev, next, router]);
+  }, [prev, next, router, hrefFor]);
 
   // Swipe: finger moves right → older GW, left → newer GW.
   const touch = useRef<{ x: number; y: number } | null>(null);

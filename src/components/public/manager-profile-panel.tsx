@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
+import { GameweekNavigator } from "@/components/manager/gameweek-navigator";
 import { GameweekTeam } from "@/components/manager/gameweek-team";
 import { PageHeader } from "@/components/fantasy/page-header";
 import { PlayerAvatar } from "@/components/fantasy/player-avatar";
@@ -14,26 +15,37 @@ import {
 
 export async function ManagerProfilePanel({
   managerId,
+  matchdayId,
 }: {
   managerId: string;
+  /** When set, show that gameweek; otherwise the latest published. */
+  matchdayId?: string;
 }) {
   await connection();
   const db = getDb();
   const profile = await getPublicManagerProfile(db, managerId);
   if (!profile) notFound();
 
-  const teamsWithVisibility = await Promise.all(
-    profile.gameweeks.map(async (gw) => ({
-      ...gw,
-      team: await getPublicManagerTeamForGameweek(db, managerId, gw.matchdayId),
-    })),
-  );
+  const current = matchdayId
+    ? profile.gameweeks.find((g) => g.matchdayId === matchdayId)
+    : profile.gameweeks[0];
+  if (profile.gameweeks.length > 0 && !current) notFound();
 
-  const details = await getGameweekDetails(
-    db,
-    managerId,
-    profile.gameweeks.map((g) => g.matchdayId),
-  );
+  const [team, details] = current
+    ? await Promise.all([
+        getPublicManagerTeamForGameweek(db, managerId, current.matchdayId),
+        getGameweekDetails(db, managerId, [current.matchdayId]),
+      ])
+    : [null, null];
+
+  const gameweekNavBasePath = `/managers/${managerId}/gameweeks`;
+  const navItems = [...profile.gameweeks]
+    .reverse()
+    .map((g) => ({
+      matchdayId: g.matchdayId,
+      number: g.number,
+      totalPoints: g.totalPoints,
+    }));
 
   return (
     <div className="space-y-8">
@@ -79,59 +91,38 @@ export async function ManagerProfilePanel({
         </div>
       ) : null}
 
-      <section className="space-y-4">
-        <h2 className="font-heading text-xl font-semibold">Gameweek scores</h2>
-        {profile.gameweeks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No published gameweeks.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {profile.gameweeks.map((gw) => (
-              <li key={gw.matchdayId}>
-                <Link
-                  href={`/matchdays/${gw.matchdayId}`}
-                  className="surface flex items-center justify-between rounded-xl px-4 py-3 text-sm"
-                >
-                  <span className="font-medium tabular-nums">
-                    GW{gw.number}
-                  </span>
-                  <span className="tabular-nums text-muted-foreground">
-                    {gw.playedOn}
-                  </span>
-                  <span className="font-semibold tabular-nums text-primary">
-                    {gw.totalPoints} pts
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
       <section className="space-y-6">
         <h2 className="font-heading text-xl font-semibold">Historical teams</h2>
         <p className="text-sm text-muted-foreground">
           Teams are visible after each gameweek selection deadline.
         </p>
-        {teamsWithVisibility.map((entry) => (
-          <GameweekTeam
-            key={entry.matchdayId}
-            number={entry.number}
-            playedOn={entry.playedOn}
-            totalPoints={entry.totalPoints}
-            rankAfter={entry.rankAfter}
-            team={entry.team}
-            lines={details.lines[entry.matchdayId]}
-            events={details.events[entry.matchdayId]}
-            scoreBreakdown={details.scores[entry.matchdayId]}
-            emptyMessage={
-              entry.team.visibility === "hidden"
-                ? "Team hidden until deadline."
-                : "No team this gameweek."
-            }
-          />
-        ))}
+        {profile.gameweeks.length === 0 || !current || !team || !details ? (
+          <p className="text-sm text-muted-foreground">
+            No published gameweeks.
+          </p>
+        ) : (
+          <GameweekNavigator
+            items={navItems}
+            currentId={current.matchdayId}
+            basePath={gameweekNavBasePath}
+          >
+            <GameweekTeam
+              number={current.number}
+              playedOn={current.playedOn}
+              totalPoints={current.totalPoints}
+              rankAfter={current.rankAfter}
+              team={team}
+              lines={details.lines[current.matchdayId]}
+              events={details.events[current.matchdayId]}
+              scoreBreakdown={details.scores[current.matchdayId]}
+              emptyMessage={
+                team.visibility === "hidden"
+                  ? "Team hidden until deadline."
+                  : "No team this gameweek."
+              }
+            />
+          </GameweekNavigator>
+        )}
       </section>
     </div>
   );
