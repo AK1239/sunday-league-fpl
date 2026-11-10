@@ -20,6 +20,10 @@ import {
   getManagerStandings,
   type ManagerStandingRow,
 } from "./manager-standings";
+import {
+  getPublicGameweekPickStats,
+  type PublicGameweekPickStats,
+} from "./gameweek-pick-stats";
 import { getStandings } from "./standings";
 
 export type PublicMatchSummary = {
@@ -63,7 +67,15 @@ export type PublicHomeData = {
   } | null;
   goldenBoot: { playerId: string; displayName: string; goals: number } | null;
   playmaker: { playerId: string; displayName: string; assists: number } | null;
+  gameweekPickStats: PublicGameweekPickStats | null;
 };
+
+async function readDbNow(db: AppDb): Promise<Date> {
+  const result = await db.execute<{ now: Date }>(sql`select now() as now`);
+  const row = result.rows[0];
+  if (!row?.now) return new Date();
+  return row.now instanceof Date ? row.now : new Date(String(row.now));
+}
 
 export async function getPublicHomeData(
   db: AppDb,
@@ -130,6 +142,13 @@ export async function getPublicHomeData(
   const assistStandings = await getStandings(db, seasonId, "assists");
   const playmakerPlayer = assistStandings[0];
 
+  const serverNow = await readDbNow(db);
+  const gameweekPickStats = await getPublicGameweekPickStats(
+    db,
+    seasonId,
+    serverNow,
+  );
+
   return {
     seasonId,
     seasonName: season?.name ?? "Season",
@@ -157,6 +176,7 @@ export async function getPublicHomeData(
           assists: playmakerPlayer.assists,
         }
       : null,
+    gameweekPickStats,
   };
 }
 

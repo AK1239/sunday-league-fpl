@@ -5,10 +5,7 @@ import {
   matchdays,
   players,
   pointLedger,
-  seasons,
-  users,
 } from "@/server/db/schema";
-import { resolveEffectiveTeam } from "@/server/fantasy/effective-team";
 import { computeExpectedPoints } from "@/server/fantasy/expected-points";
 import { isLocked, isSelectionOpen } from "@/server/fantasy/lock";
 import type { FantasyTeamPick } from "@/server/fantasy/validate-team";
@@ -17,13 +14,15 @@ import { getActiveSeasonId } from "@/server/domain/matchdays-admin";
 import {
   getManagerFantasyTeamForViewer,
   getNextScheduledMatchday,
-  loadSubmittedTeamsForSeason,
 } from "./fantasy-team-view";
+import {
+  aggregateEffectiveTeamsForMatchday,
+  MIN_TEAMS_FOR_SELECTED_BY,
+} from "./gameweek-pick-stats";
+
+export { MIN_TEAMS_FOR_SELECTED_BY };
 
 const FORM_GW_COUNT = 5;
-
-/** "Selected by %" is only shown once this many teams exist (protects privacy). */
-export const MIN_TEAMS_FOR_SELECTED_BY = 3;
 
 export type PickTeamPlayerRow = {
   id: string;
@@ -177,43 +176,9 @@ async function loadSelectedByPercent(
   seasonId: string,
   matchday: { id: string; number: number; playedOn: string },
 ): Promise<Map<string, number> | null> {
-  const [season] = await db
-    .select({ startsOn: seasons.startsOn })
-    .from(seasons)
-    .where(eq(seasons.id, seasonId))
-    .limit(1);
-  if (!season) return null;
-
-  const managers = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(
-      and(
-        inArray(users.role, ["manager", "admin"]),
-        eq(users.status, "active"),
-      ),
-    );
-
-  const submitted = await loadSubmittedTeamsForSeason(db, seasonId);
-  const timeline = {
-    matchdayId: matchday.id,
-    playedOn: matchday.playedOn,
-    number: matchday.number,
-    seasonStartsOn: season.startsOn,
-  };
-
-  const counts = new Map<string, number>();
-  let teams = 0;
-  for (const manager of managers) {
-    const team = resolveEffectiveTeam(manager.id, timeline, submitted);
-    if (!team || team.playerIds.length !== 5) continue;
-    teams += 1;
-    for (const playerId of team.playerIds) {
-      counts.set(playerId, (counts.get(playerId) ?? 0) + 1);
-    }
-  }
-
-  if (teams < MIN_TEAMS_FOR_SELECTED_BY) return null;
+  const agg = await aggregateEffectiveTeamsForMatchday(db, seasonId, matchday);
+  if (!agg) return null;
+  const { teams, selectedCounts: counts } = agg;
   return new Map(
     [...counts].map(([playerId, n]) => [
       playerId,

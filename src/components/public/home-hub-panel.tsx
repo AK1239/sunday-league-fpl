@@ -15,6 +15,7 @@ import { SectionHeading } from "@/components/fantasy/section-heading";
 import { buttonVariants } from "@/components/ui/button";
 import { LEAGUE_NAME } from "@/lib/league";
 import { getDb } from "@/server/db";
+import { GameweekPickStatsSection } from "@/components/public/gameweek-pick-stats-section";
 import { getPublicHomeData } from "@/server/queries/public-competition";
 
 export async function HomeHubPanel() {
@@ -149,6 +150,10 @@ export async function HomeHubPanel() {
           </section>
         )}
       </div>
+
+      {data.gameweekPickStats ? (
+        <GameweekPickStatsSection stats={data.gameweekPickStats} />
+      ) : null}
 
       <div className="animate-rise grid gap-4 sm:grid-cols-2">
         {data.goldenBoot ? (
