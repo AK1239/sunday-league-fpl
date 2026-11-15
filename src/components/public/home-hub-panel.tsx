@@ -16,6 +16,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { LEAGUE_NAME } from "@/lib/league";
 import { getDb } from "@/server/db";
 import { GameweekPickStatsSection } from "@/components/public/gameweek-pick-stats-section";
+import { TransferTrendsSection } from "@/components/public/transfer-trends-section";
 import { getPublicHomeData } from "@/server/queries/public-competition";
 
 export async function HomeHubPanel() {
@@ -150,6 +151,10 @@ export async function HomeHubPanel() {
           </section>
         )}
       </div>
+
+      {data.transferTrends ? (
+        <TransferTrendsSection trends={data.transferTrends} />
+      ) : null}
 
       {data.gameweekPickStats ? (
         <GameweekPickStatsSection stats={data.gameweekPickStats} />

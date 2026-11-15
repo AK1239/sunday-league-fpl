@@ -26,6 +26,11 @@ import {
 } from "./gameweek-pick-stats";
 import { getStandings } from "./standings";
 
+import {
+  getPublicTransferTrends,
+  type PublicTransferTrends,
+} from "./transfer-trends";
+
 export type PublicMatchSummary = {
   id: string;
   matchNo: number;
@@ -68,6 +73,7 @@ export type PublicHomeData = {
   goldenBoot: { playerId: string; displayName: string; goals: number } | null;
   playmaker: { playerId: string; displayName: string; assists: number } | null;
   gameweekPickStats: PublicGameweekPickStats | null;
+  transferTrends: PublicTransferTrends | null;
 };
 
 async function readDbNow(db: AppDb): Promise<Date> {
@@ -177,6 +183,7 @@ export async function getPublicHomeData(
         }
       : null,
     gameweekPickStats,
+    transferTrends: nextMd ? await getPublicTransferTrends(db, nextMd) : null,
   };
 }
 
