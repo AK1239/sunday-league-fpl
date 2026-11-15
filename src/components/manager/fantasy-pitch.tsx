@@ -144,7 +144,7 @@ function PitchPlayer({
               dnp
                 ? "bg-neutral-800 text-neutral-400"
                 : line.points > 0
-                  ? "bg-neutral-900 text-primary"
+                  ? "bg-neutral-900 text-lime-300"
                   : "bg-neutral-900 text-white",
             )}
           >
