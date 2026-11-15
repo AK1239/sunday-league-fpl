@@ -349,10 +349,12 @@ describe("scoreMatchday", () => {
         }),
       ],
     });
-    expect(rows.filter((r) => r.kind === "goal" && r.playerId === "p1")).toHaveLength(
-      3,
-    );
-    expect(rows.find((r) => r.kind === "hat_trick" && r.playerId === "p1")).toMatchObject({
+    expect(
+      rows.filter((r) => r.kind === "goal" && r.playerId === "p1"),
+    ).toHaveLength(3);
+    expect(
+      rows.find((r) => r.kind === "hat_trick" && r.playerId === "p1"),
+    ).toMatchObject({
       points: 5,
       matchId: "m1",
     });
@@ -385,8 +387,12 @@ describe("scoreMatchday", () => {
         }),
       ],
     });
-    const winsA = rows.filter((r) => r.kind === "win" && r.playerId.startsWith("a"));
-    const winsB = rows.filter((r) => r.kind === "win" && r.playerId.startsWith("b"));
+    const winsA = rows.filter(
+      (r) => r.kind === "win" && r.playerId.startsWith("a"),
+    );
+    const winsB = rows.filter(
+      (r) => r.kind === "win" && r.playerId.startsWith("b"),
+    );
     expect(winsA).toHaveLength(5);
     expect(winsB).toHaveLength(0);
     expect(winsA.every((r) => r.points === DEFAULT_RULES.winPts)).toBe(true);
@@ -446,5 +452,17 @@ describe("scoreMatchday dayStats", () => {
     expect(total("p2")).toBe(2 + 10 + 5 + 3);
     expect(total("p3")).toBe(2);
     expect(rows.every((r) => r.matchId === null)).toBe(true);
+  });
+
+  it("writes one ledger row per event with unique refs (for \u00d7N counts)", () => {
+    const rows = scoreMatchday(DEFAULT_RULES, {
+      ...BASE,
+      attendeePlayerIds: [],
+      matches: [],
+      dayStats: [{ playerId: "p1", ...zero, goals: 2, penaltyGoals: 1 }],
+    });
+    const goalRows = rows.filter((r) => r.kind === "goal");
+    expect(goalRows).toHaveLength(3);
+    expect(new Set(goalRows.map((r) => r.sourceRef)).size).toBe(3);
   });
 });

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type {
   ComputedPointRow,
   PointKind,
@@ -16,6 +17,19 @@ function matchOutcome(match: ScoreMatch): MatchOutcome {
 
 function opponentScore(match: ScoreMatch, side: "A" | "B"): number {
   return side === "A" ? match.scoreB : match.scoreA;
+}
+
+/** Stable UUID per (matchday, player, kind, n) so repeat events satisfy the ledger dedupe index. */
+function dayEventRef(
+  matchdayId: string,
+  playerId: string,
+  kind: string,
+  n: number,
+): string {
+  const h = createHash("sha1")
+    .update(`${matchdayId}:${playerId}:${kind}:${n}`)
+    .digest("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
 function pushRow(
@@ -268,20 +282,24 @@ export function scoreMatchday(
   }
 
   for (const stat of input.dayStats ?? []) {
+    const seen = new Map<string, number>();
     const add = (kind: PointKind, count: number, each: number) => {
-      if (count <= 0) return;
-      // One ledger row per kind: points = count x rule value.
-      pushRow(
-        rows,
-        {
-          matchId: null,
-          playerId: stat.playerId,
-          kind,
-          points: count * each,
-          sourceRef: null,
-        },
-        context,
-      );
+      // One ledger row per event so "×N" counts show in the points breakdown.
+      for (let i = 0; i < count; i++) {
+        const n = seen.get(kind) ?? 0;
+        seen.set(kind, n + 1);
+        pushRow(
+          rows,
+          {
+            matchId: null,
+            playerId: stat.playerId,
+            kind,
+            points: each,
+            sourceRef: dayEventRef(input.matchdayId, stat.playerId, kind, n),
+          },
+          context,
+        );
+      }
     };
     add("goal", stat.goals, rules.goalPts);
     add("goal", stat.penaltyGoals, rules.penaltyGoalPts);

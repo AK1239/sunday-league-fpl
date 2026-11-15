@@ -170,12 +170,10 @@ export function PlayerPointsModal({
                     {meta.icon}
                   </span>
                   <span className="flex-1 text-sm font-medium">
+                    {e.kind === "attendance" ? null : (
+                      <span className="mr-1.5 tabular-nums">{e.count}×</span>
+                    )}
                     {name}
-                    {e.count > 1 ? (
-                      <span className="ml-1.5 text-xs font-normal text-muted-foreground tabular-nums">
-                        ×{e.count}
-                      </span>
-                    ) : null}
                   </span>
                   <span
                     className={cn(
