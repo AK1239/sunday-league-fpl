@@ -17,6 +17,7 @@ import type {
   MatchDraftInput,
   MatchEntryMatch,
 } from "./match-entry-types";
+import { loadMatchdayDayStats } from "./day-stats";
 import { validateMatchDraft } from "./validate-match-draft";
 import { recomputeMatchday } from "./recompute-matchday";
 
@@ -208,6 +209,7 @@ export async function loadMatchdayEntry(
         : playerRows.map((p) => p.id),
     players: playerRows,
     matches: entryMatches,
+    dayStats: await loadMatchdayDayStats(db, matchdayId),
   };
 }
 

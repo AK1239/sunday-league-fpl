@@ -134,6 +134,13 @@
       "when": 1793885250000,
       "tag": "0018_hat_trick",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793885300000,
+      "tag": "0019_matchday_player_stats",
+      "breakpoints": true
     }
   ]
 }

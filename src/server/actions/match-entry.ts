@@ -12,6 +12,8 @@ import {
   saveMatchDraftAdmin,
   saveMatchdayAttendanceAdmin,
 } from "@/server/domain/match-entry";
+import { saveMatchdayDayStatsAdmin } from "@/server/domain/day-stats";
+import { DAY_STAT_KEYS } from "@/lib/parse-player-results";
 import type { MatchDraftInput } from "@/server/domain/match-entry-types";
 import {
   actionFail,
@@ -160,4 +162,49 @@ export async function copyLineupAction(
 export async function loadMatchdayEntryAction(matchdayId: string) {
   await requireAdmin();
   return loadMatchdayEntry(getDb(), matchdayId);
+}
+
+const dayStatsSchema = z.array(
+  z.object({
+    playerId: z.string().uuid(),
+    stats: z.object(
+      Object.fromEntries(
+        DAY_STAT_KEYS.map((k) => [k, z.number().int().min(0).max(99)]),
+      ) as Record<(typeof DAY_STAT_KEYS)[number], z.ZodNumber>,
+    ),
+  }),
+);
+
+export async function saveMatchdayDayStatsAction(
+  matchdayId: string,
+  attendeeIds: string[],
+  rows: z.input<typeof dayStatsSchema>,
+): Promise<ActionResult> {
+  const session = await requireAdmin();
+  if (!z.string().uuid().safeParse(matchdayId).success) {
+    return actionFail("VALIDATION", "Invalid matchday.");
+  }
+  const parsed = dayStatsSchema.safeParse(rows);
+  const ids = z.array(z.string().uuid()).safeParse(attendeeIds);
+  if (!parsed.success || !ids.success) {
+    return actionFail("VALIDATION", "Invalid results.");
+  }
+  try {
+    await saveMatchdayDayStatsAdmin(
+      getDb(),
+      session.userId,
+      matchdayId,
+      parsed.data,
+      ids.data,
+    );
+    revalidatePath(`/admin/matchdays/${matchdayId}/entry`);
+    revalidatePath(`/admin/matchdays/${matchdayId}/inspector`);
+    revalidatePath("/");
+    revalidatePath("/table");
+    return actionOk();
+  } catch (error) {
+    return (
+      mapEntryError(error) ?? actionFail("ERROR", "Could not save results.")
+    );
+  }
 }

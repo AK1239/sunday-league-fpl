@@ -414,3 +414,37 @@ describe("scoreMatchday", () => {
     expect(rows.some((r) => r.kind === "hat_trick")).toBe(false);
   });
 });
+
+describe("scoreMatchday dayStats", () => {
+  const zero = {
+    goals: 0,
+    penaltyGoals: 0,
+    assists: 0,
+    penaltiesMissed: 0,
+    penaltiesSaved: 0,
+    ownGoals: 0,
+    handballs: 0,
+    cleanSheets: 0,
+    hatTricks: 0,
+    mvps: 0,
+  };
+
+  it("scores per-player day totals with attendance and no matches", () => {
+    const rows = scoreMatchday(DEFAULT_RULES, {
+      ...BASE,
+      attendeePlayerIds: [],
+      matches: [],
+      dayStats: [
+        { playerId: "p1", ...zero, goals: 6, penaltiesMissed: 1 },
+        { playerId: "p2", ...zero, penaltiesSaved: 2, goals: 1, assists: 1 },
+        { playerId: "p3", ...zero },
+      ],
+    });
+    const total = (id: string) =>
+      rows.filter((r) => r.playerId === id).reduce((n, r) => n + r.points, 0);
+    expect(total("p1")).toBe(2 + 30 - 2);
+    expect(total("p2")).toBe(2 + 10 + 5 + 3);
+    expect(total("p3")).toBe(2);
+    expect(rows.every((r) => r.matchId === null)).toBe(true);
+  });
+});

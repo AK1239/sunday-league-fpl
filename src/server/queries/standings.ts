@@ -5,6 +5,7 @@ import {
   matchParticipants,
   matchSides,
   matchdayAttendance,
+  matchdayPlayerStats,
   matchdaySnapshots,
   matchdays,
   matches,
@@ -96,6 +97,23 @@ export async function getStandings(
     .groupBy(goals.assistId)
     .as("assist_totals");
 
+  const dayGoalTotals = db
+    .select({
+      playerId: matchdayPlayerStats.playerId,
+      goals:
+        sql<number>`sum(${matchdayPlayerStats.goals} + ${matchdayPlayerStats.penaltyGoals})::int`.as(
+          "day_goals",
+        ),
+      assists: sql<number>`sum(${matchdayPlayerStats.assists})::int`.as(
+        "day_assists",
+      ),
+    })
+    .from(matchdayPlayerStats)
+    .innerJoin(matchdays, eq(matchdayPlayerStats.matchdayId, matchdays.id))
+    .where(publishedMatchdayFilter(seasonId))
+    .groupBy(matchdayPlayerStats.playerId)
+    .as("day_goal_totals");
+
   const appearanceTotals = db
     .select({
       playerId: matchdayAttendance.playerId,
@@ -139,10 +157,14 @@ export async function getStandings(
       kitKey: players.kitKey,
       avatarUrl: players.avatarUrl,
       points: sql<number>`coalesce(${pointsTotals.points}, 0)`.mapWith(Number),
-      goals: sql<number>`coalesce(${goalTotals.goals}, 0)`.mapWith(Number),
-      assists: sql<number>`coalesce(${assistTotals.assists}, 0)`.mapWith(
-        Number,
-      ),
+      goals:
+        sql<number>`coalesce(${goalTotals.goals}, 0) + coalesce(${dayGoalTotals.goals}, 0)`.mapWith(
+          Number,
+        ),
+      assists:
+        sql<number>`coalesce(${assistTotals.assists}, 0) + coalesce(${dayGoalTotals.assists}, 0)`.mapWith(
+          Number,
+        ),
       appearances:
         sql<number>`coalesce(${appearanceTotals.appearances}, 0)`.mapWith(
           Number,
@@ -153,6 +175,7 @@ export async function getStandings(
     .leftJoin(pointsTotals, eq(players.id, pointsTotals.playerId))
     .leftJoin(goalTotals, eq(players.id, goalTotals.playerId))
     .leftJoin(assistTotals, eq(players.id, assistTotals.playerId))
+    .leftJoin(dayGoalTotals, eq(players.id, dayGoalTotals.playerId))
     .leftJoin(appearanceTotals, eq(players.id, appearanceTotals.playerId))
     .leftJoin(winTotals, eq(players.id, winTotals.playerId))
     .where(

@@ -68,12 +68,31 @@ export type ScoreMatch = {
   mvpPlayerId: string | null;
 };
 
+/** Whole-day per-player totals from the quick "enter results" flow. */
+export type ScoreDayStats = {
+  playerId: string;
+  goals: number;
+  /** Penalty goals: worth `penaltyGoalPts` instead of `goalPts`, no assist. */
+  penaltyGoals: number;
+  assists: number;
+  penaltiesMissed: number;
+  penaltiesSaved: number;
+  ownGoals: number;
+  handballs: number;
+  cleanSheets: number;
+  /** Explicit hat-trick bonuses (cannot be derived from day totals). */
+  hatTricks: number;
+  mvps: number;
+};
+
 export type ScoreMatchdayInput = {
   matchdayId: string;
   seasonId: string;
   ruleSetId: string;
   attendeePlayerIds: string[];
   matches: ScoreMatch[];
+  /** Optional per-player day totals, scored in addition to `matches`. */
+  dayStats?: ScoreDayStats[];
 };
 
 export type ComputedPointRow = {

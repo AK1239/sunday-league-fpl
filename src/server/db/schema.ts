@@ -364,6 +364,34 @@ export const matchdayAttendance = pgTable(
   (table) => [primaryKey({ columns: [table.matchdayId, table.playerId] })],
 );
 
+/**
+ * Per-player totals for a whole matchday (the quick "enter results" flow).
+ * Fed into the same point ledger as per-match goals/incidents. Attendance is
+ * still `matchday_attendance`.
+ */
+export const matchdayPlayerStats = pgTable(
+  "matchday_player_stats",
+  {
+    matchdayId: uuid("matchday_id")
+      .notNull()
+      .references(() => matchdays.id, { onDelete: "cascade" }),
+    playerId: uuid("player_id")
+      .notNull()
+      .references(() => players.id),
+    goals: integer("goals").notNull().default(0),
+    penaltyGoals: integer("penalty_goals").notNull().default(0),
+    assists: integer("assists").notNull().default(0),
+    penaltiesMissed: integer("penalties_missed").notNull().default(0),
+    penaltiesSaved: integer("penalties_saved").notNull().default(0),
+    ownGoals: integer("own_goals").notNull().default(0),
+    handballs: integer("handballs").notNull().default(0),
+    cleanSheets: integer("clean_sheets").notNull().default(0),
+    hatTricks: integer("hat_tricks").notNull().default(0),
+    mvps: integer("mvps").notNull().default(0),
+  },
+  (table) => [primaryKey({ columns: [table.matchdayId, table.playerId] })],
+);
+
 export const pointLedger = pgTable(
   "point_ledger",
   {

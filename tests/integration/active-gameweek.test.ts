@@ -10,6 +10,7 @@ import {
   users,
 } from "@/server/db/schema";
 import {
+  addDaysToIsoDate,
   computeOpenGameweekPlayedOn,
   ensureAutoScheduledMatchday,
 } from "@/server/domain/auto-schedule-matchdays";
@@ -18,7 +19,11 @@ import {
   getLockedUnpublishedMatchdays,
   getNextScheduledMatchday,
 } from "@/server/queries/fantasy-team-view";
-import { getMyTeamPageData } from "@/server/queries/manager-my-pages";
+import { getPickTeamData } from "@/server/queries/pick-team-data";
+import {
+  getMyPendingGameweeks,
+  getMyTeamPageData,
+} from "@/server/queries/manager-my-pages";
 import { resetDatabase } from "./helpers";
 
 const hasDatabase = !!process.env.DATABASE_URL;
@@ -150,5 +155,71 @@ describe.skipIf(!hasDatabase)("active gameweek after the deadline", () => {
       expect(data.locked.team.teamSource).toBe("manual");
       expect(data.locked.team.slots).toHaveLength(5);
     }
+  });
+
+  it("prod shape: GW1 locked, GW2 cancelled (earlier date), GW3 open → GW3 with GW1 squad carried over", async () => {
+    const db = getDb();
+    const settings = await getLeagueSettings(db);
+    const sunday = await computeOpenGameweekPlayedOn(db, settings!.timezone);
+    const rows = await db
+      .insert(matchdays)
+      .values([
+        {
+          seasonId,
+          number: 1,
+          playedOn: sunday,
+          deadlineAt: new Date(Date.now() - 3600_000),
+          status: "scheduled" as const,
+        },
+        {
+          seasonId,
+          number: 2,
+          playedOn: addDaysToIsoDate(sunday, -7),
+          deadlineAt: new Date(Date.now() - 7 * 86400_000),
+          status: "cancelled" as const,
+        },
+        {
+          seasonId,
+          number: 3,
+          playedOn: addDaysToIsoDate(sunday, 7),
+          deadlineAt: new Date(Date.now() + 6 * 86400_000),
+          status: "scheduled" as const,
+        },
+      ])
+      .returning();
+    const byNumber = new Map(rows.map((r) => [r.number, r.id]));
+    const squad = (await db.select({ id: players.id }).from(players))
+      .slice(0, 5)
+      .map((p) => p.id);
+    await db.transaction(async (tx) => {
+      const [team] = await tx
+        .insert(fantasyTeams)
+        .values({
+          managerId,
+          matchdayId: byNumber.get(1)!,
+          captainPlayerId: squad[0]!,
+          viceCaptainPlayerId: squad[1]!,
+          source: "manual",
+        })
+        .returning();
+      await tx
+        .insert(fantasyTeamPlayers)
+        .values(
+          squad.map((playerId) => ({ fantasyTeamId: team!.id, playerId })),
+        );
+    });
+
+    const next = await getNextScheduledMatchday(db, seasonId);
+    expect(next?.number).toBe(3);
+
+    const pick = await getPickTeamData(db, managerId);
+    expect(pick?.matchday.number).toBe(3);
+    expect(pick?.myTeamSource).toBe("carry_over");
+    expect([...(pick?.myTeam?.playerIds ?? [])].sort()).toEqual(
+      [...squad].sort(),
+    );
+
+    const pending = await getMyPendingGameweeks(db, seasonId);
+    expect(pending.map((p) => p.number)).toEqual([1]);
   });
 });

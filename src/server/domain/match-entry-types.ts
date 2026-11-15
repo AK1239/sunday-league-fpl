@@ -61,4 +61,10 @@ export type MatchdayEntryData = {
   attendeeIds: string[];
   players: MatchEntryPlayer[];
   matches: MatchEntryMatch[];
+  dayStats: MatchdayDayStatsEntry[];
+};
+
+export type MatchdayDayStatsEntry = {
+  playerId: string;
+  stats: import("@/lib/parse-player-results").DayStats;
 };

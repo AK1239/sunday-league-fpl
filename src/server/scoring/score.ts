@@ -51,6 +51,8 @@ export function scoreMatchday(
     for (const playerId of match.sideB.playerIds) attendees.add(playerId);
   }
 
+  for (const stat of input.dayStats ?? []) attendees.add(stat.playerId);
+
   for (const playerId of attendees) {
     pushRow(
       rows,
@@ -263,6 +265,34 @@ export function scoreMatchday(
         context,
       );
     }
+  }
+
+  for (const stat of input.dayStats ?? []) {
+    const add = (kind: PointKind, count: number, each: number) => {
+      if (count <= 0) return;
+      // One ledger row per kind: points = count x rule value.
+      pushRow(
+        rows,
+        {
+          matchId: null,
+          playerId: stat.playerId,
+          kind,
+          points: count * each,
+          sourceRef: null,
+        },
+        context,
+      );
+    };
+    add("goal", stat.goals, rules.goalPts);
+    add("goal", stat.penaltyGoals, rules.penaltyGoalPts);
+    add("assist", stat.assists, rules.assistPts);
+    add("penalty_missed", stat.penaltiesMissed, rules.penaltyMissedPts);
+    add("penalty_saved", stat.penaltiesSaved, rules.penaltySavedPts);
+    add("own_goal", stat.ownGoals, rules.ownGoalPts);
+    add("handball", stat.handballs, rules.handballPts);
+    add("clean_sheet", stat.cleanSheets, rules.cleanSheetPts);
+    add("hat_trick", stat.hatTricks, rules.hatTrickPts);
+    add("mvp", stat.mvps, rules.mvpPts);
   }
 
   return rows;

@@ -16,6 +16,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
+import { DayResultsEditor } from "@/components/admin/day-results-editor";
 import { PlayerAvatar } from "@/components/fantasy/player-avatar";
 import { SectionHeading } from "@/components/fantasy/section-heading";
 import { appToast, toastActionResult } from "@/lib/app-toast";
@@ -387,52 +388,69 @@ export function MatchdayEntryClient({
         </div>
       </section>
 
-      <section className="space-y-4">
-        <SectionHeading
-          title="Matches"
-          action={
-            <Button type="button" size="sm" onClick={handleAddMatch}>
-              <Plus className="size-4" aria-hidden />
-              Add match
-            </Button>
-          }
-        />
+      <DayResultsEditor
+        matchdayId={initial.matchdayId}
+        players={initial.players}
+        initialStats={initial.dayStats}
+        attendeeIds={attendeeIds}
+        onAttendeesChange={(ids) => {
+          setAttendeeIds(ids);
+          debouncedAttendance(ids);
+        }}
+        isPublished={isPublished}
+      />
 
-        <p className="text-sm text-muted-foreground">
-          Sides can be uneven (e.g. 5v4 or 4v4). Not everyone who attended has
-          to be in every match.
-        </p>
-        {matches.length === 0 ? (
+      <details className="group" open={matches.length > 0}>
+        <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+          Advanced: per-match entry (sides, scores, goal-by-goal)
+        </summary>
+        <section className="mt-4 space-y-4">
+          <SectionHeading
+            title="Matches"
+            action={
+              <Button type="button" size="sm" onClick={handleAddMatch}>
+                <Plus className="size-4" aria-hidden />
+                Add match
+              </Button>
+            }
+          />
+
           <p className="text-sm text-muted-foreground">
-            Add the first match of the day.
+            Sides can be uneven (e.g. 5v4 or 4v4). Not everyone who attended has
+            to be in every match.
           </p>
-        ) : (
-          matches.map((match) => (
-            <MatchCardEditor
-              key={match.id}
-              match={match}
-              players={initial.players}
-              playerMap={playerMap}
-              attendeeIds={attendeeIds}
-              onChange={updateMatch}
-              onCopyLineup={
-                match.matchNo > 1 && !match.id.startsWith("temp-")
-                  ? () => handleCopyLineup(match.id)
-                  : undefined
-              }
-              onDelete={
-                !match.id.startsWith("temp-")
-                  ? () =>
-                      setDeleteTarget({
-                        matchId: match.id,
-                        matchNo: match.matchNo,
-                      })
-                  : undefined
-              }
-            />
-          ))
-        )}
-      </section>
+          {matches.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Add the first match of the day.
+            </p>
+          ) : (
+            matches.map((match) => (
+              <MatchCardEditor
+                key={match.id}
+                match={match}
+                players={initial.players}
+                playerMap={playerMap}
+                attendeeIds={attendeeIds}
+                onChange={updateMatch}
+                onCopyLineup={
+                  match.matchNo > 1 && !match.id.startsWith("temp-")
+                    ? () => handleCopyLineup(match.id)
+                    : undefined
+                }
+                onDelete={
+                  !match.id.startsWith("temp-")
+                    ? () =>
+                        setDeleteTarget({
+                          matchId: match.id,
+                          matchNo: match.matchNo,
+                        })
+                    : undefined
+                }
+              />
+            ))
+          )}
+        </section>
+      </details>
     </div>
   );
 }

@@ -1,6 +1,6 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { AppDb } from "@/server/db";
-import { matchdays, matches } from "@/server/db/schema";
+import { matchdayPlayerStats, matchdays, matches } from "@/server/db/schema";
 import { writeAuditLog } from "./audit-log";
 import { loadMatchdayEntry, MatchEntryError } from "./match-entry";
 import { validateMatchDraft } from "./validate-match-draft";
@@ -41,9 +41,13 @@ export async function validateMatchdayReadyToPublish(
   if (entry.status === "published") {
     throw new MatchdayPublishError("Already published.", "ALREADY_PUBLISHED");
   }
-  if (entry.matches.length === 0) {
+  const [{ n: dayStatRows }] = (await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(matchdayPlayerStats)
+    .where(eq(matchdayPlayerStats.matchdayId, matchdayId))) as [{ n: number }];
+  if (entry.matches.length === 0 && dayStatRows === 0) {
     throw new MatchdayPublishError(
-      "Add at least one match before publishing.",
+      "Enter some results (or at least one match) before publishing.",
       "NO_MATCHES",
     );
   }

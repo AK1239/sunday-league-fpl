@@ -7,6 +7,7 @@ import {
   matchParticipants,
   matchSides,
   matchdayAttendance,
+  matchdayPlayerStats,
   matchdays,
   matches,
   scoringRuleSets,
@@ -193,5 +194,21 @@ export async function loadScoreMatchdayInput(
     ruleSetId: meta.ruleSetId,
     attendeePlayerIds: attendanceRows.map((row) => row.playerId),
     matches: scoreMatches,
+    dayStats: await db
+      .select({
+        playerId: matchdayPlayerStats.playerId,
+        goals: matchdayPlayerStats.goals,
+        penaltyGoals: matchdayPlayerStats.penaltyGoals,
+        assists: matchdayPlayerStats.assists,
+        penaltiesMissed: matchdayPlayerStats.penaltiesMissed,
+        penaltiesSaved: matchdayPlayerStats.penaltiesSaved,
+        ownGoals: matchdayPlayerStats.ownGoals,
+        handballs: matchdayPlayerStats.handballs,
+        cleanSheets: matchdayPlayerStats.cleanSheets,
+        hatTricks: matchdayPlayerStats.hatTricks,
+        mvps: matchdayPlayerStats.mvps,
+      })
+      .from(matchdayPlayerStats)
+      .where(eq(matchdayPlayerStats.matchdayId, matchdayId)),
   };
 }
