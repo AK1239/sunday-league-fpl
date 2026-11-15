@@ -20,8 +20,8 @@ export async function seedDatabase() {
     .values({
       name: "Default · Nov 2026",
       attendancePts: 2,
-      winPts: 3,
-      drawPts: 1,
+      winPts: 0,
+      drawPts: 0,
       goalPts: 5,
       assistPts: 3,
       mvpPts: 3,

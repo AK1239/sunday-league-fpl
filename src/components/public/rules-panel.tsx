@@ -35,8 +35,6 @@ export async function RulesPanel() {
         </p>
         <ul className="grid gap-2 text-sm sm:grid-cols-2">
           <RuleRow label="Attendance" value={rules.attendancePts} />
-          <RuleRow label="Win" value={rules.winPts} />
-          <RuleRow label="Draw" value={rules.drawPts} />
           <RuleRow label="Goal" value={rules.goalPts} />
           <RuleRow
             label="Hat-trick (3+ goals in one match)"
