@@ -28,6 +28,7 @@ export function GameweekTeam({
   scoreBreakdown,
   emptyTitle,
   emptyMessage,
+  pending = false,
 }: {
   number: number;
   playedOn: string;
@@ -39,6 +40,8 @@ export function GameweekTeam({
   scoreBreakdown?: MatchdayScoreBreakdown | null;
   emptyTitle?: string;
   emptyMessage?: string;
+  /** Locked but not yet published: list the squad with "–" for points. */
+  pending?: boolean;
 }) {
   const visible = team.visibility === "visible" && team.slots.length > 0;
   return (
@@ -98,6 +101,7 @@ export function GameweekTeam({
           lines={lines}
           events={events}
           scoreBreakdown={scoreBreakdown}
+          pending={pending}
         />
       )}
     </article>

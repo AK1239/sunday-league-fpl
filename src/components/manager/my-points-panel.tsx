@@ -9,6 +9,7 @@ import { getDb } from "@/server/db";
 import { getManagerFantasyTeamForViewer } from "@/server/queries/fantasy-team-view";
 import {
   getManagerMySeasonId,
+  getMyPendingGameweeks,
   getMyPointsGameweeks,
 } from "@/server/queries/manager-my-pages";
 import { getGameweekDetails } from "@/server/queries/manager-score-lines";
@@ -38,8 +39,31 @@ export async function MyPointsPanel({ matchdayId }: { matchdayId?: string }) {
   }
 
   // Newest first from the query; the navigator wants oldest → newest.
-  const rows = await getMyPointsGameweeks(db, user.userId, seasonId);
-  if (rows.length === 0) {
+  const [rows, pendingRows] = await Promise.all([
+    getMyPointsGameweeks(db, user.userId, seasonId),
+    getMyPendingGameweeks(db, seasonId),
+  ]);
+  // Squad is fixed for locked gameweeks, but only show them if the manager has
+  // a team there — otherwise nothing to list.
+  const pendingWithTeam = (
+    await Promise.all(
+      pendingRows.map(async (r) => ({
+        row: r,
+        team: await getManagerFantasyTeamForViewer(
+          db,
+          r.matchdayId,
+          user.userId,
+          {
+            viewerUserId: user.userId,
+            viewerRole: "manager",
+            targetManagerId: user.userId,
+          },
+        ),
+      })),
+    )
+  ).filter((p) => p.team.visibility === "visible" && p.team.slots.length > 0);
+
+  if (rows.length === 0 && pendingWithTeam.length === 0) {
     return (
       <div className="space-y-8">
         {header}
@@ -51,9 +75,50 @@ export async function MyPointsPanel({ matchdayId }: { matchdayId?: string }) {
     );
   }
 
-  const current = matchdayId
-    ? rows.find((r) => r.matchdayId === matchdayId)
-    : rows[0];
+  // Default: latest published, else the newest locked-but-unpublished gameweek.
+  const pendingCurrent = matchdayId
+    ? pendingWithTeam.find((p) => p.row.matchdayId === matchdayId)
+    : rows.length === 0
+      ? pendingWithTeam[pendingWithTeam.length - 1]
+      : undefined;
+  const current = pendingCurrent
+    ? undefined
+    : matchdayId
+      ? rows.find((r) => r.matchdayId === matchdayId)
+      : rows[0];
+  if (!current && !pendingCurrent) notFound();
+
+  const items = [
+    ...[...rows].reverse().map((r) => ({
+      matchdayId: r.matchdayId,
+      number: r.number,
+      totalPoints: r.totalPoints as number | null,
+    })),
+    ...pendingWithTeam.map((p) => ({
+      matchdayId: p.row.matchdayId,
+      number: p.row.number,
+      totalPoints: null as number | null,
+    })),
+  ];
+
+  if (pendingCurrent) {
+    return (
+      <div className="space-y-6">
+        {header}
+        <GameweekNavigator
+          items={items}
+          currentId={pendingCurrent.row.matchdayId}
+        >
+          <GameweekTeam
+            number={pendingCurrent.row.number}
+            playedOn={pendingCurrent.row.playedOn}
+            team={pendingCurrent.team}
+            pending
+          />
+        </GameweekNavigator>
+      </div>
+    );
+  }
   if (!current) notFound();
 
   const [team, details] = await Promise.all([
@@ -64,12 +129,6 @@ export async function MyPointsPanel({ matchdayId }: { matchdayId?: string }) {
     }),
     getGameweekDetails(db, user.userId, [current.matchdayId]),
   ]);
-
-  const items = [...rows].reverse().map((r) => ({
-    matchdayId: r.matchdayId,
-    number: r.number,
-    totalPoints: r.totalPoints,
-  }));
 
   return (
     <div className="space-y-6">

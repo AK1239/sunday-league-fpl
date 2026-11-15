@@ -9,7 +9,8 @@ import { cn } from "@/lib/utils";
 export type GameweekNavItem = {
   matchdayId: string;
   number: number;
-  totalPoints: number;
+  /** null while the gameweek is locked but not yet published. */
+  totalPoints: number | null;
 };
 
 const DEFAULT_BASE_PATH = "/my/points";
@@ -116,7 +117,7 @@ export function GameweekNavigator({
                     active ? "text-primary-foreground/80" : "text-primary",
                   )}
                 >
-                  {item.totalPoints}
+                  {item.totalPoints ?? "–"}
                 </span>
                 {latest ? (
                   <span

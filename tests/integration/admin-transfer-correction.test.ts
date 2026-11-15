@@ -75,7 +75,8 @@ describe.skipIf(!hasDatabase)("admin transfer correction", () => {
         seasonId: season!.id,
         number: 10,
         playedOn: "2026-11-10",
-        deadlineAt: new Date("2026-11-10T13:00:00.000Z"),
+        // Far-future deadline so the manager save stays open regardless of today.
+        deadlineAt: new Date("2099-11-10T13:00:00.000Z"),
         status: "scheduled",
       })
       .returning();

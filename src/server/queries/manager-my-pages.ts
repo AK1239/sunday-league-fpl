@@ -9,6 +9,7 @@ import {
   scoringRuleSets,
   seasons,
 } from "@/server/db/schema";
+import { ensureAutoScheduledMatchday } from "@/server/domain/auto-schedule-matchdays";
 import { getActiveSeasonId } from "@/server/domain/matchdays-admin";
 import { computeFreeAvailableForMatchday } from "@/server/domain/transfer-balance";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/server/fantasy/transfer-rules";
 import { loadSubmittedTeamsForSeason } from "@/server/queries/fantasy-team-view";
 import {
+  getLockedUnpublishedMatchdays,
   getManagerFantasyTeamForViewer,
   getNextScheduledMatchday,
   type FantasyTeamView,
@@ -66,6 +68,16 @@ export type MyTeamPageData = {
     status: "scheduled" | "draft" | "published" | "cancelled";
     team: FantasyTeamView;
   } | null;
+  /**
+   * Most recent gameweek that is locked (deadline passed) but not yet
+   * published — squad is fixed, points are pending.
+   */
+  locked: {
+    matchdayId: string;
+    number: number;
+    playedOn: string;
+    team: FantasyTeamView;
+  } | null;
   latestPublished: {
     matchdayId: string;
     number: number;
@@ -81,6 +93,8 @@ export async function getMyTeamPageData(
   db: AppDb,
   managerId: string,
 ): Promise<MyTeamPageData | null> {
+  // Make sure the next gameweek exists once the current one has locked.
+  await ensureAutoScheduledMatchday(db);
   const seasonId = await getActiveSeasonId(db);
   if (!seasonId) return null;
 
@@ -124,6 +138,22 @@ export async function getMyTeamPageData(
       deadlineAt: upcomingMd.deadlineAt,
       status: upcomingMd.status,
       team,
+    };
+  }
+
+  const lockedMds = await getLockedUnpublishedMatchdays(db, seasonId);
+  const lockedMd = lockedMds[lockedMds.length - 1];
+  let locked: MyTeamPageData["locked"] = null;
+  if (lockedMd) {
+    locked = {
+      matchdayId: lockedMd.id,
+      number: lockedMd.number,
+      playedOn: lockedMd.playedOn,
+      team: await getManagerFantasyTeamForViewer(db, lockedMd.id, managerId, {
+        viewerUserId: managerId,
+        viewerRole: "manager",
+        targetManagerId: managerId,
+      }),
     };
   }
 
@@ -239,6 +269,7 @@ export async function getMyTeamPageData(
     seasonName: season?.name ?? "Season",
     seasonTotalPoints: total ?? 0,
     upcoming,
+    locked,
     latestPublished,
     upcomingFreeTransfers,
   };
@@ -285,6 +316,25 @@ export async function getMyPointsGameweeks(
     totalPoints: row.totalPoints ?? 0,
     rankAfter: row.rankAfter ?? null,
     teamSource: row.teamSource ?? "none",
+  }));
+}
+
+export type MyPendingGameweekRow = {
+  matchdayId: string;
+  number: number;
+  playedOn: string;
+};
+
+/** Locked-but-unpublished gameweeks (points not available yet), oldest first. */
+export async function getMyPendingGameweeks(
+  db: AppDb,
+  seasonId: string,
+): Promise<MyPendingGameweekRow[]> {
+  const rows = await getLockedUnpublishedMatchdays(db, seasonId);
+  return rows.map((r) => ({
+    matchdayId: r.id,
+    number: r.number,
+    playedOn: r.playedOn,
   }));
 }
 

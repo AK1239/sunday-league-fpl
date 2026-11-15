@@ -333,35 +333,72 @@ export async function getManagerFantasyTeamForViewer(
   };
 }
 
-export async function getNextScheduledMatchday(
-  db: AppDb,
-  seasonId: string,
-): Promise<{
+export type ScheduledMatchdayRow = {
   id: string;
   number: number;
   playedOn: string;
   deadlineAt: Date;
   status: typeof matchdays.$inferSelect.status;
   seasonId: string;
-} | null> {
+};
+
+const scheduledMatchdayColumns = {
+  id: matchdays.id,
+  number: matchdays.number,
+  playedOn: matchdays.playedOn,
+  deadlineAt: matchdays.deadlineAt,
+  status: matchdays.status,
+  seasonId: matchdays.seasonId,
+};
+
+/**
+ * The active (open) gameweek: the earliest scheduled/draft gameweek whose
+ * selection deadline has not passed. Once GW N locks, this moves on to GW N+1.
+ * `now` defaults to the database clock.
+ */
+export async function getNextScheduledMatchday(
+  db: AppDb,
+  seasonId: string,
+  now?: Date,
+): Promise<ScheduledMatchdayRow | null> {
   const rows = await db
-    .select({
-      id: matchdays.id,
-      number: matchdays.number,
-      playedOn: matchdays.playedOn,
-      deadlineAt: matchdays.deadlineAt,
-      status: matchdays.status,
-      seasonId: matchdays.seasonId,
-    })
+    .select(scheduledMatchdayColumns)
     .from(matchdays)
     .where(
       and(
         eq(matchdays.seasonId, seasonId),
         sql`${matchdays.status} in ('scheduled', 'draft')`,
+        now
+          ? sql`${matchdays.deadlineAt} > ${now.toISOString()}::timestamptz`
+          : sql`${matchdays.deadlineAt} > now()`,
       ),
     )
     .orderBy(asc(matchdays.playedOn), asc(matchdays.number))
     .limit(1);
 
   return rows[0] ?? null;
+}
+
+/**
+ * Gameweeks that are locked (deadline passed) but not yet published, oldest
+ * first. Their squads are fixed; points are not available yet.
+ */
+export async function getLockedUnpublishedMatchdays(
+  db: AppDb,
+  seasonId: string,
+  now?: Date,
+): Promise<ScheduledMatchdayRow[]> {
+  return db
+    .select(scheduledMatchdayColumns)
+    .from(matchdays)
+    .where(
+      and(
+        eq(matchdays.seasonId, seasonId),
+        sql`${matchdays.status} in ('scheduled', 'draft')`,
+        now
+          ? sql`${matchdays.deadlineAt} <= ${now.toISOString()}::timestamptz`
+          : sql`${matchdays.deadlineAt} <= now()`,
+      ),
+    )
+    .orderBy(asc(matchdays.playedOn), asc(matchdays.number));
 }

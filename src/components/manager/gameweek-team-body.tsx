@@ -20,17 +20,21 @@ export function GameweekTeamBody({
   lines,
   events,
   scoreBreakdown,
+  pending = false,
 }: {
   gameweek: number;
   slots: FantasyTeamPlayerSlot[];
   lines?: Record<string, ManagerLine>;
   events?: Record<string, PlayerPointEvent[]>;
   scoreBreakdown?: MatchdayScoreBreakdown | null;
+  /** Locked but unpublished: show "–" instead of points. */
+  pending?: boolean;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
   function select(playerId: string) {
+    if (pending) return;
     setSelectedId(playerId);
     setOpen(true);
   }
@@ -84,9 +88,11 @@ export function GameweekTeamBody({
           ) : null}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h4 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-              Points breakdown
+              {pending ? "Squad" : "Points breakdown"}
               <span className="ml-2 font-normal tracking-normal normal-case">
-                · tap a player for details
+                {pending
+                  ? "· points appear once results are published"
+                  : "· tap a player for details"}
               </span>
             </h4>
             {captainBonus > 0 ? (
@@ -136,7 +142,14 @@ export function GameweekTeamBody({
                           {dnp ? " · Did not play" : null}
                         </p>
                       </div>
-                      {line ? (
+                      {pending ? (
+                        <p
+                          aria-label="Points not published yet"
+                          className="font-heading text-xl font-bold text-muted-foreground tabular-nums"
+                        >
+                          –
+                        </p>
+                      ) : line ? (
                         <div className="text-right">
                           <p
                             className={cn(
@@ -154,10 +167,12 @@ export function GameweekTeamBody({
                           ) : null}
                         </div>
                       ) : null}
-                      <ChevronRight
-                        className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-                        aria-hidden
-                      />
+                      {pending ? null : (
+                        <ChevronRight
+                          className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+                          aria-hidden
+                        />
+                      )}
                     </div>
                   </button>
                 </li>

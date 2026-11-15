@@ -100,6 +100,7 @@ async function findMatchdayByPlayedOn(
     .select({
       id: matchdays.id,
       status: matchdays.status,
+      deadlineAt: matchdays.deadlineAt,
     })
     .from(matchdays)
     .where(
@@ -112,7 +113,9 @@ async function findMatchdayByPlayedOn(
 /**
  * Ensures the active season has a scheduled gameweek for the current open Sunday
  * window (rolls to the next Sunday after 12:00 league time on gameweek Sunday).
- * Skips dates that already have a published or cancelled gameweek.
+ * Skips dates that already have a published or cancelled gameweek, or whose
+ * selection deadline has passed — so the next gameweek is created as soon as
+ * the current one locks.
  */
 export async function ensureAutoScheduledMatchday(
   db: AppDb,
@@ -153,7 +156,12 @@ export async function ensureAutoScheduledMatchday(
       }
     }
 
-    if (existing.status === "scheduled" || existing.status === "draft") {
+    // A scheduled/draft gameweek whose selection deadline has passed is locked:
+    // roll on so the next gameweek exists (and opens for transfers) right away.
+    if (
+      (existing.status === "scheduled" || existing.status === "draft") &&
+      existing.deadlineAt.getTime() > now.getTime()
+    ) {
       return {
         status: "exists",
         matchdayId: existing.id,

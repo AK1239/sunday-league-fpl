@@ -114,6 +114,22 @@ export async function MyTeamPanel() {
         </section>
       ) : null}
 
+      {data.locked &&
+      data.locked.team.visibility === "visible" &&
+      data.locked.team.slots.length > 0 ? (
+        <section className="space-y-4">
+          <div>
+            <h2 className="font-heading text-xl font-semibold">
+              Locked · GW{data.locked.number}
+            </h2>
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {data.locked.playedOn} · Points appear once results are published
+            </p>
+          </div>
+          <FantasyTeamCard team={data.locked.team} />
+        </section>
+      ) : null}
+
       {data.latestPublished ? (
         <section className="space-y-4">
           <h2 className="font-heading text-xl font-semibold">Latest result</h2>
@@ -131,7 +147,7 @@ export async function MyTeamPanel() {
         </section>
       ) : null}
 
-      {!data.upcoming && !data.latestPublished ? (
+      {!data.upcoming && !data.locked && !data.latestPublished ? (
         <EmptyState
           title="Nothing to show yet"
           description="Schedule a gameweek or publish results to see your team here."
