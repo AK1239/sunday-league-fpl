@@ -178,30 +178,25 @@ export async function buildPublicGameweekPickStats(
     .sort((a, b) => b.count - a.count || b.percent - a.percent)
     .slice(0, 5);
 
-  const enriched = await enrichPlayers(db, [
-    ...(topCaptainRaw ? [topCaptainRaw] : []),
-    ...(topViceRaw ? [topViceRaw] : []),
-    ...(differentialRaw ? [differentialRaw] : []),
-    ...topSelectedRaw,
+  // Each list keeps its own count/percent: the same player can appear in
+  // several lists (e.g. captain and most selected) with different numbers.
+  const [captainP, viceP, differentialP] = await Promise.all([
+    enrichPlayers(db, topCaptainRaw ? [topCaptainRaw] : []),
+    enrichPlayers(db, topViceRaw ? [topViceRaw] : []),
+    enrichPlayers(db, differentialRaw ? [differentialRaw] : []),
   ]);
-  const byId = new Map(enriched.map((p) => [p.playerId, p]));
+  const topSelected = await enrichPlayers(db, topSelectedRaw);
 
   return {
     matchdayId: matchday.id,
     number: matchday.number,
     playedOn: matchday.playedOn,
     teamsCount: teams,
-    topCaptain: topCaptainRaw ? (byId.get(topCaptainRaw.playerId) ?? null) : null,
-    topViceCaptain: topViceRaw
-      ? (byId.get(topViceRaw.playerId) ?? null)
-      : null,
-    topSelected: topSelectedRaw
-      .map((r) => byId.get(r.playerId))
-      .filter((p): p is PickStatPlayer => p != null),
+    topCaptain: captainP[0] ?? null,
+    topViceCaptain: viceP[0] ?? null,
+    topSelected,
     uniqueCaptains: captainCounts.size,
-    differential: differentialRaw
-      ? (byId.get(differentialRaw.playerId) ?? null)
-      : null,
+    differential: differentialP[0] ?? null,
   };
 }
 
