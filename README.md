@@ -9,8 +9,8 @@ Next.js 16, React 19, Tailwind v4, Drizzle ORM, PostgreSQL, Docker Compose + Cad
 ## Local development
 
 ```bash
-cp .env.example .env   # set DATABASE_URL, SESSION_SECRET, admin credentials
-docker compose up -d db
+cp .env.example .env   # DATABASE_URL host port must match POSTGRES_HOST_PORT (default 5434)
+docker compose up -d db   # recreates db if you change compose ports
 pnpm install
 pnpm db:migrate
 pnpm db:seed           # season, scoring rules, squad players (no gameweeks/results)
