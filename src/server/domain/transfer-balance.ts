@@ -1,6 +1,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import type { DbExecutor } from "@/server/db";
 import {
+  fantasyTeams,
   fantasyTransfers,
   managerFreeTransferAdjustments,
   matchdays,
@@ -10,6 +11,35 @@ import {
   type FreeTransferRules,
   type MatchdayBalanceInput,
 } from "@/server/fantasy/free-transfers";
+
+/**
+ * First matchday of the free-transfer chain for a manager: never earlier than
+ * `transfersStartMatchday`, and always AFTER their initial squad build. The
+ * initial build is a free build, so it must not grant or bank free transfers
+ * (otherwise GW2 would show 3 instead of 2 when transfers start at GW1).
+ */
+export async function resolveChainStartNumber(
+  tx: DbExecutor,
+  managerId: string,
+  seasonId: string,
+  transfersStartMatchday: number,
+): Promise<number> {
+  const [row] = await tx
+    .select({ first: sql<number | null>`min(${matchdays.number})::int` })
+    .from(fantasyTeams)
+    .innerJoin(matchdays, eq(fantasyTeams.matchdayId, matchdays.id))
+    .where(
+      and(
+        eq(fantasyTeams.managerId, managerId),
+        eq(matchdays.seasonId, seasonId),
+        sql`${fantasyTeams.source} in ('manual', 'admin', 'carry_over')`,
+      ),
+    );
+  const first = row?.first ?? null;
+  return first == null
+    ? transfersStartMatchday
+    : Math.max(transfersStartMatchday, first + 1);
+}
 
 export async function sumAdjustmentsForMatchday(
   tx: DbExecutor,
@@ -64,6 +94,12 @@ export async function computeFreeAvailableForMatchday(
     rules: FreeTransferRules;
   },
 ): Promise<number> {
+  const chainStart = await resolveChainStartNumber(
+    tx,
+    input.managerId,
+    input.seasonId,
+    input.transfersStartMatchday,
+  );
   const priorMatchdays = await tx
     .select({
       id: matchdays.id,
@@ -74,7 +110,7 @@ export async function computeFreeAvailableForMatchday(
     .where(
       and(
         eq(matchdays.seasonId, input.seasonId),
-        sql`${matchdays.number} >= ${input.transfersStartMatchday}`,
+        sql`${matchdays.number} >= ${chainStart}`,
         sql`${matchdays.number} < ${input.matchdayNumber}`,
       ),
     )

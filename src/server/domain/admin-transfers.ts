@@ -26,6 +26,7 @@ import { validateFantasyTeamTransferPick } from "@/server/fantasy/validate-trans
 import type { FantasyTeamPick } from "@/server/fantasy/validate-team";
 import {
   countActiveTransfersForMatchday,
+  resolveChainStartNumber,
   sumAdjustmentsForMatchday,
 } from "@/server/domain/transfer-balance";
 import { deriveTransferPenalty } from "@/server/domain/transfer-penalty";
@@ -182,7 +183,12 @@ export async function previewTransferWindowRebuild(
   const matchdayRows = await loadTransferEligibleMatchdays(
     tx,
     input.seasonId,
-    input.transfersStartMatchday,
+    await resolveChainStartNumber(
+      tx,
+      input.managerId,
+      input.seasonId,
+      input.transfersStartMatchday,
+    ),
   );
   if (matchdayRows.length === 0) return [];
   const matchdayIds = matchdayRows.map((m) => m.id);

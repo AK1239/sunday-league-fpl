@@ -103,7 +103,8 @@ describe.skipIf(!hasDatabase)("admin transfer correction", () => {
         seasonId: season!.id,
         number: 11,
         playedOn: "2026-11-17",
-        deadlineAt: new Date("2026-11-17T13:00:00.000Z"),
+        // Open while the manager submits; moved into the past afterwards.
+        deadlineAt: new Date("2099-11-17T13:00:00.000Z"),
         status: "scheduled",
       })
       .returning();
@@ -123,14 +124,18 @@ describe.skipIf(!hasDatabase)("admin transfer correction", () => {
         captainPlayerId: extraPlayerIds[0]!,
         viceCaptainPlayerId: extraPlayerIds[1]!,
         expectedVersion: 0,
-        acknowledgedPenalty: 4,
+        acknowledgedPenalty: 8,
       },
       managerId,
     );
 
     await db
       .update(matchdays)
-      .set({ status: "published", publishedAt: new Date() })
+      .set({
+        status: "published",
+        publishedAt: new Date(),
+        deadlineAt: new Date("2026-11-17T13:00:00.000Z"),
+      })
       .where(eq(matchdays.id, gw11Id));
     await recomputeMatchday(gw11Id);
   });

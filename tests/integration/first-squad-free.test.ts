@@ -96,4 +96,39 @@ describe.skipIf(!hasDatabase)("first squad is free", () => {
     expect(await db.select().from(fantasyTransfers)).toHaveLength(0);
     expect(await db.select().from(managerTransferWindows)).toHaveLength(0);
   });
+
+  it("does not bank free transfers from the initial build: GW2 gets exactly 2", async () => {
+    const db = getDb();
+    const [season] = await db.select().from(seasons).limit(1);
+    const base = active.slice(0, 5);
+    await submitTeam(db, gw1Id, pick(base, 0), managerId);
+    await db
+      .update(matchdays)
+      .set({ status: "published", publishedAt: new Date() })
+      .where(eq(matchdays.id, gw1Id));
+
+    const [gw2] = await db
+      .insert(matchdays)
+      .values({
+        seasonId: season!.id,
+        number: 2,
+        playedOn: "2099-11-15",
+        deadlineAt: new Date("2099-11-15T13:00:00.000Z"),
+        status: "scheduled",
+      })
+      .returning();
+
+    // 3 changes against 2 free => 1 extra (-4).
+    const next = [active[5]!, active[6]!, active[7]!, base[3]!, base[4]!];
+    const result = await submitTeam(
+      db,
+      gw2!.id,
+      { ...pick(next, 0), acknowledgedPenalty: 4 },
+      managerId,
+    );
+    expect(result.summary?.freeAvailable).toBe(2);
+    expect(result.summary?.made).toBe(3);
+    expect(result.summary?.extra).toBe(1);
+    expect(result.summary?.transferPenalty).toBe(-4);
+  });
 });

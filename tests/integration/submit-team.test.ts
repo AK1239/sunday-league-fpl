@@ -191,14 +191,14 @@ describe.skipIf(!hasDatabase)("submitTeam (transfers on)", () => {
       captainPlayerId: extraPlayerIds[0]!,
       viceCaptainPlayerId: extraPlayerIds[1]!,
       expectedVersion: 0,
-      acknowledgedPenalty: 4,
+      acknowledgedPenalty: 8,
     };
 
     const result = await submitTeam(db, openMatchdayId, pick, managerId);
     expect(result.summary?.made).toBe(4);
-    expect(result.summary?.freeAvailable).toBe(3);
-    expect(result.summary?.extra).toBe(1);
-    expect(result.summary?.transferPenalty).toBe(-4);
+    expect(result.summary?.freeAvailable).toBe(2);
+    expect(result.summary?.extra).toBe(2);
+    expect(result.summary?.transferPenalty).toBe(-8);
   });
 
   it("returns CONFLICT when expectedVersion is stale", async () => {

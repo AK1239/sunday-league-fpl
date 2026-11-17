@@ -106,7 +106,7 @@ describe.skipIf(!hasDatabase)("recompute transfer penalty", () => {
         captainPlayerId: extras[0]!,
         viceCaptainPlayerId: extras[1]!,
         expectedVersion: 0,
-        acknowledgedPenalty: 4,
+        acknowledgedPenalty: 8,
       },
       managerId,
     );
@@ -133,7 +133,7 @@ describe.skipIf(!hasDatabase)("recompute transfer penalty", () => {
       .where(eq(managerMatchdayScores.managerId, managerId));
 
     expect(score).toBeDefined();
-    expect(score!.transferPenalty).toBe(-4);
+    expect(score!.transferPenalty).toBe(-8);
     expect(score!.totalPoints).toBe(
       score!.squadPoints + score!.transferPenalty,
     );
