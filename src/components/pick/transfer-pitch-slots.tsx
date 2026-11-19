@@ -1,6 +1,6 @@
 "use client";
 
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, X } from "lucide-react";
 import { EmptyShirt } from "@/components/fantasy/empty-shirt";
 import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { CaptainBadge } from "@/components/pick/captain-badge";
@@ -21,12 +21,11 @@ export function TransferPitchSlots({
   viceCaptainPlayerId,
   playerById,
   disabled,
-  pendingOutSlot,
-  incomingIds,
+  pendingOutSlots,
   onSlotPress,
   onUndoPending,
+  onRemove,
   showRoleBadges = true,
-  showIncomingBadges = true,
   captainMultiplier,
   pitchClassName,
 }: {
@@ -35,12 +34,12 @@ export function TransferPitchSlots({
   viceCaptainPlayerId: string | null;
   playerById: Map<string, PickTeamPlayerRow>;
   disabled?: boolean;
-  pendingOutSlot: number | null;
-  incomingIds: ReadonlySet<string>;
+  pendingOutSlots: readonly number[];
   onSlotPress: (slotIndex: number) => void;
   onUndoPending: (slotIndex: number) => void;
+  /** Shortcut to take a player out; the X is hidden when omitted. */
+  onRemove?: (slotIndex: number) => void;
   showRoleBadges?: boolean;
-  showIncomingBadges?: boolean;
   captainMultiplier?: 2 | 3;
   pitchClassName?: string;
 }) {
@@ -59,12 +58,14 @@ export function TransferPitchSlots({
       <div className="grid h-full grid-cols-2 grid-rows-3 gap-3">
         {SLOT_LAYOUT.map((layoutClass, index) => {
           const playerId = selection[index] ?? null;
-          const isPendingOut = pendingOutSlot === index && playerId != null;
-          const player = playerId ? playerById.get(playerId) : null;
+          const isPendingOut =
+            pendingOutSlots.includes(index) && playerId != null;
+          const outgoing = isPendingOut ? playerById.get(playerId!) : null;
+          // A transferred-out slot reads as empty until a replacement is picked.
+          const player =
+            playerId && !isPendingOut ? playerById.get(playerId) : null;
           const isCaptain = playerId != null && playerId === captainPlayerId;
           const isVice = playerId != null && playerId === viceCaptainPlayerId;
-          const isIncoming =
-            playerId != null && incomingIds.has(playerId) && !isPendingOut;
 
           return (
             <div key={index} className={cn("relative", layoutClass)}>
@@ -74,7 +75,6 @@ export function TransferPitchSlots({
                 onClick={() => onSlotPress(index)}
                 className={cn(
                   "group/slot flex min-h-[4.5rem] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/50 bg-background/60 px-2 py-3 text-center text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] disabled:opacity-70",
-                  isPendingOut && "opacity-60 grayscale",
                   !player &&
                     "border-dashed hover:border-primary/40 hover:bg-primary/5",
                   player && !isPendingOut && "hover:border-primary/30",
@@ -82,7 +82,9 @@ export function TransferPitchSlots({
                 aria-label={
                   player
                     ? `${player.displayName}, slot ${index + 1}. Tap to change.`
-                    : `Empty slot ${index + 1}.`
+                    : outgoing
+                      ? `${outgoing.displayName} transferred out of slot ${index + 1}. Tap to choose a replacement.`
+                      : `Empty slot ${index + 1}.`
                 }
               >
                 {player ? (
@@ -106,16 +108,6 @@ export function TransferPitchSlots({
                           className="absolute -right-1 -top-1"
                         />
                       ) : null}
-                      {isPendingOut ? (
-                        <span className="absolute -left-1 -top-1 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-muted-foreground uppercase">
-                          Out
-                        </span>
-                      ) : null}
-                      {showIncomingBadges && isIncoming ? (
-                        <span className="absolute -left-1 -top-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-primary-foreground uppercase">
-                          In
-                        </span>
-                      ) : null}
                     </div>
                     <span className="line-clamp-2 text-xs font-medium leading-tight text-foreground">
                       {player.displayName}
@@ -128,11 +120,23 @@ export function TransferPitchSlots({
                   <>
                     <EmptyShirt size="lg" />
                     <span className="text-xs font-medium text-muted-foreground">
-                      Add player
+                      {outgoing
+                        ? `Replace ${outgoing.displayName}`
+                        : "Add player"}
                     </span>
                   </>
                 )}
               </button>
+              {player && !disabled && onRemove ? (
+                <button
+                  type="button"
+                  onClick={() => onRemove(index)}
+                  aria-label={`Remove ${player.displayName} from slot ${index + 1}`}
+                  className="absolute top-1 right-1 z-10 flex size-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-90"
+                >
+                  <X className="size-3.5" aria-hidden strokeWidth={2.5} />
+                </button>
+              ) : null}
               {isPendingOut && !disabled ? (
                 <button
                   type="button"

@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { PlayerShirt } from "@/components/fantasy/player-shirt";
 import { BottomSheet } from "@/components/pick/bottom-sheet";
@@ -53,21 +54,23 @@ export function TransferConfirmSheet({
             {pairs.map((pair) => (
               <li
                 key={`${pair.playerOutId}-${pair.playerInId}`}
-                className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-card/50 px-3 py-2"
+                className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/50 px-3 py-2"
               >
-                <div className="flex min-w-0 flex-1 items-center gap-2">
-                  <PlayerShirt
-                    name={playerNameById.get(pair.playerOutId) ?? "Out"}
-                    kitKey={playerKitKeyById.get(pair.playerOutId) ?? null}
-                    size="sm"
-                  />
-                  <span className="text-muted-foreground">→</span>
-                  <PlayerShirt
-                    name={playerNameById.get(pair.playerInId) ?? "In"}
-                    kitKey={playerKitKeyById.get(pair.playerInId) ?? null}
-                    size="sm"
-                  />
-                </div>
+                <TransferSide
+                  label="Out"
+                  name={playerNameById.get(pair.playerOutId) ?? "Out"}
+                  kitKey={playerKitKeyById.get(pair.playerOutId) ?? null}
+                />
+                <ArrowRight
+                  className="size-4 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
+                <TransferSide
+                  label="In"
+                  name={playerNameById.get(pair.playerInId) ?? "In"}
+                  kitKey={playerKitKeyById.get(pair.playerInId) ?? null}
+                  highlight
+                />
               </li>
             ))}
           </ul>
@@ -112,5 +115,34 @@ export function TransferConfirmSheet({
         </Button>
       </div>
     </BottomSheet>
+  );
+}
+
+function TransferSide({
+  label,
+  name,
+  kitKey,
+  highlight = false,
+}: {
+  label: string;
+  name: string;
+  kitKey: string | null;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      <PlayerShirt name={name} kitKey={kitKey} size="sm" />
+      <div className="min-w-0">
+        <p
+          className={cn(
+            "text-[10px] font-semibold tracking-widest uppercase",
+            highlight ? "text-primary" : "text-muted-foreground",
+          )}
+        >
+          {label}
+        </p>
+        <p className="truncate text-sm font-medium">{name}</p>
+      </div>
+    </div>
   );
 }

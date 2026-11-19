@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import type { AppDb } from "@/server/db";
 import {
   fantasyTeams,
@@ -34,6 +34,8 @@ export type TransferHistoryEntry = {
   matchdayId: string;
   number: number;
   playedOn: string;
+  /** Gameweek still open: changes can be edited until the deadline. */
+  open: boolean;
   freeAvailable: number;
   made: number;
   pairs: {
@@ -79,6 +81,7 @@ async function loadTransferHistory(
       playerOutId: fantasyTransfers.playerOutId,
       playerInId: fantasyTransfers.playerInId,
       freeAvailable: managerTransferWindows.freeAvailable,
+      open: sql<boolean>`(${matchdays.status} in ('scheduled', 'draft') and ${matchdays.deadlineAt} > now())`,
     })
     .from(fantasyTransfers)
     .innerJoin(matchdays, eq(fantasyTransfers.matchdayId, matchdays.id))
@@ -94,10 +97,6 @@ async function loadTransferHistory(
         eq(fantasyTransfers.managerId, managerId),
         eq(fantasyTransfers.seasonId, seasonId),
         eq(fantasyTransfers.status, "active"),
-        or(
-          eq(matchdays.status, "published"),
-          lt(matchdays.deadlineAt, sql`now()`),
-        ),
       ),
     )
     .orderBy(desc(matchdays.number), asc(fantasyTransfers.seq));
@@ -127,6 +126,7 @@ async function loadTransferHistory(
         matchdayId: row.matchdayId,
         number: row.number,
         playedOn: row.playedOn,
+        open: row.open,
         freeAvailable: row.freeAvailable ?? 0,
         made: 0,
         pairs: [],

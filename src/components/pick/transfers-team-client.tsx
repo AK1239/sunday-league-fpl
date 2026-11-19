@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/fantasy/page-header";
 import { DeadlineCountdown } from "@/components/pick/deadline-countdown";
 import { LockedBanner } from "@/components/pick/locked-banner";
 import { PlayerPickerSheet } from "@/components/pick/player-picker-sheet";
+import { CaptaincySheet } from "@/components/pick/captaincy-sheet";
 import { SlotActionSheet } from "@/components/pick/slot-action-sheet";
 import { TransferConfirmSheet } from "@/components/pick/transfer-confirm-sheet";
 import { ActiveChipBanner } from "@/components/pick/active-chip-banner";
@@ -28,7 +29,6 @@ import {
   type SerializedTransferPageData,
 } from "@/components/pick/transfer-types";
 import { submitTeamAction } from "@/server/actions/submit-team";
-import { diffSquads } from "@/server/fantasy/transfer-diff";
 import { summariseTransferWindow } from "@/server/fantasy/transfer-summary";
 import { BENCH_BOOST_EXTRA_COUNT } from "@/server/chips/bench-boost-extras";
 import type { ChipCode } from "@/server/chips/registry";
@@ -38,7 +38,7 @@ import {
   validateFantasyTeamTransferPick,
   validateInitialFantasyTeamBuild,
 } from "@/server/fantasy/validate-transfers";
-import { ArrowRight, Check, RotateCcw } from "lucide-react";
+import { ArrowRight, Check, Crown, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -174,13 +174,15 @@ export function TransfersTeamClient({
         : null),
   );
 
-  const [pendingOutSlot, setPendingOutSlot] = useState<number | null>(null);
+  /** Slots whose player was transferred out and still await a replacement. */
+  const [pendingOutSlots, setPendingOutSlots] = useState<number[]>([]);
+  const anyPendingOut = pendingOutSlots.length > 0;
   const [pickerOpen, setPickerOpen] = useState(false);
   const [actionOpen, setActionOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [confirming, setConfirming] = useState(false);
-  const [captaincyStep, setCaptaincyStep] = useState(false);
+  const [captaincyOpen, setCaptaincyOpen] = useState(false);
 
   const readOnly = pick.locked || !pick.selectionOpen;
   const savedTeam = pick.myTeam;
@@ -240,12 +242,6 @@ export function TransfersTeamClient({
     [freeBuild, chipCode, basePlayerIds, permanentBasePlayerIds],
   );
 
-  const diff = useMemo(
-    () => diffSquads(lineupBaseForValidation, plannedIds),
-    [lineupBaseForValidation, plannedIds],
-  );
-  const incomingIds = useMemo(() => new Set(diff.in), [diff.in]);
-
   const unlimitedTransfers = chipCode === "wildcard" || chipCode === "free_hit";
 
   const summary = useMemo(
@@ -268,13 +264,13 @@ export function TransfersTeamClient({
   );
 
   const pickerWouldBeExtra = useMemo(() => {
-    if (unlimitedTransfers || freeBuild || pendingOutSlot == null) return false;
+    if (unlimitedTransfers || freeBuild || !anyPendingOut) return false;
     const hypotheticalMade = summary.made + 1;
     return hypotheticalMade > initial.freeAvailable;
   }, [
     unlimitedTransfers,
     freeBuild,
-    pendingOutSlot,
+    anyPendingOut,
     summary.made,
     initial.freeAvailable,
   ]);
@@ -314,8 +310,7 @@ export function TransfersTeamClient({
     return false;
   }, [chipCode, extraIds, savedChipCodeOnServer, savedExtrasOnServer]);
 
-  const dirty =
-    !savedTeam || !matchesSavedTeam || pendingOutSlot != null || chipDirty;
+  const dirty = !savedTeam || !matchesSavedTeam || anyPendingOut || chipDirty;
   const captaincyChanged =
     savedTeam != null &&
     (captainPlayerId !== savedTeam.captainPlayerId ||
@@ -391,7 +386,7 @@ export function TransfersTeamClient({
     ) {
       return `Choose ${BENCH_BOOST_EXTRA_COUNT} extra players for Bench Boost, then tap Review.`;
     }
-    if (pendingOutSlot != null) {
+    if (anyPendingOut) {
       return "Pick a replacement to finish this transfer.";
     }
     if (plannedIds.length !== 5) return "Your squad must have 5 players.";
@@ -402,7 +397,7 @@ export function TransfersTeamClient({
     );
     if (!lineup.ok) return lineup.message;
     if (!captainPlayerId || !viceCaptainPlayerId) {
-      return "Tap a player to choose your captain and vice-captain.";
+      return "Choose your captain and vice-captain to continue.";
     }
     return null;
   }, [
@@ -411,7 +406,7 @@ export function TransfersTeamClient({
     chipCode,
     extraIds,
     chipDirty,
-    pendingOutSlot,
+    anyPendingOut,
     plannedIds,
     lineupBaseForValidation,
     eligible,
@@ -420,13 +415,13 @@ export function TransfersTeamClient({
   ]);
 
   const lineupReady = useMemo(() => {
-    if (pendingOutSlot != null || plannedIds.length !== 5) return false;
+    if (anyPendingOut || plannedIds.length !== 5) return false;
     return validateFantasyTeamTransferLineup(
       plannedIds,
       lineupBaseForValidation,
       eligible,
     ).ok;
-  }, [pendingOutSlot, plannedIds, lineupBaseForValidation, eligible]);
+  }, [anyPendingOut, plannedIds, lineupBaseForValidation, eligible]);
 
   const captaincyReady = useMemo(() => {
     if (!captainPlayerId || !viceCaptainPlayerId) return false;
@@ -438,7 +433,7 @@ export function TransfersTeamClient({
   }, [captainPlayerId, viceCaptainPlayerId, plannedIds]);
 
   const canConfirm = useMemo(() => {
-    if (readOnly || !pickForValidation || pendingOutSlot != null) return false;
+    if (readOnly || !pickForValidation || anyPendingOut) return false;
     if (
       chipCode === "bench_boost" &&
       extraIds.length !== BENCH_BOOST_EXTRA_COUNT
@@ -458,7 +453,7 @@ export function TransfersTeamClient({
   }, [
     readOnly,
     pickForValidation,
-    pendingOutSlot,
+    anyPendingOut,
     freeBuild,
     permanentBasePlayerIds,
     eligible,
@@ -467,24 +462,11 @@ export function TransfersTeamClient({
   ]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- leave the captaincy step when there is nothing to confirm
-    if (!dirty) setCaptaincyStep(false);
-  }, [dirty]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- close the captaincy sheet when there is nothing to confirm or the lineup is incomplete
+    if (!dirty || !lineupReady) setCaptaincyOpen(false);
+  }, [dirty, lineupReady]);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- leave the captaincy step when the lineup is incomplete
-    if (!lineupReady) setCaptaincyStep(false);
-  }, [lineupReady]);
-
-  useEffect(() => {
-    if (captaincyReady && captaincyStep) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- leave the captaincy step once captaincy is set
-      setCaptaincyStep(false);
-    }
-  }, [captaincyReady, captaincyStep]);
-
-  const showCaptaincyNext =
-    dirty && lineupReady && !captaincyReady && !captaincyStep;
+  const showCaptaincyNext = dirty && lineupReady && !captaincyReady;
 
   const selectedIds = useMemo(() => new Set(plannedIds), [plannedIds]);
 
@@ -503,16 +485,45 @@ export function TransfersTeamClient({
       if (readOnly) return;
       const playerId = slots[index];
       setActiveSlot(index);
+      // Transferred out: the empty shirt opens the player sheet.
+      if (pendingOutSlots.includes(index)) {
+        setPickerOpen(true);
+        return;
+      }
       if (playerId) {
         setActionOpen(true);
         return;
       }
       if (freeBuild) {
-        setPendingOutSlot(null);
+        setPendingOutSlots([]);
         setPickerOpen(true);
       }
     },
-    [readOnly, slots, freeBuild],
+    [readOnly, slots, freeBuild, pendingOutSlots],
+  );
+
+  /** X shortcut / "Transfer out": empties the slot without opening the picker. */
+  const removeFromSlot = useCallback(
+    (index: number) => {
+      if (readOnly) return;
+      const removed = slots[index];
+      if (!removed) return;
+      if (freeBuild) {
+        setSlots((prev) => {
+          const next = [...prev];
+          next[index] = null;
+          return next;
+        });
+        if (removed === captainPlayerId) setCaptainPlayerId(null);
+        if (removed === viceCaptainPlayerId) setViceCaptainPlayerId(null);
+        return;
+      }
+      setActiveSlot(index);
+      setPendingOutSlots((prev) =>
+        prev.includes(index) ? prev : [...prev, index],
+      );
+    },
+    [readOnly, slots, freeBuild, captainPlayerId, viceCaptainPlayerId],
   );
 
   const assignPlayerToSlot = useCallback(
@@ -532,10 +543,10 @@ export function TransfersTeamClient({
           setViceCaptainPlayerId(playerId);
         }
         setPickerOpen(false);
-        setPendingOutSlot(null);
+        setPendingOutSlots([]);
         return;
       }
-      setPendingOutSlot(null);
+      setPendingOutSlots((prev) => prev.filter((i) => i !== activeSlot));
       setSlots((prev) => {
         const next = [...prev];
         const existingIndex = next.findIndex((id) => id === playerId);
@@ -548,8 +559,8 @@ export function TransfersTeamClient({
   );
 
   function resetToSavedTeam() {
-    setPendingOutSlot(null);
-    setCaptaincyStep(false);
+    setPendingOutSlots([]);
+    setCaptaincyOpen(false);
     if (savedTeam?.playerIds.length === 5) {
       setSlots(teamToSlots(savedTeam.playerIds));
       setCaptainPlayerId(savedTeam.captainPlayerId);
@@ -797,26 +808,6 @@ export function TransfersTeamClient({
             </p>
           ) : null}
 
-          {captaincyStep && !readOnly ? (
-            <div className="space-y-2 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3">
-              <p className="text-sm font-medium text-foreground">
-                Choose captain and vice-captain
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Tap each player below — required before you can confirm.
-              </p>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-8 px-0 text-muted-foreground"
-                onClick={() => setCaptaincyStep(false)}
-              >
-                ← Back to transfers
-              </Button>
-            </div>
-          ) : null}
-
           <div className="space-y-3">
             <TransferPitchSlots
               selection={slots}
@@ -824,12 +815,8 @@ export function TransfersTeamClient({
               viceCaptainPlayerId={viceCaptainPlayerId}
               playerById={playerById}
               disabled={readOnly}
-              pendingOutSlot={pendingOutSlot}
-              incomingIds={incomingIds}
+              pendingOutSlots={pendingOutSlots}
               showRoleBadges
-              showIncomingBadges={
-                !captaincyStep && chipCode !== "free_hit" && !freeBuild
-              }
               captainMultiplier={chipCode === "triple_captain" ? 3 : undefined}
               pitchClassName={
                 chipCode === "free_hit"
@@ -837,8 +824,9 @@ export function TransfersTeamClient({
                   : undefined
               }
               onSlotPress={handleSlotPress}
+              onRemove={removeFromSlot}
               onUndoPending={(index) => {
-                if (pendingOutSlot === index) setPendingOutSlot(null);
+                setPendingOutSlots((prev) => prev.filter((i) => i !== index));
               }}
             />
             {chipCode === "bench_boost" ? (
@@ -891,11 +879,9 @@ export function TransfersTeamClient({
             ) : null}
             {!readOnly ? (
               <p className="text-center text-xs text-muted-foreground">
-                {captaincyStep
-                  ? "Tap a player to set captain or vice-captain."
-                  : freeBuild
-                    ? "Tap empty slots to add players, then set captain and vice-captain."
-                    : "Tap a player to set captain, vice-captain or make a transfer."}
+                {freeBuild
+                  ? "Tap empty slots to add players, then set captain and vice-captain."
+                  : "Tap a player to set captain, vice-captain or make a transfer."}
               </p>
             ) : null}
           </div>
@@ -933,7 +919,7 @@ export function TransfersTeamClient({
                   aria-busy={confirming}
                   onClick={() => {
                     if (showCaptaincyNext) {
-                      setCaptaincyStep(true);
+                      setCaptaincyOpen(true);
                       return;
                     }
                     // First gameweek free build: save immediately (no review sheet).
@@ -949,8 +935,8 @@ export function TransfersTeamClient({
                 >
                   {showCaptaincyNext ? (
                     <>
-                      Next
-                      <ArrowRight aria-hidden />
+                      <Crown aria-hidden />
+                      Choose captain
                     </>
                   ) : !freeBuild && (summary.extra > 0 || summary.made > 0) ? (
                     <>
@@ -978,20 +964,24 @@ export function TransfersTeamClient({
       <PlayerPickerSheet
         open={pickerOpen}
         onClose={() => {
+          // Keep a transferred-out slot empty; the empty shirt reopens this.
           setPickerOpen(false);
-          setPendingOutSlot(null);
         }}
         players={pick.players}
         selectedIds={selectedIds}
         onSelect={assignPlayerToSlot}
         replacingName={
-          pendingOutSlot != null && slots[pendingOutSlot]
-            ? (playerById.get(slots[pendingOutSlot]!)?.displayName ?? null)
+          activeSlot != null &&
+          pendingOutSlots.includes(activeSlot) &&
+          slots[activeSlot]
+            ? (playerById.get(slots[activeSlot]!)?.displayName ?? null)
             : null
         }
         replacingKitKey={
-          pendingOutSlot != null && slots[pendingOutSlot]
-            ? (playerById.get(slots[pendingOutSlot]!)?.kitKey ?? null)
+          activeSlot != null &&
+          pendingOutSlots.includes(activeSlot) &&
+          slots[activeSlot]
+            ? (playerById.get(slots[activeSlot]!)?.kitKey ?? null)
             : null
         }
         costBanner={
@@ -1023,7 +1013,7 @@ export function TransfersTeamClient({
           isVice={activePlayerId === viceCaptainPlayerId}
           transferMode
           showCaptainActions
-          showSquadEditActions={!captaincyStep}
+          showSquadEditActions
           onMakeCaptain={() => {
             if (activePlayerId) {
               setCaptainPlayerId(activePlayerId);
@@ -1046,27 +1036,42 @@ export function TransfersTeamClient({
               setPickerOpen(true);
               return;
             }
-            if (activeSlot != null) setPendingOutSlot(activeSlot);
-            setPickerOpen(true);
+            // Transfer out: leave an empty shirt; tapping it opens the sheet.
+            if (activeSlot != null) {
+              const slot = activeSlot;
+              setPendingOutSlots((prev) =>
+                prev.includes(slot) ? prev : [...prev, slot],
+              );
+            }
           }}
           onRemove={
             freeBuild && activeSlot != null
-              ? () => {
-                  const removed = slots[activeSlot];
-                  setSlots((prev) => {
-                    const next = [...prev];
-                    next[activeSlot] = null;
-                    return next;
-                  });
-                  if (removed === captainPlayerId) setCaptainPlayerId(null);
-                  if (removed === viceCaptainPlayerId) {
-                    setViceCaptainPlayerId(null);
-                  }
-                }
+              ? () => removeFromSlot(activeSlot)
               : undefined
           }
         />
       ) : null}
+
+      <CaptaincySheet
+        open={captaincyOpen}
+        onClose={() => setCaptaincyOpen(false)}
+        squad={plannedIds.map((id) => ({
+          id,
+          name: playerNameById.get(id) ?? "Player",
+          kitKey: playerKitKeyById.get(id) ?? null,
+        }))}
+        captainPlayerId={captainPlayerId}
+        viceCaptainPlayerId={viceCaptainPlayerId}
+        onSetCaptain={(id) => {
+          setCaptainPlayerId(id);
+          if (viceCaptainPlayerId === id) setViceCaptainPlayerId(null);
+        }}
+        onSetVice={(id) => {
+          setViceCaptainPlayerId(id);
+          if (captainPlayerId === id) setCaptainPlayerId(null);
+        }}
+        captainMultiplier={chipCode === "triple_captain" ? 3 : undefined}
+      />
 
       <TransferConfirmSheet
         open={confirmOpen}
